@@ -1,5 +1,5 @@
 // test/providers/itinerary_detail_notifier_test.dart — Riverpod notifier tests
-// for ItineraryDetailNotifier's reorder-related methods.
+// for ItineraryDetailNotifier's arrange-mode save.
 //
 // First Riverpod-based test in the project; establishes the
 // ProviderContainer + fake-repository pattern.
@@ -36,12 +36,11 @@ class _FakeRepo extends ItineraryRepository {
 
   Itinerary itineraryToReturn = _makeItinerary();
 
-  /// The trip every save answers with; the moved stop rides in it.
+  /// The trip every save answers with.
   Itinerary answeredTrip = _tripWith(_makeStop());
 
   // Call recorders.
   final List<String> getItineraryCalls = [];
-  final List<_UpdateStopCall> updateStopCalls = [];
   final List<_ReorderCall> reorderCalls = [];
 
   @override
@@ -51,35 +50,16 @@ class _FakeRepo extends ItineraryRepository {
   }
 
   @override
-  Future<TripEditAnswer> updateStop(
-    String itineraryId,
-    String stopId,
-    Map<String, dynamic> data, {
-    required String etag,
-    required String? lockToken,
-  }) async {
-    updateStopCalls.add(_UpdateStopCall(
-      itineraryId: itineraryId,
-      stopId: stopId,
-      body: data,
-      etag: etag,
-    ));
-    return TripEditAnswer(answeredTrip);
-  }
-
-  @override
   Future<TripEditAnswer> reorderItinerary(
     String itineraryId, {
-    Map<String, List<String>>? stopOrders,
-    List<String>? trackOrder,
+    required List<Map<String, dynamic>> layout,
     List<String>? segmentIdsToDelete,
     required String etag,
     required String? lockToken,
   }) async {
     reorderCalls.add(_ReorderCall(
       itineraryId: itineraryId,
-      stopOrders: stopOrders,
-      trackOrder: trackOrder,
+      layout: layout,
       segmentIdsToDelete: segmentIdsToDelete,
       etag: etag,
     ));
@@ -87,29 +67,14 @@ class _FakeRepo extends ItineraryRepository {
   }
 }
 
-class _UpdateStopCall {
-  final String itineraryId;
-  final String stopId;
-  final Map<String, dynamic> body;
-  final String etag;
-  _UpdateStopCall({
-    required this.itineraryId,
-    required this.stopId,
-    required this.body,
-    required this.etag,
-  });
-}
-
 class _ReorderCall {
   final String itineraryId;
-  final Map<String, List<String>>? stopOrders;
-  final List<String>? trackOrder;
+  final List<Map<String, dynamic>> layout;
   final List<String>? segmentIdsToDelete;
   final String etag;
   _ReorderCall({
     required this.itineraryId,
-    required this.stopOrders,
-    required this.trackOrder,
+    required this.layout,
     required this.segmentIdsToDelete,
     required this.etag,
   });
@@ -187,43 +152,30 @@ void main() {
     return container.read(itineraryDetailProvider(_itinId).notifier);
   }
 
-  group('ItineraryDetailNotifier.moveStop', () {
-    test('cross-track move passes track_id and no new-track anchors',
-        () async {
+  group('ItineraryDetailNotifier.applyArrangement', () {
+    const layout = [
+      {
+        'track_id': 't2',
+        'stop_ids': ['stop-1', 'stop-2'],
+      },
+      {
+        'track_id': null,
+        'stop_ids': ['stop-3'],
+      },
+    ];
+
+    test('forwards the layout and the segments it breaks', () async {
       final notifier = await _readyNotifier();
 
-      await notifier.moveStop(_stopId, targetTrackId: 't2');
-
-      expect(fakeRepo.updateStopCalls, hasLength(1));
-      final body = fakeRepo.updateStopCalls.single.body;
-      expect(body['track_id'], 't2');
-      expect(body.containsKey('after_track_id'), isFalse);
-      expect(body.containsKey('before_track_id'), isFalse);
-    });
-
-    test('new-track move passes after/before anchors and no track_id',
-        () async {
-      final notifier = await _readyNotifier();
-
-      await notifier.moveStop(
-        _stopId,
-        afterTrackId: 't1',
-        beforeTrackId: 't2',
+      await notifier.applyArrangement(
+        layout: layout,
+        segmentIdsToDelete: ['seg-1'],
       );
 
-      final body = fakeRepo.updateStopCalls.single.body;
-      expect(body['after_track_id'], 't1');
-      expect(body['before_track_id'], 't2');
-      expect(body.containsKey('track_id'), isFalse);
-    });
-
-    test('returns the moved Stop from the answered trip', () async {
-      fakeRepo.answeredTrip = _tripWith(_makeStop(trackId: 'destination-track'));
-      final notifier = await _readyNotifier();
-
-      final result = await notifier.moveStop(_stopId, targetTrackId: 't2');
-
-      expect(result.trackId, 'destination-track');
+      expect(fakeRepo.reorderCalls, hasLength(1));
+      final call = fakeRepo.reorderCalls.single;
+      expect(call.layout, layout);
+      expect(call.segmentIdsToDelete, ['seg-1']);
     });
 
     test('threads the current ETag (quoted ISO timestamp) into If-Match',
@@ -237,76 +189,18 @@ void main() {
           '"${DateTime.utc(2026, 5, 11, 10, 22, 56).toIso8601String()}"';
 
       final notifier = await _readyNotifier();
-      await notifier.moveStop(_stopId, targetTrackId: 't2');
+      await notifier.applyArrangement(layout: layout);
 
-      expect(fakeRepo.updateStopCalls.single.etag, expectedEtag);
+      expect(fakeRepo.reorderCalls.single.etag, expectedEtag);
+      expect(fakeRepo.reorderCalls.single.segmentIdsToDelete, isNull);
     });
 
     test('adopts the answered trip, without a reload', () async {
       final notifier = await _readyNotifier();
-      // Initial build → 1 getItinerary call, and no other after the move.
+      // Initial build → 1 getItinerary call, and no other after the save.
       expect(fakeRepo.getItineraryCalls, hasLength(1));
 
-      await notifier.moveStop(_stopId, targetTrackId: 't2');
-
-      expect(fakeRepo.getItineraryCalls, hasLength(1));
-      expect(container.read(itineraryDetailProvider(_itinId)).value,
-          same(fakeRepo.answeredTrip));
-    });
-  });
-
-  group('ItineraryDetailNotifier.applyReorder', () {
-    test('stop_orders body is forwarded to the repository', () async {
-      final notifier = await _readyNotifier();
-
-      await notifier.applyReorder(stopOrders: {
-        't1': ['s2', 's1'],
-      });
-
-      expect(fakeRepo.reorderCalls, hasLength(1));
-      final call = fakeRepo.reorderCalls.single;
-      expect(call.stopOrders, {
-        't1': ['s2', 's1'],
-      });
-      expect(call.trackOrder, isNull);
-      expect(call.segmentIdsToDelete, isNull);
-    });
-
-    test('trackOrder + segmentIdsToDelete forwarded together', () async {
-      final notifier = await _readyNotifier();
-
-      await notifier.applyReorder(
-        trackOrder: ['t3', 't1', 't2'],
-        segmentIdsToDelete: ['seg-1', 'seg-2'],
-      );
-
-      final call = fakeRepo.reorderCalls.single;
-      expect(call.trackOrder, ['t3', 't1', 't2']);
-      expect(call.segmentIdsToDelete, ['seg-1', 'seg-2']);
-      expect(call.stopOrders, isNull);
-    });
-
-    test('applyReorder with no arguments still calls the repository', () async {
-      // Server would 422 in real flow, but the client just passes the empty
-      // intent through. Documents the current behavior.
-      final notifier = await _readyNotifier();
-
-      await notifier.applyReorder();
-
-      expect(fakeRepo.reorderCalls, hasLength(1));
-      final call = fakeRepo.reorderCalls.single;
-      expect(call.stopOrders, isNull);
-      expect(call.trackOrder, isNull);
-      expect(call.segmentIdsToDelete, isNull);
-    });
-
-    test('applyReorder adopts the answered trip, without a reload', () async {
-      final notifier = await _readyNotifier();
-      expect(fakeRepo.getItineraryCalls, hasLength(1));
-
-      await notifier.applyReorder(stopOrders: {
-        't1': ['s1'],
-      });
+      await notifier.applyArrangement(layout: layout);
 
       expect(fakeRepo.getItineraryCalls, hasLength(1));
       expect(container.read(itineraryDetailProvider(_itinId)).value,

@@ -2614,12 +2614,6 @@ abstract class AppLocalizations {
   /// **'The connection between these two stops will be cleared. You can add a new one later.'**
   String get removeTransitMessage;
 
-  /// No description provided for @reorderTracksTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Reorder tracks'**
-  String get reorderTracksTitle;
-
   /// No description provided for @shareTooltip.
   ///
   /// In en, this message translates to:
@@ -2686,17 +2680,59 @@ abstract class AppLocalizations {
   /// **'Edit stops'**
   String get editStopsButton;
 
+  /// Edit-mode stop-list header button (tooltip) that enters arrange mode, and the list's title while arranging.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrange stops'**
+  String get arrangeStops;
+
+  /// Arrange mode's instructions above the compact track rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag or tap a stop, then pick where it goes: between tracks for a track of its own, or onto a track as an alternative. Drag a number to move its whole track.'**
+  String get arrangeHint;
+
+  /// Arrange mode: a stop is picked for tap-to-place.
+  ///
+  /// In en, this message translates to:
+  /// **'Moving {name} — tap where it goes'**
+  String arrangeMovingStop(String name);
+
+  /// Arrange mode: a whole track is picked for tap-to-place.
+  ///
+  /// In en, this message translates to:
+  /// **'Moving track {number} — tap where it goes'**
+  String arrangeMovingTrack(int number);
+
+  /// Arrange mode: drop zone between two tracks.
+  ///
+  /// In en, this message translates to:
+  /// **'New track here'**
+  String get arrangeNewTrackHere;
+
+  /// Arrange mode: a track offered as a drop target for the picked stop.
+  ///
+  /// In en, this message translates to:
+  /// **'Add as alternative'**
+  String get arrangeAddAsAlternative;
+
+  /// Screen-reader label of a stop's drag handle in arrange mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Move {name}'**
+  String arrangeMoveStop(String name);
+
+  /// Screen-reader label of a track's drag handle in arrange mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Move track {number}'**
+  String arrangeMoveTrack(int number);
+
   /// No description provided for @addStopTooltip.
   ///
   /// In en, this message translates to:
   /// **'Add stop'**
   String get addStopTooltip;
-
-  /// No description provided for @reorderTracksTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Reorder tracks'**
-  String get reorderTracksTooltip;
 
   /// No description provided for @mapSection.
   ///
@@ -3436,95 +3472,17 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get saveButton;
 
-  /// No description provided for @moveStopTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Move stop'**
-  String get moveStopTitle;
-
-  /// No description provided for @moveStopDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose an existing track, a gap to create a new track, or extract into its own track. Tracks at the {max}-stop maximum are disabled.'**
-  String moveStopDescription(int max);
-
-  /// No description provided for @extractIntoOwnTrack.
-  ///
-  /// In en, this message translates to:
-  /// **'Extract into its own new track'**
-  String get extractIntoOwnTrack;
-
-  /// No description provided for @moveButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Move'**
-  String get moveButton;
-
-  /// No description provided for @moveStopMoved.
-  ///
-  /// In en, this message translates to:
-  /// **'Moved to {destination}'**
-  String moveStopMoved(String destination);
-
   /// No description provided for @itineraryChangedElsewhere.
   ///
   /// In en, this message translates to:
   /// **'Itinerary changed elsewhere — close and reopen to see the latest order.'**
   String get itineraryChangedElsewhere;
 
-  /// No description provided for @moveStopOrphan1.
-  ///
-  /// In en, this message translates to:
-  /// **'This is the last stop in its track — the track will be removed from the itinerary.'**
-  String get moveStopOrphan1;
-
-  /// No description provided for @moveStopOrphanSegments.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{1 transit segment will be deleted because its stops will no longer be in adjacent tracks.} other{{count} transit segments will be deleted because their stops will no longer be in adjacent tracks.}}'**
-  String moveStopOrphanSegments(int count);
-
-  /// No description provided for @moveStopNewTrack.
-  ///
-  /// In en, this message translates to:
-  /// **'New track'**
-  String get moveStopNewTrack;
-
-  /// No description provided for @moveStopNewTrackBefore.
-  ///
-  /// In en, this message translates to:
-  /// **'New track before Track {n}'**
-  String moveStopNewTrackBefore(int n);
-
-  /// No description provided for @moveStopNewTrackAfter.
-  ///
-  /// In en, this message translates to:
-  /// **'New track after Track {n}'**
-  String moveStopNewTrackAfter(int n);
-
-  /// No description provided for @moveStopNewTrackBetween.
-  ///
-  /// In en, this message translates to:
-  /// **'New track between Track {a} and Track {b}'**
-  String moveStopNewTrackBetween(int a, int b);
-
-  /// No description provided for @moveStopCurrentSuffix.
-  ///
-  /// In en, this message translates to:
-  /// **'  •  current'**
-  String get moveStopCurrentSuffix;
-
   /// No description provided for @moveStopFull.
   ///
   /// In en, this message translates to:
   /// **'Full {max}/{max}'**
   String moveStopFull(int max);
-
-  /// No description provided for @extractSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Splits this stop out of \"{trackName}\" — new track lands right after.'**
-  String extractSubtitle(String trackName);
 
   /// No description provided for @removeRatingTitle.
   ///
@@ -3964,29 +3922,11 @@ abstract class AppLocalizations {
   /// **'Your reorder will not be saved.'**
   String get discardReorderMessage;
 
-  /// No description provided for @emptyTrackName.
-  ///
-  /// In en, this message translates to:
-  /// **'(empty)'**
-  String get emptyTrackName;
-
   /// No description provided for @unnamedStop.
   ///
   /// In en, this message translates to:
   /// **'(unnamed)'**
   String get unnamedStop;
-
-  /// No description provided for @unknownStop.
-  ///
-  /// In en, this message translates to:
-  /// **'(unknown)'**
-  String get unknownStop;
-
-  /// No description provided for @dragToChangeTrackOrder.
-  ///
-  /// In en, this message translates to:
-  /// **'Drag to change the track order'**
-  String get dragToChangeTrackOrder;
 
   /// No description provided for @transitSegmentsWillBeDeleted.
   ///
@@ -4000,41 +3940,11 @@ abstract class AppLocalizations {
   /// **'… and {count} more'**
   String andMoreCount(int count);
 
-  /// No description provided for @altsCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{{count} alt} other{{count} alts}}'**
-  String altsCount(int count);
-
   /// No description provided for @segmentToWillBeDeleted.
   ///
   /// In en, this message translates to:
   /// **'→ {name}  —  segment will be deleted'**
   String segmentToWillBeDeleted(String name);
-
-  /// No description provided for @reorderAlternativesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Reorder alternatives'**
-  String get reorderAlternativesTitle;
-
-  /// No description provided for @reorderAlternativesHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Drag to change which option appears first. Tap Save to apply.'**
-  String get reorderAlternativesHint;
-
-  /// No description provided for @emptyTrackLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'(empty track)'**
-  String get emptyTrackLabel;
-
-  /// No description provided for @moveStopToLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Move stop to'**
-  String get moveStopToLabel;
 
   /// No description provided for @messageLabel.
   ///
@@ -4305,18 +4215,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Update your rating'**
   String get updateYourRating;
-
-  /// No description provided for @moveActionLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'move'**
-  String get moveActionLabel;
-
-  /// No description provided for @reorderActionLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'reorder'**
-  String get reorderActionLabel;
 
   /// Label of the side button that adds a parallel stop (alternative) to the same track. The leading '//' is the parallel symbol and must be kept in every locale; only the noun is translated.
   ///

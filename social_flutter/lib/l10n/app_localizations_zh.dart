@@ -1357,9 +1357,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get removeTransitMessage => '这两个停靠点之间的连接将被清除。你之后可以再添加一个。';
 
   @override
-  String get reorderTracksTitle => '重新排列列';
-
-  @override
   String get shareTooltip => '分享';
 
   @override
@@ -1393,10 +1390,40 @@ class AppLocalizationsZh extends AppLocalizations {
   String get editStopsButton => '编辑停靠点';
 
   @override
-  String get addStopTooltip => '添加停靠点';
+  String get arrangeStops => '整理停靠点';
 
   @override
-  String get reorderTracksTooltip => '重新排列列';
+  String get arrangeHint =>
+      '拖动或点按停靠点，然后选择它的位置：放在两列之间成为单独一列，或放到某一列上作为备选项。拖动编号可移动整列。';
+
+  @override
+  String arrangeMovingStop(String name) {
+    return '正在移动$name——点按新位置';
+  }
+
+  @override
+  String arrangeMovingTrack(int number) {
+    return '正在移动第 $number 列——点按新位置';
+  }
+
+  @override
+  String get arrangeNewTrackHere => '在此新建列';
+
+  @override
+  String get arrangeAddAsAlternative => '添加为备选项';
+
+  @override
+  String arrangeMoveStop(String name) {
+    return '移动$name';
+  }
+
+  @override
+  String arrangeMoveTrack(int number) {
+    return '移动第 $number 列';
+  }
+
+  @override
+  String get addStopTooltip => '添加停靠点';
 
   @override
   String get mapSection => '地图';
@@ -1796,69 +1823,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get saveButton => '保存';
 
   @override
-  String get moveStopTitle => '移动停靠点';
-
-  @override
-  String moveStopDescription(int max) {
-    return '选择现有列、用于新建列的空位，或将其提取到单独的列中。已达到 $max 个停靠点上限的列已停用。';
-  }
-
-  @override
-  String get extractIntoOwnTrack => '提取到单独的新列';
-
-  @override
-  String get moveButton => '移动';
-
-  @override
-  String moveStopMoved(String destination) {
-    return '已移动到 $destination';
-  }
-
-  @override
   String get itineraryChangedElsewhere => '行程已在别处更改——请关闭后重新打开以查看最新顺序。';
-
-  @override
-  String get moveStopOrphan1 => '这是该列中的最后一个停靠点——该列将从行程中移除。';
-
-  @override
-  String moveStopOrphanSegments(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count 个交通路段将被删除，因为其停靠点将不再位于相邻的列中。',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get moveStopNewTrack => '新建列';
-
-  @override
-  String moveStopNewTrackBefore(int n) {
-    return '在第 $n 列之前新建列';
-  }
-
-  @override
-  String moveStopNewTrackAfter(int n) {
-    return '在第 $n 列之后新建列';
-  }
-
-  @override
-  String moveStopNewTrackBetween(int a, int b) {
-    return '在第 $a 列和第 $b 列之间新建列';
-  }
-
-  @override
-  String get moveStopCurrentSuffix => '  •  当前';
 
   @override
   String moveStopFull(int max) {
     return '已满 $max/$max';
-  }
-
-  @override
-  String extractSubtitle(String trackName) {
-    return '将此停靠点从“$trackName”中分离——新列紧随其后。';
   }
 
   @override
@@ -2114,16 +2083,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get discardReorderMessage => '你的重新排序将不会被保存。';
 
   @override
-  String get emptyTrackName => '（空）';
-
-  @override
   String get unnamedStop => '（未命名）';
-
-  @override
-  String get unknownStop => '（未知）';
-
-  @override
-  String get dragToChangeTrackOrder => '拖动以更改列的顺序';
 
   @override
   String transitSegmentsWillBeDeleted(int count) {
@@ -2141,31 +2101,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String altsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count 个备选',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String segmentToWillBeDeleted(String name) {
     return '→ $name  —  该路段将被删除';
   }
-
-  @override
-  String get reorderAlternativesTitle => '重新排列备选项';
-
-  @override
-  String get reorderAlternativesHint => '拖动以更改哪个选项排在最前。点按保存以应用。';
-
-  @override
-  String get emptyTrackLabel => '（空列）';
-
-  @override
-  String get moveStopToLabel => '将停靠点移动到';
 
   @override
   String get messageLabel => '留言';
@@ -2310,12 +2248,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get updateYourRating => '更新你的评分';
-
-  @override
-  String get moveActionLabel => '移动';
-
-  @override
-  String get reorderActionLabel => '重新排序';
 
   @override
   String get addParallelStopLabel => '// 停靠点';

@@ -1423,9 +1423,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'The connection between these two stops will be cleared. You can add a new one later.';
 
   @override
-  String get reorderTracksTitle => 'Reorder tracks';
-
-  @override
   String get shareTooltip => 'Share';
 
   @override
@@ -1459,10 +1456,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editStopsButton => 'Edit stops';
 
   @override
-  String get addStopTooltip => 'Add stop';
+  String get arrangeStops => 'Arrange stops';
 
   @override
-  String get reorderTracksTooltip => 'Reorder tracks';
+  String get arrangeHint =>
+      'Drag or tap a stop, then pick where it goes: between tracks for a track of its own, or onto a track as an alternative. Drag a number to move its whole track.';
+
+  @override
+  String arrangeMovingStop(String name) {
+    return 'Moving $name — tap where it goes';
+  }
+
+  @override
+  String arrangeMovingTrack(int number) {
+    return 'Moving track $number — tap where it goes';
+  }
+
+  @override
+  String get arrangeNewTrackHere => 'New track here';
+
+  @override
+  String get arrangeAddAsAlternative => 'Add as alternative';
+
+  @override
+  String arrangeMoveStop(String name) {
+    return 'Move $name';
+  }
+
+  @override
+  String arrangeMoveTrack(int number) {
+    return 'Move track $number';
+  }
+
+  @override
+  String get addStopTooltip => 'Add stop';
 
   @override
   String get mapSection => 'Map';
@@ -1889,74 +1916,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveButton => 'Save';
 
   @override
-  String get moveStopTitle => 'Move stop';
-
-  @override
-  String moveStopDescription(int max) {
-    return 'Choose an existing track, a gap to create a new track, or extract into its own track. Tracks at the $max-stop maximum are disabled.';
-  }
-
-  @override
-  String get extractIntoOwnTrack => 'Extract into its own new track';
-
-  @override
-  String get moveButton => 'Move';
-
-  @override
-  String moveStopMoved(String destination) {
-    return 'Moved to $destination';
-  }
-
-  @override
   String get itineraryChangedElsewhere =>
       'Itinerary changed elsewhere — close and reopen to see the latest order.';
 
   @override
-  String get moveStopOrphan1 =>
-      'This is the last stop in its track — the track will be removed from the itinerary.';
-
-  @override
-  String moveStopOrphanSegments(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other:
-          '$count transit segments will be deleted because their stops will no longer be in adjacent tracks.',
-      one:
-          '1 transit segment will be deleted because its stops will no longer be in adjacent tracks.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get moveStopNewTrack => 'New track';
-
-  @override
-  String moveStopNewTrackBefore(int n) {
-    return 'New track before Track $n';
-  }
-
-  @override
-  String moveStopNewTrackAfter(int n) {
-    return 'New track after Track $n';
-  }
-
-  @override
-  String moveStopNewTrackBetween(int a, int b) {
-    return 'New track between Track $a and Track $b';
-  }
-
-  @override
-  String get moveStopCurrentSuffix => '  •  current';
-
-  @override
   String moveStopFull(int max) {
     return 'Full $max/$max';
-  }
-
-  @override
-  String extractSubtitle(String trackName) {
-    return 'Splits this stop out of \"$trackName\" — new track lands right after.';
   }
 
   @override
@@ -2223,16 +2188,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get discardReorderMessage => 'Your reorder will not be saved.';
 
   @override
-  String get emptyTrackName => '(empty)';
-
-  @override
   String get unnamedStop => '(unnamed)';
-
-  @override
-  String get unknownStop => '(unknown)';
-
-  @override
-  String get dragToChangeTrackOrder => 'Drag to change the track order';
 
   @override
   String transitSegmentsWillBeDeleted(int count) {
@@ -2251,33 +2207,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String altsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count alts',
-      one: '$count alt',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String segmentToWillBeDeleted(String name) {
     return '→ $name  —  segment will be deleted';
   }
-
-  @override
-  String get reorderAlternativesTitle => 'Reorder alternatives';
-
-  @override
-  String get reorderAlternativesHint =>
-      'Drag to change which option appears first. Tap Save to apply.';
-
-  @override
-  String get emptyTrackLabel => '(empty track)';
-
-  @override
-  String get moveStopToLabel => 'Move stop to';
 
   @override
   String get messageLabel => 'Message';
@@ -2428,12 +2360,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get updateYourRating => 'Update your rating';
-
-  @override
-  String get moveActionLabel => 'move';
-
-  @override
-  String get reorderActionLabel => 'reorder';
 
   @override
   String get addParallelStopLabel => '// stop';

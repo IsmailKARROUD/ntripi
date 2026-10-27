@@ -6,7 +6,9 @@
 // show which alternative is active.
 //
 // "// stop" button: appears to the right of the card in edit mode and triggers
-// adding another stop to the same track (parallel alternative).
+// adding another stop to the same track (parallel alternative). Ordering the
+// alternatives and moving a stop to another track are arrange mode's
+// (ArrangeTripView), not buttons on the card.
 
 import 'package:flutter/material.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
@@ -14,7 +16,6 @@ import 'package:ntripi/features/itineraries/domain/annotation.dart';
 import 'package:ntripi/features/itineraries/domain/stop.dart';
 import 'package:ntripi/features/itineraries/domain/track.dart';
 import 'package:ntripi/features/itineraries/domain/transit_segment.dart';
-import 'package:ntripi/features/itineraries/presentation/widgets/reorder_parallels_sheet.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/segment_card.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/stop_card.dart';
 import 'package:expandable_page_view/expandable_page_view.dart';
@@ -68,14 +69,6 @@ class ParallelStopGroup extends StatefulWidget {
   /// Called whenever the user swipes to a different parallel, with the new index.
   final void Function(int index)? onPageChanged;
 
-  /// True when the itinerary has another track to move this group's active
-  /// stop into. Controls visibility of the move-to-track button in edit mode.
-  final bool canMoveToTrack;
-
-  /// Called when the user taps the move-to-track button. Receives the active
-  /// parallel stop so the parent can launch the target-picker sheet.
-  final void Function(Stop activeStop)? onMoveToTrack;
-
   const ParallelStopGroup({
     super.key,
     required this.stops,
@@ -97,8 +90,6 @@ class ParallelStopGroup extends StatefulWidget {
     this.onAddStopAfter,
     this.onAddTransit,
     this.onPageChanged,
-    this.canMoveToTrack = false,
-    this.onMoveToTrack,
   });
 
   /// The stop currently visible (parallel_position=0 by default).
@@ -208,36 +199,13 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
                   )
                   : _buildStopCard(widget.stops.first),
             ),
-            if (widget.editMode &&
-                (canAddMore || hasParallels || widget.canMoveToTrack)) ...[
+            if (widget.editMode && canAddMore) ...[
               const SizedBox(width: 4),
               OfflineGate(
-                builder: (online) => Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (canAddMore)
-                      _AddParallelButton(
-                        onTap: (widget.onAddParallel == null || !online)
-                            ? null
-                            : () => widget.onAddParallel!(_activeStop.trackId),
-                      ),
-                    if (hasParallels)
-                      _ReorderParallelsButton(
-                        onTap: !online
-                            ? null
-                            : () => showReorderParallelsSheet(
-                                  context: context,
-                                  itineraryId: widget.itineraryId,
-                                  stops: widget.stops,
-                                ),
-                      ),
-                    if (widget.canMoveToTrack)
-                      _MoveToTrackButton(
-                        onTap: (widget.onMoveToTrack == null || !online)
-                            ? null
-                            : () => widget.onMoveToTrack!(_activeStop),
-                      ),
-                  ],
+                builder: (online) => _AddParallelButton(
+                  onTap: (widget.onAddParallel == null || !online)
+                      ? null
+                      : () => widget.onAddParallel!(_activeStop.trackId),
                 ),
               ),
             ],
@@ -429,86 +397,6 @@ class _ActionChip extends StatelessWidget {
                       style: TextStyle(fontSize: 12, color: color)),
                 ],
               ),
-      ),
-    );
-  }
-}
-
-class _MoveToTrackButton extends StatelessWidget {
-  final VoidCallback? onTap;
-  const _MoveToTrackButton({this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final nt = context.nt;
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsetsDirectional.only(top: 6, end: 8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          decoration: BoxDecoration(
-            color: nt.editBlueTint,
-            border: Border.all(color: nt.editBlue.withValues(alpha: 0.13)),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.swap_vert, size: 16, color: nt.editBlue),
-              const SizedBox(height: 2),
-              Text(
-                AppLocalizations.of(context)!.moveActionLabel,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: nt.editBlue,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ReorderParallelsButton extends StatelessWidget {
-  final VoidCallback? onTap;
-  const _ReorderParallelsButton({this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final nt = context.nt;
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsetsDirectional.only(top: 6, end: 8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          decoration: BoxDecoration(
-            color: nt.editBlueTint,
-            border: Border.all(color: nt.editBlue.withValues(alpha: 0.13)),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.swap_horiz, size: 16, color: nt.editBlue),
-              const SizedBox(height: 2),
-              Text(
-                AppLocalizations.of(context)!.reorderActionLabel,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: nt.editBlue,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

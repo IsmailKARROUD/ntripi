@@ -38,6 +38,35 @@ Map<String, dynamic> stopJson(
       'annotations': <Map<String, dynamic>>[],
     };
 
+/// A transit segment from [fromStopId] to [toStopId], by one walking leg.
+Map<String, dynamic> segmentJson(String id, String fromStopId, String toStopId) =>
+    {
+      'id': id,
+      'itinerary_id': kTripId,
+      'from_stop_id': fromStopId,
+      'to_stop_id': toStopId,
+      'total_duration_min': 10,
+      'total_cost': 0.0,
+      'created_at': '2026-10-21T09:00:00.000000Z',
+      'legs': [
+        {
+          'id': '$id-leg',
+          'segment_id': id,
+          'position': 1,
+          'mode': 'walk',
+          'line': null,
+          'direction': null,
+          'duration_min': 10,
+          'cost': 0.0,
+          'is_free': true,
+          'notes': null,
+          'note_type': null,
+          'created_at': '2026-10-21T09:00:00.000000Z',
+          'source_lang': null,
+        },
+      ],
+    };
+
 /// A track holding [stops].
 Map<String, dynamic> trackJson(
   String id,
@@ -99,6 +128,7 @@ Map<String, dynamic> tripJson({
   double? ratingAvg,
   int ratingCount = 0,
   List<Map<String, dynamic>> tracks = const [],
+  List<Map<String, dynamic>> segments = const [],
   bool canEdit = true,
 }) =>
     {
@@ -115,7 +145,7 @@ Map<String, dynamic> tripJson({
       ),
       'description': description,
       'tracks': tracks,
-      'segments': <Map<String, dynamic>>[],
+      'segments': segments,
       'annotations': <Map<String, dynamic>>[],
       'can_edit': canEdit,
     };

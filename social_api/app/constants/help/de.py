@@ -101,6 +101,7 @@ RELEASES: tuple[Release, ...] = (
             "**Ein neues Titelbild wird mit dem Rest gespeichert.** Wer das Titelbild einer Reise zusammen mit Titel, Währung oder bester Reisezeit ändert, muss nicht mehr neu laden — alles wird auf einmal gespeichert.",
             "**Nur den Link kopieren.** Das Teilen-Menü hat einen neuen Eintrag **Link kopieren**, der nur den Link kopiert — ohne Namen, Stationen und Dauer der Reise. Im Web bietet ihn auch der Teilen-Knopf an.",
             "**Geteilte Links führen dorthin, wo Sie schon sind.** Sind Sie in Ihrem Browser bei Ntripi angemeldet, öffnet sich eine geteilte Reise oder ein geteiltes Profil direkt statt der Vorschau, und auf dem Telefon bietet die Seite **In Ntripi öffnen** an. Die Adressleiste der Web-App zeigt jetzt die Seite, auf der Sie sind — nach dem Neuladen bleiben Sie dort.",
+            "**Stopps an einem Ort anordnen.** Im Bearbeitungsmodus macht **Stopps anordnen** (die vier Pfeile) über den Stopps aus der Reise Reihen von Stopps. Ziehen oder tippen Sie einen Stopp, um ihn zur Alternative einer anderen Spalte zu machen oder ihm zwischen zwei anderen eine eigene Spalte zu geben; ziehen Sie die Nummer einer Spalte, um die ganze Spalte zu verschieben. Nichts ändert sich, bevor Sie auf **Speichern** tippen, und die getrennten Knöpfe zum Umordnen und Verschieben an jedem Stopp sind verschwunden.",
         ),
     ),
     Release(
@@ -220,7 +221,7 @@ Neue Reisen sind **nur für Sie** sichtbar, bis Sie das ändern — Ausprobieren
 - **Aufenthaltsdauer** — wie viel Zeit einzuplanen ist. Das macht einen Plan realistisch statt optimistisch.
 - **Notizen** — alles, woran Sie sich erinnern wollen.
 
-Fügen Sie Stopps in der Reihenfolge des Besuchs hinzu. Verschieben können Sie sie später jederzeit.""",
+Fügen Sie Stopps in der Reihenfolge des Besuchs hinzu. Um die Reihenfolge später zu ändern, tippen Sie im Bearbeitungsmodus über den Stopps auf **Stopps anordnen**.""",
             ),
             Block(
                 anchor="connect-the-stops",
@@ -262,7 +263,7 @@ Siehe [wie Sie eine Reise teilen, ohne sie zu veröffentlichen](/help/share-an-i
             "planung",
         ),
         related=("plan-alternative-options", "share-an-itinerary-privately", "getting-started"),
-        updated="2026-09-01",
+        updated="2026-10-27",
         cta="Planen Sie Ihre eigene Reiseroute — etwa zehn Minuten.",
     ),
     Article(
@@ -362,27 +363,36 @@ Die beiden Stopps stehen nun nebeneinander. Keiner ist der „echte“ — sie s
             ),
             Block(
                 anchor="move-a-stop",
-                heading="Einen Stopp zwischen Spalten verschieben",
+                heading="Einen Stopp in eine andere Spalte verschieben",
                 kind=KIND_STEP,
-                body="""Ein Stopp lässt sich nachträglich in eine andere Spalte verschieben, Sie sind also nicht an die Reihenfolge gebunden, in der Sie die Dinge zufällig angelegt haben. Öffnen Sie den Stopp und wählen Sie über die Verschiebe-Aktion seine Spalte.
+                body="""Ein Stopp kann nachträglich die Spalte wechseln, Sie sind also nicht an die Reihenfolge gebunden, in der Sie die Dinge zufällig angelegt haben. Tippen Sie im Bearbeitungsmodus über den Stopps auf **Stopps anordnen** (die vier Pfeile): Die Reise wird zu Reihen von Stopps, eine Reihe pro Spalte. Ziehen Sie einen Stopp an seinem Griff, oder tippen Sie ihn an und dann auf seinen neuen Platz:
 
-Eine Spalte existiert nur, solange mindestens ein Stopp darin ist. Verschieben oder löschen Sie den letzten Stopp, verschwindet die leere Spalte von selbst — es bleibt nichts aufzuräumen.""",
+- **auf eine andere Spalte**, um ihn zu einer ihrer Alternativen zu machen;
+- **zwischen zwei Spalten**, um ihm dort eine eigene Spalte zu geben.
+
+Gespeichert wird erst, wenn Sie auf **Speichern** tippen. Eine Spalte existiert nur, solange mindestens ein Stopp darin ist. Verschieben oder löschen Sie den letzten Stopp, verschwindet die leere Spalte von selbst — es bleibt nichts aufzuräumen.""",
             ),
             Block(
                 anchor="reorder",
-                heading="Spalten und Stopps neu anordnen",
+                heading="Spalten und Alternativen neu anordnen",
                 kind=KIND_STEP,
-                body="Ziehen Sie, um Stopps innerhalb einer Spalte und um die Spalten selbst neu anzuordnen. Die erste Spalte einer Reise gilt als Ausgangspunkt und die letzte als Ziel — das ist es, was die Karte verbindet.",
+                body="Im selben Modus ziehen Sie die Nummer einer Spalte, um die ganze Spalte samt Alternativen zu verschieben, oder legen einen Stopp auf einem anderen Stopp seiner Spalte ab, um zu ändern, welche Alternative zuerst kommt. Alles wartet auf **Speichern**, Sie können also eine Reihenfolge ausprobieren und mit ✕ verwerfen. Die erste Spalte einer Reise gilt als Ausgangspunkt und die letzte als Ziel — das ist es, was die Karte verbindet.",
             ),
             Block(
                 anchor="transport-warning",
                 heading="Warum das Einfügen einer Spalte manchmal warnt",
                 body="""Transport wird zwischen zwei *benachbarten* Spalten notiert. Fügen Sie eine neue Spalte zwischen zwei ein, die bereits durch Transport verbunden sind, hat diese Verbindung keinen Platz mehr — die beiden Spalten sind keine Nachbarn mehr.
 
-Ntripi fragt vorher, statt den eingetragenen Transport stillschweigend zu verwerfen. Bestätigen Sie, wird die betroffene Verbindung entfernt; brechen Sie ab, ändert sich nichts.""",
+Ntripi fragt vorher, statt den eingetragenen Transport stillschweigend zu verwerfen. Bestätigen Sie, wird die betroffene Verbindung entfernt; brechen Sie ab, ändert sich nichts.
+
+Beim Anordnen gilt dasselbe: Trennt eine Verschiebung zwei Spalten, zwischen denen Transport eingetragen ist, wird dieser Transport schon beim Anordnen markiert, und **Speichern** fragt, bevor er entfernt wird.""",
             ),
         ),
         keywords=(
+            "anordnen",
+            "neu anordnen",
+            "verschieben",
+            "ziehen",
             "parallel",
             "spalte",
             "spalten",
@@ -399,7 +409,7 @@ Ntripi fragt vorher, statt den eingetragenen Transport stillschweigend zu verwer
             "auswahl",
         ),
         related=("plan-a-trip-itinerary", "getting-started"),
-        updated="2026-09-01",
+        updated="2026-10-27",
         cta="Planen Sie eine Reise mit echten Alternativen statt einer einzigen fragilen Linie.",
     ),
     Article(
@@ -416,7 +426,7 @@ Ntripi fragt vorher, statt den eingetragenen Transport stillschweigend zu verwer
                 kind=KIND_STEP,
                 body="""Öffnen Sie die Reise und tippen Sie auf **+**. Geben Sie dem Ort einen Namen — den, den Sie laut sagen würden, nicht die offizielle Bezeichnung — und eine Adresse, falls vorhanden.
 
-Stopps werden in Besuchsreihenfolge angelegt. Sie können sie danach jederzeit in eine andere Reihenfolge ziehen.""",
+Stopps werden in Besuchsreihenfolge angelegt. Um sie später anders zu ordnen, tippen Sie im Bearbeitungsmodus über den Stopps auf **Stopps anordnen**.""",
             ),
             Block(
                 anchor="place-type",
@@ -471,7 +481,7 @@ Für eine Warnung, die schwer zu übersehen sein soll statt nebenbei gelesen zu 
             "museum",
         ),
         related=("plan-a-trip-itinerary", "add-locations-from-google-maps", "travel-notes-and-warnings"),
-        updated="2026-09-01",
+        updated="2026-10-27",
         cta="Legen Sie eine Reise an und fügen Sie den ersten Stopp hinzu.",
     ),
     Article(

@@ -1,8 +1,8 @@
 // test/providers/itinerary_detail_mutations_test.dart — Riverpod tests for
 // ItineraryDetailNotifier's addStop, updateStop, and deleteStop methods.
 //
-// Complements itinerary_detail_notifier_test.dart (which covers moveStop and
-// applyReorder). Uses the same fake-repository pattern established there.
+// Complements itinerary_detail_notifier_test.dart (which covers
+// applyArrangement). Uses the same fake-repository pattern established there.
 // Every save answers with the whole trip, which is adopted: no reload after.
 
 import 'package:dio/dio.dart';

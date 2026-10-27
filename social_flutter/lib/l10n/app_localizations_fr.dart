@@ -1448,9 +1448,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'La connexion entre ces deux étapes sera supprimée. Vous pourrez en ajouter une nouvelle ultérieurement.';
 
   @override
-  String get reorderTracksTitle => 'Réorganiser les pistes';
-
-  @override
   String get shareTooltip => 'Partager';
 
   @override
@@ -1484,10 +1481,40 @@ class AppLocalizationsFr extends AppLocalizations {
   String get editStopsButton => 'Modifier les étapes';
 
   @override
-  String get addStopTooltip => 'Ajouter une étape';
+  String get arrangeStops => 'Organiser les étapes';
 
   @override
-  String get reorderTracksTooltip => 'Réorganiser les pistes';
+  String get arrangeHint =>
+      'Faites glisser ou touchez une étape, puis choisissez sa place : entre deux pistes pour une piste à elle, ou sur une piste comme alternative. Faites glisser un numéro pour déplacer toute sa piste.';
+
+  @override
+  String arrangeMovingStop(String name) {
+    return 'Déplacement de $name — touchez sa nouvelle place';
+  }
+
+  @override
+  String arrangeMovingTrack(int number) {
+    return 'Déplacement de la piste $number — touchez sa nouvelle place';
+  }
+
+  @override
+  String get arrangeNewTrackHere => 'Nouvelle piste ici';
+
+  @override
+  String get arrangeAddAsAlternative => 'Ajouter comme alternative';
+
+  @override
+  String arrangeMoveStop(String name) {
+    return 'Déplacer $name';
+  }
+
+  @override
+  String arrangeMoveTrack(int number) {
+    return 'Déplacer la piste $number';
+  }
+
+  @override
+  String get addStopTooltip => 'Ajouter une étape';
 
   @override
   String get mapSection => 'Carte';
@@ -1919,74 +1946,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get saveButton => 'Enregistrer';
 
   @override
-  String get moveStopTitle => 'Déplacer l\'étape';
-
-  @override
-  String moveStopDescription(int max) {
-    return 'Choisissez une piste existante, un espace pour créer une nouvelle piste, ou extrayez dans sa propre piste. Les pistes au maximum de $max étapes sont désactivées.';
-  }
-
-  @override
-  String get extractIntoOwnTrack => 'Extraire dans sa propre piste';
-
-  @override
-  String get moveButton => 'Déplacer';
-
-  @override
-  String moveStopMoved(String destination) {
-    return 'Déplacé vers $destination';
-  }
-
-  @override
   String get itineraryChangedElsewhere =>
       'Itinéraire modifié ailleurs — fermez et rouvrez pour voir la dernière version.';
 
   @override
-  String get moveStopOrphan1 =>
-      'C\'est la dernière étape de sa piste — la piste sera supprimée de l\'itinéraire.';
-
-  @override
-  String moveStopOrphanSegments(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other:
-          '$count segments de transit seront supprimés car leurs étapes ne seront plus dans des pistes adjacentes.',
-      one:
-          '1 segment de transit sera supprimé car ses étapes ne seront plus dans des pistes adjacentes.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get moveStopNewTrack => 'Nouvelle piste';
-
-  @override
-  String moveStopNewTrackBefore(int n) {
-    return 'Nouvelle piste avant la piste $n';
-  }
-
-  @override
-  String moveStopNewTrackAfter(int n) {
-    return 'Nouvelle piste après la piste $n';
-  }
-
-  @override
-  String moveStopNewTrackBetween(int a, int b) {
-    return 'Nouvelle piste entre la piste $a et la piste $b';
-  }
-
-  @override
-  String get moveStopCurrentSuffix => '  •  actuelle';
-
-  @override
   String moveStopFull(int max) {
     return 'Pleine $max/$max';
-  }
-
-  @override
-  String extractSubtitle(String trackName) {
-    return 'Extrait cette étape de « $trackName » — la nouvelle piste se place juste après.';
   }
 
   @override
@@ -2262,17 +2227,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Votre réorganisation ne sera pas enregistrée.';
 
   @override
-  String get emptyTrackName => '(vide)';
-
-  @override
   String get unnamedStop => '(sans nom)';
-
-  @override
-  String get unknownStop => '(inconnu)';
-
-  @override
-  String get dragToChangeTrackOrder =>
-      'Faites glisser pour changer l\'ordre des pistes';
 
   @override
   String transitSegmentsWillBeDeleted(int count) {
@@ -2291,33 +2246,9 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String altsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count alt.',
-      one: '$count alt.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String segmentToWillBeDeleted(String name) {
     return '→ $name  —  le segment sera supprimé';
   }
-
-  @override
-  String get reorderAlternativesTitle => 'Réorganiser les alternatives';
-
-  @override
-  String get reorderAlternativesHint =>
-      'Faites glisser pour changer l\'option qui apparaît en premier. Appuyez sur Enregistrer pour appliquer.';
-
-  @override
-  String get emptyTrackLabel => '(piste vide)';
-
-  @override
-  String get moveStopToLabel => 'Déplacer l\'étape vers';
 
   @override
   String get messageLabel => 'Message';
@@ -2471,12 +2402,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get updateYourRating => 'Modifier votre évaluation';
-
-  @override
-  String get moveActionLabel => 'déplacer';
-
-  @override
-  String get reorderActionLabel => 'réorganiser';
 
   @override
   String get addParallelStopLabel => '// étape';

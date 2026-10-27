@@ -89,10 +89,37 @@ or moving one item writes exactly one row.
   — no missing, no extra, no duplicates;
 - `track_order`, if given, must be exactly the current track set;
 - every track and every `segments_to_delete` id must belong to this itinerary;
-- at least one of the three fields must be present.
+- at least one of the four fields must be present.
 
 Six distinct 422 messages come out of this, all as plain `HTTPException` with no
 error code.
+
+### Layout (arrange mode's save)
+
+`layout` is the whole trip as it should stand — tracks in order, each with its
+stops in order — and it is how the app saves arrange mode
+([decisions.md](../decisions.md), 2026-10-27). Stops may change track; a null
+`track_id` is a track to create; an existing track left out is deleted, since it
+holds no stop any more.
+
+- **Validated whole before any write** (`_validate_layout`): every stop of the
+  itinerary exactly once (no missing, no extra, no duplicate), and every
+  non-null `track_id` this itinerary's and listed once. Four more uncoded 422s;
+  a schema 422 for an empty `stop_ids`, and for `layout` sent together with
+  `stop_orders` or `track_order`, which it replaces.
+- **Only what moved is written** (`_apply_layout`): new tracks start on a parked
+  `'!'+id` rank; a track whose stop list changed has its stops parked on
+  `'!'+id` under their new track, then ranked with `n_keys_between` — the same
+  two phases as `_two_phase_renumber`, so a moved stop never meets a
+  destination's live rank; the track ranks are rewritten only when the sequence
+  changed.
+- **Emptied tracks go before the track renumber** — a kept track's new key can
+  be one a leaving track still holds — and each one's `stops` collection is
+  expired first: `Track.stops` cascades delete-orphan, and a collection loaded
+  before the moves would delete the moved stops with their old track
+  (`test_a_loaded_track_does_not_take_its_moved_stop_with_it`).
+- `segments_to_delete`, the totals and the answer are the endpoint's as before:
+  one transaction, `?return=itinerary` answered like every trip edit.
 
 ## Data model
 
@@ -122,7 +149,7 @@ Migration `d5e6f7a8b9c0` is a **clean-slate** migration: it wipes `annotations`,
 | POST | `/itineraries/{id}/stops` | verified email **+** `require_edit_access` | `StopCreate` | `StopResponse` 201 + ETag | 404 `track_not_found`, 422 (uncoded) bad anchors, 412 `itinerary_stale`, 409 `rank_collision` |
 | PATCH | `/itineraries/{id}/stops/{stop_id}` | `require_edit_access` | `StopUpdate` | `StopResponse` + ETag | 404 `stop_not_found`, 422, 412 |
 | DELETE | `/itineraries/{id}/stops/{stop_id}` | `require_edit_access` | — | 204 + ETag | 404 `stop_not_found` |
-| POST | `/itineraries/{id}/reorder` | `require_edit_access` | `ReorderRequest` | `ItineraryDetail` + ETag | 422 (six uncoded messages) |
+| POST | `/itineraries/{id}/reorder` | `require_edit_access` | `ReorderRequest` | `ItineraryDetail` + ETag | 422 (ten uncoded messages, plus the schema's) |
 
 **All four take `?return=itinerary`** and then answer `ItineraryEditResponse` —
 the whole trip as a GET right after would show it, plus `created_id`, the new
@@ -139,7 +166,9 @@ side-effect of stop writes, and reordered through `reorder`.
 `place_type`, `duration_min` (≥0), `cost` (≥0), `is_free`, `notes` (≤2000).
 
 `ReorderRequest` = `{stop_orders: {track_id: [stop_id…]}, track_order?: [...],
-segments_to_delete: [...]}`.
+layout?: [{track_id: id | null, stop_ids: [stop_id…]}], segments_to_delete: [...]}`
+— `layout` excludes the first two. The app sends only `layout` (with
+`segments_to_delete`); the other two stay for installed builds.
 
 `TrackResponse` = `{id, itinerary_id, rank, stops: [StopResponse]}`.
 `StopResponse` carries `rank` and a nested `annotations` list.
@@ -154,9 +183,34 @@ trip edit.
 - **Screens** — `StopFormScreen` (`/itineraries/:id/stops/new`,
   `/itineraries/:id/stops/:stopId/edit`), `StopDetailScreen`
   (`/itineraries/:id/stops/:stopId`), `MapPickerScreen` (`/map-picker`).
-- **Reorder / move sheets** (`features/itineraries/presentation/widgets/`):
-  `track_reorder_view.dart`, `reorder_parallels_sheet.dart` (labelled Phase 2a),
-  `move_stop_to_track_sheet.dart` (Phase 2c).
+- **Arrange mode is the one place a trip's structure changes** — the order of
+  its tracks, the order of a track's alternatives, and which track a stop is in.
+  The stop list header's button (four arrows, **Arrange stops**, shown in edit
+  mode when there are two tracks or a track with alternatives) turns the list
+  into `ArrangeTripView` (`widgets/arrange_trip_view.dart`): a row per track,
+  a chip per stop. A chip's handle drags at once (it never scrolls the page),
+  holding the chip drags too, and a tap picks it for a second tap on where it
+  goes; a track's number moves the whole track the same two ways. Targets: a
+  gap between tracks (a track of its own; a stop alone in its track moves the
+  track instead), a track (its last alternative), a stop (in front of it —
+  inside its own track, a reorder). A full track (`Track.maxParallelStops`)
+  refuses with "Full 4/4". There are no reorder or move buttons on the stop
+  cards; `+ // stop` is the only one left.
+- **Nothing saves until Save.** The arrangement is `TripArrangement`
+  (`domain/trip_arrangement.dart`, immutable, every move a pure function); the
+  header's ✕ and **Save** replace its button while arranging, everything above
+  the list is dimmed and ignores touch (`_InertWhileArranging`), the map and
+  pull-to-refresh are off, and Back leaves arrange mode — asking first when the
+  arrangement holds something unsaved. Save sends `toLayoutJson()` through
+  `ItineraryDetailNotifier.applyArrangement` — one `POST /reorder`, adopted like
+  every save, no reload. A 412 or another error keeps the arrangement on screen;
+  a lost claim (409) also puts the lock banner above the rows, which is why
+  Save went grey, and taking the claim back keeps the arrangement. Regression
+  tests: `test/widgets/arrange_mode_test.dart`, `test/models/trip_arrangement_test.dart`.
+- **Transport an arrangement breaks is shown as it happens**:
+  `computeOrphansForLayout` runs on every move, marks each broken segment under
+  its track and sums them up above the rows; Save confirms them and sends them
+  as `segments_to_delete`. See [transit-segments.md](transit-segments.md).
 - **Models** — `Stop`, `Track`, `PlaceType`, `StopType`
   (`features/itineraries/domain/`). `Stop.fromJson` always sets a placeholder
   `waypoint`; the real role is assigned after deserialisation by
@@ -172,8 +226,9 @@ trip edit.
   saturated light palette and black on the pastel dark one. The corner icon
   carries a `Semantics` label, so a screen reader announces the row as
   "3, Sleep, …". An untyped stop keeps the plain `nt.mist` badge, and its marker
-  keeps the start/middle/end color (`_markerColors`). The reorder sheets number
-  whole tracks, which can mix types, so they stay neutral. Regression test:
+  keeps the start/middle/end color (`_markerColors`). Arrange mode's chips
+  wear the type's icon too; its track numbers stay neutral, since a track can
+  mix types. Regression test:
   `test/widgets/stop_card_place_type_test.dart`.
 - **Any editing route claims the edit lock before pushing.** `_openStopForm` does
   the round trip first and abandons the push if the claim is refused — no form
@@ -221,12 +276,12 @@ trip edit.
 - `test_fractional_indexing_smoke.py` is the designated home for new ordering
   tests. The six sibling files skipped by the commit that introduced fractional
   indexing (2026-05-07) run again since 2026-09-26.
-- **"Phase 2b — whole-track reorder" is referenced but not built**
-  (`move_stop_to_track_sheet.dart:20`). The sheet clears segments now
-  specifically so a Phase 2b that restores track adjacency cannot resurrect a
-  stale one.
-- The reorder endpoint's six 422s carry no error code, so the client shows the
-  server's English `detail`.
+- **No server-side cap on alternatives per track.** `Track.maxParallelStops`
+  (4) is enforced by the client alone — the add-parallel button and arrange
+  mode's drop targets. `add_stop`, a stop move and `layout` all accept more.
+- The reorder endpoint's ten 422s carry no error code, so the client shows the
+  server's English `detail`. With a matching `If-Match` the server holds exactly
+  the trip the client arranged, so they can only mean a client bug.
 
 ## Related
 
@@ -237,6 +292,7 @@ trip edit.
 - [etag-concurrency.md](etag-concurrency.md) — why bad anchors answer 412
 - [text-moderation.md](text-moderation.md) — stop name, address and notes are scanned
 - [translations.md](translations.md) — stop notes carry `source_lang` (never the place name); deleting a stop purges what cascaded
+- [help-centre.md](help-centre.md) — `/help/plan-alternative-options` describes arrange mode to users
 - [reference/data-model.md](../reference/data-model.md)
 
 ## OPEN QUESTIONS

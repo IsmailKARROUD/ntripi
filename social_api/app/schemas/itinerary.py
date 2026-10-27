@@ -229,11 +229,18 @@ class StopUpdate(BaseModel):
         return reject_explicit_nulls(self, ("cost", "is_free"))
 
 
+class TrackLayout(BaseModel):
+    """One track of a full layout: an existing track, or a new one (null id)."""
+
+    track_id: Optional[uuid.UUID] = None
+    stop_ids: list[uuid.UUID] = Field(min_length=1)
+
+
 class ReorderRequest(BaseModel):
     """
     Batch reorder of tracks and/or stops, plus optional segment deletions.
 
-    At least one of the three fields must be provided.
+    At least one of the four fields must be provided.
 
     stop_orders   — map of track_id → list of stop_ids in the desired display
                     order. For each entry, the provided stop_id set must
@@ -243,6 +250,12 @@ class ReorderRequest(BaseModel):
     track_order   — full track order for the itinerary. If provided, must
                     contain exactly the current track-id set (no missing, no
                     extra, no duplicates).
+    layout        — the whole trip as it should stand: tracks in order, each
+                    with its stops in order. Stops may change track; a null
+                    track_id creates a track, and an existing track left out is
+                    deleted (it holds no stop any more). Every stop of the
+                    itinerary appears exactly once. Replaces stop_orders and
+                    track_order, so it cannot be combined with either.
     segments_to_delete
                   — segment IDs to delete in the same transaction (typically
                     those orphaned by a track reorder).
@@ -253,16 +266,24 @@ class ReorderRequest(BaseModel):
 
     stop_orders: dict[uuid.UUID, list[uuid.UUID]] = Field(default_factory=dict)
     track_order: Optional[list[uuid.UUID]] = None
+    layout: Optional[list[TrackLayout]] = None
     segments_to_delete: list[uuid.UUID] = Field(default_factory=list)
 
     @model_validator(mode='after')
     def _validate(self) -> 'ReorderRequest':
         if (not self.stop_orders
                 and self.track_order is None
+                and self.layout is None
                 and not self.segments_to_delete):
             raise ValueError(
-                "at least one of stop_orders, track_order, or "
+                "at least one of stop_orders, track_order, layout, or "
                 "segments_to_delete must be provided"
+            )
+        if self.layout is not None and (self.stop_orders
+                                        or self.track_order is not None):
+            raise ValueError(
+                "layout replaces stop_orders and track_order; send one or "
+                "the other"
             )
         for track_id, stop_ids in self.stop_orders.items():
             if not stop_ids:

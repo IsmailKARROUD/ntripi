@@ -36,9 +36,13 @@ readers see under the leg — and the segment's totals are the sum of them.
 - Segments are listed sorted by `(from_stop.track.rank, from_stop.rank)`.
 - `_require_stops_in_itinerary` (`itineraries.py:243`) checks both stops belong
   to the itinerary in the URL — the membership guard.
-- **Inserting a track between two segment-joined tracks orphans the segment.**
-  The client warns first and deletes the segment(s) on confirm; `reorder` accepts
-  `segments_to_delete` so it happens in the same transaction.
+- **A segment lives only between neighbouring tracks** — its from-track at
+  index i, its to-track at i+1. Inserting a track between two segment-joined
+  tracks orphans the segment: the add-stop flow warns first and deletes the
+  segment(s) on confirm. Arrange mode marks every segment its layout would break
+  while the user arranges, confirms them on Save, and sends them as
+  `segments_to_delete` in the same `reorder` request, so they go in the same
+  transaction as the layout.
 
 ## Data model
 
@@ -128,8 +132,11 @@ endpoints are defined in the backend for future API consumers."*
 - **Translation adds no toggle of its own.** On the trip page the trip's "See
   translation" covers every leg's thoughts; on a stop page the stop's covers its
   inbound and outbound legs — see [translations.md](translations.md).
-- `core/services/segment_orphan_service.dart` computes which segments a track
-  insertion would orphan, feeding the confirmation dialog.
+- `core/services/segment_orphan_service.dart` `computeOrphansForLayout` is the
+  adjacency check over a proposed layout: arrange mode runs it on every move (a
+  red line under the track, a banner above the rows) and again on Save. The
+  add-stop-between-tracks warning checks its narrower case inline
+  (`itinerary_detail_screen.dart`, `onAddStopAfter`).
 
 ## Known gaps / TODOs
 

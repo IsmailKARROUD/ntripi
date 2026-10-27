@@ -589,7 +589,6 @@
   "deleteAnnotationStopMessage": "سيُزال هذا التنويه نهائيًا.",
   "removeTransitTitle": "إزالة التنقّل بين المحطتين؟",
   "removeTransitMessage": "سيتم مسح الاتصال بين هاتين المحطتين. يمكنك إضافة واحد جديد لاحقًا.",
-  "reorderTracksTitle": "إعادة ترتيب الممرات",
   "shareTooltip": "مشاركة",
   "shareCopyLink": "نسخ الرابط",
   "shareLinkCopied": "تم نسخ الرابط",
@@ -601,8 +600,15 @@
   "noAnnotationsYet": "لا توجد تنويهات بعد.",
   "stopsList": "قائمة المحطات",
   "editStopsButton": "تعديل المحطات",
+  "arrangeStops": "ترتيب المحطات",
+  "arrangeHint": "اسحب محطة أو انقر عليها، ثم اختر مكانها: بين ممرين لتكون في ممر خاص بها، أو على ممر لتكون بديلًا فيه. اسحب رقمًا لنقل ممره بالكامل.",
+  "arrangeMovingStop": "نقل {name} — انقر على مكانها الجديد",
+  "arrangeMovingTrack": "نقل الممر {number} — انقر على مكانه الجديد",
+  "arrangeNewTrackHere": "ممر جديد هنا",
+  "arrangeAddAsAlternative": "إضافة كبديل",
+  "arrangeMoveStop": "نقل {name}",
+  "arrangeMoveTrack": "نقل الممر {number}",
   "addStopTooltip": "إضافة محطة",
-  "reorderTracksTooltip": "إعادة ترتيب الممرات",
   "mapSection": "الخريطة",
   "openInMaps": "فتح في تطبيق الخرائط",
   "otherMapsApp": "تطبيق خرائط آخر",
@@ -754,77 +760,12 @@
   "editAnnotationTitle": "تعديل التنويه",
   "addAnnotationDialogTitle": "إضافة تنويه",
   "saveButton": "حفظ",
-  "moveStopTitle": "نقل المحطة",
-  "moveStopDescription": "اختر ممرًا موجودًا، أو فجوة لإنشاء ممر جديد، أو استخرجها إلى ممر خاص بها. الممرات التي بلغت الحد الأقصى ({max} محطات) معطّلة.",
-  "@moveStopDescription": {
-    "placeholders": {
-      "max": {
-        "type": "int"
-      }
-    }
-  },
-  "extractIntoOwnTrack": "استخراج إلى ممر جديد خاص بها",
-  "moveButton": "نقل",
-  "moveStopMoved": "نُقلت إلى {destination}",
-  "@moveStopMoved": {
-    "placeholders": {
-      "destination": {
-        "type": "String"
-      }
-    }
-  },
   "itineraryChangedElsewhere": "تغيّر المسار من مكان آخر — أغلق وأعد الفتح لرؤية أحدث ترتيب.",
-  "moveStopOrphan1": "هذه آخر محطة في ممرها — سيُزال الممر من المسار.",
-  "moveStopOrphanSegments": "{count, plural, zero{لن يُحذف أي مقطع تنقّل.} one{سيُحذف مقطع تنقّل واحد لأن محطتيه لن تكونا في ممرين متجاورين.} two{سيُحذف مقطعا تنقّل لأن محطاتهما لن تكون في ممرات متجاورة.} few{ستُحذف {count} مقاطع تنقّل لأن محطاتها لن تكون في ممرات متجاورة.} many{سيُحذف {count} مقطع تنقّل لأن محطاتها لن تكون في ممرات متجاورة.} other{سيُحذف {count} مقطع تنقّل لأن محطاتها لن تكون في ممرات متجاورة.}}",
-  "@moveStopOrphanSegments": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "moveStopNewTrack": "ممر جديد",
-  "moveStopNewTrackBefore": "ممر جديد قبل الممر {n}",
-  "@moveStopNewTrackBefore": {
-    "placeholders": {
-      "n": {
-        "type": "int"
-      }
-    }
-  },
-  "moveStopNewTrackAfter": "ممر جديد بعد الممر {n}",
-  "@moveStopNewTrackAfter": {
-    "placeholders": {
-      "n": {
-        "type": "int"
-      }
-    }
-  },
-  "moveStopNewTrackBetween": "ممر جديد بين الممر {a} والممر {b}",
-  "@moveStopNewTrackBetween": {
-    "placeholders": {
-      "a": {
-        "type": "int"
-      },
-      "b": {
-        "type": "int"
-      }
-    }
-  },
-  "moveStopCurrentSuffix": "  •  الحالي",
   "moveStopFull": "ممتلئ {max}/{max}",
   "@moveStopFull": {
     "placeholders": {
       "max": {
         "type": "int"
-      }
-    }
-  },
-  "extractSubtitle": "يفصل هذه المحطة عن \"{trackName}\" — يُنشأ الممر الجديد بعده مباشرة.",
-  "@extractSubtitle": {
-    "placeholders": {
-      "trackName": {
-        "type": "String"
       }
     }
   },
@@ -984,10 +925,7 @@
   "otherOption": "أخرى",
   "thisItineraryFallback": "المسار هذا",
   "discardReorderMessage": "لن يتم حفظ إعادة الترتيب.",
-  "emptyTrackName": "(فارغ)",
   "unnamedStop": "(بدون اسم)",
-  "unknownStop": "(غير معروف)",
-  "dragToChangeTrackOrder": "اسحب لتغيير ترتيب الممرات",
   "transitSegmentsWillBeDeleted": "{count, plural, zero{لن يُحذف أي مقطع تنقّل} one{سيُحذف مقطع تنقّل واحد} two{سيُحذف مقطعا تنقّل} few{ستُحذف {count} مقاطع تنقّل} many{سيُحذف {count} مقطع تنقّل} other{سيُحذف {count} مقطع تنقّل}}",
   "@transitSegmentsWillBeDeleted": {
     "placeholders": {
@@ -1004,14 +942,6 @@
       }
     }
   },
-  "altsCount": "{count, plural, zero{لا بدائل} one{بديل واحد} two{بديلان} few{{count} بدائل} many{{count} بديلًا} other{{count} بديل}}",
-  "@altsCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "segmentToWillBeDeleted": "← {name}  —  سيُحذف المقطع",
   "@segmentToWillBeDeleted": {
     "placeholders": {
@@ -1020,10 +950,6 @@
       }
     }
   },
-  "reorderAlternativesTitle": "إعادة ترتيب البدائل",
-  "reorderAlternativesHint": "اسحب لتغيير الخيار الذي يظهر أولًا. اضغط حفظ للتطبيق.",
-  "emptyTrackLabel": "(ممر فارغ)",
-  "moveStopToLabel": "نقل المحطة إلى",
   "messageLabel": "الرسالة",
   "annotationKeepShortHint": "اجعله قصيرًا — أقل من 200 حرف يُقرأ بشكل أفضل على الشاشات الصغيرة.",
   "transportModeSection": "وسيلة النقل",
@@ -1076,8 +1002,6 @@
   "stopWithNumber": "محطة {n}",
   "undoLabel": "تراجع",
   "updateYourRating": "حدّث تقييمك",
-  "moveActionLabel": "نقل",
-  "reorderActionLabel": "إعادة ترتيب",
   "addParallelStopLabel": "// محطة",
   "aStopFallback": "محطة",
   "locationLabel": "الموقع",

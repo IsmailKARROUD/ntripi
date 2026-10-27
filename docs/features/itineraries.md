@@ -204,14 +204,13 @@ registered from the same router under the `/users` prefix.
   `?return=itinerary` and returns a `TripEditAnswer`
   (`domain/trip_edit_answer.dart`: the parsed trip, `createdId`). The leg
   routes have no client.
-- **Saves adopt the answer, never reload** — all 16 write methods of
+- **Saves adopt the answer, never reload** — all 15 write methods of
   `ItineraryDetailNotifier` are one call to `_save` (or `_saveTrip`, for the
-  four that hand something back): it runs the request through `_write`, hands
+  three that hand something back): it runs the request through `_write`, hands
   the answer to `_adopt`, which sets the answered trip as the state, and to
   `_syncListRows`. No `GET` follows a save, the trip view is not rebuilt, and the
   next save's `If-Match` comes from the answered `updated_at`. `addStop` returns
-  the stop the answer's `createdId` names and `moveStop` the moved stop, both
-  found in the answered trip. With no trip in the answer (the caller lost view
+  the stop the answer's `createdId` names, found in the answered trip. With no trip in the answer (the caller lost view
   access), `_adopt` makes the one GET whose 403 puts the screen in its no-access
   state, and the methods that return a value rethrow that refusal. That GET
   goes through `ReloadKeepsContent` like any reload: if it times out instead,

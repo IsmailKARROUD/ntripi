@@ -101,6 +101,7 @@ RELEASES: tuple[Release, ...] = (
             "**Une nouvelle photo de couverture s’enregistre avec le reste.** Changer la couverture d’un voyage en même temps que son titre, sa devise ou sa meilleure période ne vous demande plus de recharger — tout est enregistré d’un coup.",
             "**Copier le lien seul.** La feuille de partage a une nouvelle ligne **Copier le lien**, qui copie le lien sans le nom du voyage, ses étapes ni sa durée. Sur le web, le bouton de partage la propose aussi.",
             "**Les liens partagés mènent là où vous êtes déjà.** Connecté à Ntripi dans votre navigateur, un voyage ou un profil partagé s’ouvre directement au lieu de son aperçu, et sur un téléphone la page propose **Ouvrir dans Ntripi**. La barre d’adresse de l’application web affiche désormais la page où vous êtes : recharger vous y laisse.",
+            "**Organiser les étapes au même endroit.** En mode édition, **Organiser les étapes** (les quatre flèches) au-dessus des étapes transforme le voyage en rangées d’étapes. Faites glisser ou touchez une étape pour en faire l’alternative d’une autre piste, ou pour lui donner sa propre piste entre deux autres ; faites glisser le numéro d’une piste pour déplacer toute la piste. Rien ne change avant que vous touchiez **Enregistrer**, et les boutons séparés pour réorganiser et déplacer sur chaque étape ont disparu.",
         ),
     ),
     Release(
@@ -221,7 +222,7 @@ Les nouveaux voyages ne sont visibles que par **vous seul** tant que vous ne cha
 - **Temps à prévoir** — combien de temps compter. C’est ce qui rend un plan réaliste plutôt qu’optimiste.
 - **Notes** — tout ce dont vous voulez vous souvenir.
 
-Ajoutez les étapes dans l’ordre où vous les visiterez. Vous pourrez les déplacer ensuite.""",
+Ajoutez les étapes dans l’ordre où vous les visiterez. Pour changer l’ordre plus tard, touchez **Organiser les étapes** au-dessus d’elles en mode édition.""",
             ),
             Block(
                 anchor="connect-the-stops",
@@ -263,7 +264,7 @@ Voir [comment partager un voyage sans le rendre public](/help/share-an-itinerary
             "planification",
         ),
         related=("plan-alternative-options", "share-an-itinerary-privately", "getting-started"),
-        updated="2026-09-01",
+        updated="2026-10-27",
         cta="Planifiez votre propre itinéraire — comptez une dizaine de minutes.",
     ),
     Article(
@@ -363,27 +364,36 @@ Les deux étapes sont maintenant côte à côte. Aucune n’est la « vraie » �
             ),
             Block(
                 anchor="move-a-stop",
-                heading="Déplacer une étape d’une piste à l’autre",
+                heading="Déplacer une étape vers une autre piste",
                 kind=KIND_STEP,
-                body="""Une étape peut être déplacée vers une autre piste après coup, vous n’êtes donc pas prisonnier de l’ordre dans lequel vous avez ajouté les choses. Ouvrez l’étape et utilisez l’action de déplacement pour choisir sa piste.
+                body="""Une étape peut changer de piste après coup, vous n’êtes donc pas prisonnier de l’ordre dans lequel vous avez ajouté les choses. En mode édition, touchez **Organiser les étapes** (les quatre flèches) au-dessus des étapes : le voyage devient des rangées d’étapes, une rangée par piste. Faites glisser une étape par sa poignée, ou touchez-la puis touchez sa nouvelle place :
 
-Une piste n’existe que tant qu’elle contient au moins une étape. Déplacez ou supprimez la dernière étape et la colonne vide disparaît d’elle-même — il n’y a rien à ranger.""",
+- **sur une autre piste** pour en faire une des alternatives de cette piste ;
+- **entre deux pistes** pour lui donner sa propre piste à cet endroit.
+
+Rien n’est enregistré avant que vous touchiez **Enregistrer**. Une piste n’existe que tant qu’elle contient au moins une étape. Déplacez ou supprimez la dernière étape et la colonne vide disparaît d’elle-même — il n’y a rien à ranger.""",
             ),
             Block(
                 anchor="reorder",
-                heading="Réorganiser les pistes et les étapes",
+                heading="Réorganiser les pistes et les alternatives",
                 kind=KIND_STEP,
-                body="Faites glisser pour réorganiser les étapes à l’intérieur d’une piste, et pour réorganiser les pistes elles-mêmes. La première piste d’un voyage est traitée comme le point de départ et la dernière comme la destination, c’est ce que la carte relie.",
+                body="Dans ce même mode, faites glisser le numéro d’une piste pour déplacer toute la piste, alternatives comprises, ou déposez une étape sur une autre étape de sa piste pour changer l’alternative qui vient en premier. Tout attend **Enregistrer** : vous pouvez essayer un ordre et y renoncer avec ✕. La première piste d’un voyage est traitée comme le point de départ et la dernière comme la destination, c’est ce que la carte relie.",
             ),
             Block(
                 anchor="transport-warning",
                 heading="Pourquoi insérer une piste déclenche parfois un avertissement",
                 body="""Un transit se note entre deux pistes *voisines*. Si vous insérez une nouvelle piste entre deux qui sont déjà reliées par un transit, cette liaison n’a plus où se loger — les deux pistes ne sont plus voisines.
 
-Ntripi demande confirmation plutôt que de supprimer discrètement le transit que vous avez saisi. Confirmez, et la liaison concernée est supprimée ; annulez, et rien ne change.""",
+Ntripi demande confirmation plutôt que de supprimer discrètement le transit que vous avez saisi. Confirmez, et la liaison concernée est supprimée ; annulez, et rien ne change.
+
+L’organisation fonctionne de la même façon : si un déplacement sépare deux pistes reliées par un transit, ce transit est signalé pendant que vous organisez, et **Enregistrer** demande confirmation avant de le supprimer.""",
             ),
         ),
         keywords=(
+            "organiser",
+            "réorganiser",
+            "déplacer",
+            "glisser",
             "parallèle",
             "piste",
             "pistes",
@@ -401,7 +411,7 @@ Ntripi demande confirmation plutôt que de supprimer discrètement le transit qu
             "choix",
         ),
         related=("plan-a-trip-itinerary", "getting-started"),
-        updated="2026-09-01",
+        updated="2026-10-27",
         cta="Planifiez un voyage avec de vraies alternatives, pas une seule ligne fragile.",
     ),
     Article(
@@ -418,7 +428,7 @@ Ntripi demande confirmation plutôt que de supprimer discrètement le transit qu
                 kind=KIND_STEP,
                 body="""Ouvrez le voyage et appuyez sur **+**. Donnez au lieu un nom — celui que vous diriez à voix haute, pas son intitulé officiel — et une adresse si vous en avez une.
 
-Les étapes s’ajoutent dans l’ordre de visite. Vous pouvez les faire glisser dans un autre ordre à tout moment ensuite.""",
+Les étapes s’ajoutent dans l’ordre de visite. Pour les mettre dans un autre ordre plus tard, touchez **Organiser les étapes** au-dessus d’elles en mode édition.""",
             ),
             Block(
                 anchor="place-type",
@@ -473,7 +483,7 @@ Pour un avertissement qui doit être difficile à manquer plutôt que lu en pass
             "musée",
         ),
         related=("plan-a-trip-itinerary", "add-locations-from-google-maps", "travel-notes-and-warnings"),
-        updated="2026-09-01",
+        updated="2026-10-27",
         cta="Lancez un voyage et ajoutez votre première étape.",
     ),
     Article(

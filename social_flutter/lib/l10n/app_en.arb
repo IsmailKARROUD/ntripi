@@ -606,7 +606,6 @@
   "deleteAnnotationStopMessage": "This annotation will be permanently removed.",
   "removeTransitTitle": "Remove transit between stops?",
   "removeTransitMessage": "The connection between these two stops will be cleared. You can add a new one later.",
-  "reorderTracksTitle": "Reorder tracks",
   "shareTooltip": "Share",
   "shareCopyLink": "Copy link",
   "shareLinkCopied": "Link copied",
@@ -618,8 +617,59 @@
   "noAnnotationsYet": "No annotations yet.",
   "stopsList": "Stop list",
   "editStopsButton": "Edit stops",
+  "arrangeStops": "Arrange stops",
+  "@arrangeStops": {
+    "description": "Edit-mode stop-list header button (tooltip) that enters arrange mode, and the list's title while arranging."
+  },
+  "arrangeHint": "Drag or tap a stop, then pick where it goes: between tracks for a track of its own, or onto a track as an alternative. Drag a number to move its whole track.",
+  "@arrangeHint": {
+    "description": "Arrange mode's instructions above the compact track rows."
+  },
+  "arrangeMovingStop": "Moving {name} — tap where it goes",
+  "@arrangeMovingStop": {
+    "description": "Arrange mode: a stop is picked for tap-to-place.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "arrangeMovingTrack": "Moving track {number} — tap where it goes",
+  "@arrangeMovingTrack": {
+    "description": "Arrange mode: a whole track is picked for tap-to-place.",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "arrangeNewTrackHere": "New track here",
+  "@arrangeNewTrackHere": {
+    "description": "Arrange mode: drop zone between two tracks."
+  },
+  "arrangeAddAsAlternative": "Add as alternative",
+  "@arrangeAddAsAlternative": {
+    "description": "Arrange mode: a track offered as a drop target for the picked stop."
+  },
+  "arrangeMoveStop": "Move {name}",
+  "@arrangeMoveStop": {
+    "description": "Screen-reader label of a stop's drag handle in arrange mode.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "arrangeMoveTrack": "Move track {number}",
+  "@arrangeMoveTrack": {
+    "description": "Screen-reader label of a track's drag handle in arrange mode.",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
   "addStopTooltip": "Add stop",
-  "reorderTracksTooltip": "Reorder tracks",
   "mapSection": "Map",
   "openInMaps": "Open in maps",
   "otherMapsApp": "Other maps app",
@@ -778,77 +828,12 @@
   "editAnnotationTitle": "Edit annotation",
   "addAnnotationDialogTitle": "Add annotation",
   "saveButton": "Save",
-  "moveStopTitle": "Move stop",
-  "moveStopDescription": "Choose an existing track, a gap to create a new track, or extract into its own track. Tracks at the {max}-stop maximum are disabled.",
-  "@moveStopDescription": {
-    "placeholders": {
-      "max": {
-        "type": "int"
-      }
-    }
-  },
-  "extractIntoOwnTrack": "Extract into its own new track",
-  "moveButton": "Move",
-  "moveStopMoved": "Moved to {destination}",
-  "@moveStopMoved": {
-    "placeholders": {
-      "destination": {
-        "type": "String"
-      }
-    }
-  },
   "itineraryChangedElsewhere": "Itinerary changed elsewhere — close and reopen to see the latest order.",
-  "moveStopOrphan1": "This is the last stop in its track — the track will be removed from the itinerary.",
-  "moveStopOrphanSegments": "{count, plural, one{1 transit segment will be deleted because its stops will no longer be in adjacent tracks.} other{{count} transit segments will be deleted because their stops will no longer be in adjacent tracks.}}",
-  "@moveStopOrphanSegments": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "moveStopNewTrack": "New track",
-  "moveStopNewTrackBefore": "New track before Track {n}",
-  "@moveStopNewTrackBefore": {
-    "placeholders": {
-      "n": {
-        "type": "int"
-      }
-    }
-  },
-  "moveStopNewTrackAfter": "New track after Track {n}",
-  "@moveStopNewTrackAfter": {
-    "placeholders": {
-      "n": {
-        "type": "int"
-      }
-    }
-  },
-  "moveStopNewTrackBetween": "New track between Track {a} and Track {b}",
-  "@moveStopNewTrackBetween": {
-    "placeholders": {
-      "a": {
-        "type": "int"
-      },
-      "b": {
-        "type": "int"
-      }
-    }
-  },
-  "moveStopCurrentSuffix": "  •  current",
   "moveStopFull": "Full {max}/{max}",
   "@moveStopFull": {
     "placeholders": {
       "max": {
         "type": "int"
-      }
-    }
-  },
-  "extractSubtitle": "Splits this stop out of \"{trackName}\" — new track lands right after.",
-  "@extractSubtitle": {
-    "placeholders": {
-      "trackName": {
-        "type": "String"
       }
     }
   },
@@ -1008,10 +993,7 @@
   "otherOption": "Other",
   "thisItineraryFallback": "this itinerary",
   "discardReorderMessage": "Your reorder will not be saved.",
-  "emptyTrackName": "(empty)",
   "unnamedStop": "(unnamed)",
-  "unknownStop": "(unknown)",
-  "dragToChangeTrackOrder": "Drag to change the track order",
   "transitSegmentsWillBeDeleted": "{count, plural, one{1 transit segment will be deleted} other{{count} transit segments will be deleted}}",
   "@transitSegmentsWillBeDeleted": {
     "placeholders": {
@@ -1028,14 +1010,6 @@
       }
     }
   },
-  "altsCount": "{count, plural, one{{count} alt} other{{count} alts}}",
-  "@altsCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "segmentToWillBeDeleted": "→ {name}  —  segment will be deleted",
   "@segmentToWillBeDeleted": {
     "placeholders": {
@@ -1044,10 +1018,6 @@
       }
     }
   },
-  "reorderAlternativesTitle": "Reorder alternatives",
-  "reorderAlternativesHint": "Drag to change which option appears first. Tap Save to apply.",
-  "emptyTrackLabel": "(empty track)",
-  "moveStopToLabel": "Move stop to",
   "messageLabel": "Message",
   "annotationKeepShortHint": "Keep it short — under 200 characters reads best on small screens.",
   "transportModeSection": "Transport mode",
@@ -1107,8 +1077,6 @@
   },
   "undoLabel": "Undo",
   "updateYourRating": "Update your rating",
-  "moveActionLabel": "move",
-  "reorderActionLabel": "reorder",
   "addParallelStopLabel": "// stop",
   "@addParallelStopLabel": {
     "description": "Label of the side button that adds a parallel stop (alternative) to the same track. The leading '//' is the parallel symbol and must be kept in every locale; only the noun is translated."

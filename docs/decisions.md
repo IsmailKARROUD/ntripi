@@ -2231,3 +2231,78 @@ keeps its own connections.
 - **The same timeout for the geocoding, People API and link-preview clients**:
   their servers' idle limits are unknown, and a client that keeps a connection
   longer than its server can lose a request to the server's close.
+
+---
+
+### 2026-10-27 — Arrange mode replaces the per-stop reorder and move buttons
+
+**Context.** Edit mode carried three ways to change a trip's structure: a
+`⇄ reorder` pill on a track with alternatives (the order of the alternatives),
+a `⇅ move` pill on every stop (which track it belongs to, or a new track at any
+gap), and an icon-only **Reorder tracks** button in the stop list's header (the
+order of whole tracks). "Reorder" and "move" read as the same word, `⇅` looked
+like the trip-order button, and on a track with one stop Move's new-track rows
+did exactly what Reorder tracks did — yet Move was the only way to make a lone
+stop another track's alternative, so it could not simply go. The owner, who
+built them, kept confusing them. Each of the three was its own sheet and its own
+save.
+
+**Decision.** One mechanism. The header's button (four arrows, **Arrange
+stops**) opens arrange mode in place on the trip page: the stop cards give way
+to compact rows, one per track, with a chip per stop; everything else on the
+page is dimmed and ignores touch; and the button's place is taken by ✕ and
+**Save**. A stop moves by dragging its handle (or holding the chip), or by a tap
+on it and a tap on its destination: a gap between tracks gives it a track of its
+own (a stop alone in its track moves the track instead, so no track is created
+for nothing), a track takes it as its last alternative, and another stop takes
+it in front of itself — which inside its own track is the reorder of
+alternatives. A track's number drags the whole track. Nothing is sent until
+Save, and Save is one request: `POST /itineraries/{id}/reorder` gained
+`layout`, the whole trip as it should stand — tracks in order, each with its
+stops in order, a null `track_id` for a track to create — validated against the
+current stops before anything is written and applied in one transaction, with
+the transit segments the layout breaks in the same request's
+`segments_to_delete`. Those segments are computed on every move
+(`computeOrphansForLayout`), marked under their track and summed up above the
+rows while the user arranges, and confirmed on Save. The per-stop pills, the
+three sheets and `moveStop`/`applyReorder` are gone; `ItineraryDetailNotifier`
+saves an arrangement through `applyArrangement`, which adopts the answered trip
+like every other save.
+
+**Consequences.**
+- Every structural change of a trip happens in one place, under one Save, and
+  lands all at once or not at all. A user can try an order and back out with ✕
+  (asked first when something would be lost).
+- `layout` is exclusive with `stop_orders` and `track_order`, which stay for
+  installed builds. Deploy the backend first: an older one ignores `layout`
+  and would apply only `segments_to_delete`.
+- `_apply_layout` writes only what moved — stop ranks of tracks whose list
+  changed (moved stops parked on `'!'+id` first, as `_two_phase_renumber`
+  does), track ranks only when the sequence changed — and deletes emptied
+  tracks before renumbering, since a kept track's new key can be one a leaving
+  track still holds. It expires each leaving track's `stops` collection before
+  deleting it: `Track.stops` cascades delete-orphan, and a collection loaded
+  before the moves would delete the moved stops with it
+  (`test_a_loaded_track_does_not_take_its_moved_stop_with_it`).
+- The layout's four new 422s carry no error code, like the endpoint's six old
+  ones; they mean a client bug, because a matching `If-Match` means the server
+  holds exactly the trip the client arranged.
+- There is still no server-side cap on alternatives per track; arrange mode
+  refuses a drop on a full track (`Track.maxParallelStops`, 4) client-side.
+- While arranging, the lock banner sits above the rows rather than atop the
+  page: a lost claim is why Save went grey, and taking it back keeps the
+  arrangement.
+
+**Alternatives rejected.**
+- **Keeping the buttons and renaming them** ("order" ⇄ for alternatives, "join"
+  or "split" for moving, purpose-specific icons): smaller, but still three
+  mechanisms that each save on their own, and the overlap with the track-order
+  button only shrinks.
+- **An arrange sheet** over the trip page: a second copy of the trip in a modal,
+  and the sheet's height capped how much of a long trip fits.
+- **Saving an arrangement as a sequence of stop PATCHes and a reorder**: not
+  atomic — a failure halfway leaves a half-arranged trip — and every request
+  moves the ETag the next one must carry.
+- **Dragging alternatives inside the full-size cards**: a track shows one
+  alternative at a time (the others are a swipe away), and a stop that cannot be
+  seen cannot be dragged.

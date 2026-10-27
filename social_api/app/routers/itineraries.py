@@ -100,6 +100,7 @@ from app.schemas.itinerary import (
     StopResponse,
     StopUpdate,
     TitleTranslation,
+    TrackLayout,
     TransitSegmentCreate,
     TransitSegmentResponse,
     TransportLegCreate,
@@ -664,6 +665,111 @@ def _delete_track_if_empty(track_id: uuid.UUID, db: Session) -> None:
         track = db.get(Track, track_id)
         if track:
             db.delete(track)
+
+
+def _validate_layout(
+    itinerary_id: uuid.UUID, layout: list[TrackLayout], db: Session,
+) -> tuple[dict[uuid.UUID, Track], dict[uuid.UUID, Stop]]:
+    """Check a full layout against the itinerary; return its tracks and stops by id."""
+    tracks_by_id = {
+        t.id: t for t in db.execute(
+            select(Track).where(Track.itinerary_id == itinerary_id)
+        ).scalars()
+    }
+    stops_by_id = {
+        s.id: s for s in db.execute(
+            select(Stop).where(Stop.itinerary_id == itinerary_id)
+        ).scalars()
+    }
+
+    seen_tracks: set[uuid.UUID] = set()
+    for entry in layout:
+        if entry.track_id is None:
+            continue
+        if entry.track_id not in tracks_by_id:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"track_id {entry.track_id} does not belong to this itinerary.",
+            )
+        if entry.track_id in seen_tracks:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"layout lists track {entry.track_id} more than once.",
+            )
+        seen_tracks.add(entry.track_id)
+
+    placed = [stop_id for entry in layout for stop_id in entry.stop_ids]
+    if len(set(placed)) != len(placed):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="layout contains duplicate stop_ids.",
+        )
+    if set(placed) != set(stops_by_id):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="layout must contain exactly the current stops of this itinerary.",
+        )
+    return tracks_by_id, stops_by_id
+
+
+def _apply_layout(
+    itinerary_id: uuid.UUID,
+    layout: list[TrackLayout],
+    tracks_by_id: dict[uuid.UUID, Track],
+    stops_by_id: dict[uuid.UUID, Stop],
+    db: Session,
+) -> None:
+    """
+    Rewrite the itinerary to a layout `_validate_layout` accepted.
+
+    Only what moved is written: a track whose stop list is unchanged keeps its
+    stop ranks, and the track ranks are rewritten only when the sequence changed.
+    """
+    current_lists: dict[uuid.UUID, list[uuid.UUID]] = {}
+    # Python's string order is COLLATE "C" order, the order the GET shows.
+    for stop in sorted(stops_by_id.values(), key=lambda s: s.rank):
+        current_lists.setdefault(stop.track_id, []).append(stop.id)
+    old_sequence = [t.id for t in sorted(tracks_by_id.values(), key=lambda t: t.rank)]
+
+    ordered_tracks: list[Track] = []
+    rewrites: list[tuple[Track, list[Stop]]] = []
+    for entry in layout:
+        if entry.track_id is None:
+            new_id = uuid.uuid4()
+            # Parked like every rewritten rank: it cannot meet a live key mid-flush.
+            track = Track(id=new_id, itinerary_id=itinerary_id, rank=f"!{new_id}")
+            db.add(track)
+        else:
+            track = tracks_by_id[entry.track_id]
+        ordered_tracks.append(track)
+        if entry.stop_ids != current_lists.get(track.id):
+            rewrites.append((track, [stops_by_id[sid] for sid in entry.stop_ids]))
+    db.flush()
+
+    # Two phases, as _two_phase_renumber: a stop parked on '!'+id under its new
+    # track cannot collide with the ranks already in that track.
+    for track, stops in rewrites:
+        for stop in stops:
+            stop.track_id = track.id
+            stop.rank = f"!{stop.id}"
+    db.flush()
+    for track, stops in rewrites:
+        for stop, new_rank in zip(stops, n_keys_between(None, None, len(stops))):
+            stop.rank = new_rank
+    db.flush()
+
+    # Emptied tracks go before the renumber: a kept track's new key may be one a
+    # leaving track still holds. Track.stops cascades delete-orphan, so a
+    # collection loaded before the moves would take the moved stops with it.
+    kept = {t.id for t in ordered_tracks}
+    for track in tracks_by_id.values():
+        if track.id not in kept:
+            db.expire(track, ["stops"])
+            _delete_track_if_empty(track.id, db)
+    db.flush()
+
+    if [t.id for t in ordered_tracks] != old_sequence:
+        _two_phase_renumber(ordered_tracks, db)
 
 
 def _rebalance_track(track: Track, db: Session) -> None:
@@ -1908,7 +2014,8 @@ def reorder_itinerary(
     wants_trip: str | None = Depends(wants_itinerary),
 ) -> Response:
     """
-    Apply a batch reorder of stops within tracks, a new track order, and/or
+    Apply a batch reorder of stops within tracks, a new track order, a whole
+    new layout (stops changing track, tracks created and emptied), and/or
     delete one or more segments, all in a single transaction.
 
     Client sends the new ORDER (list of ids); server computes the
@@ -1976,6 +2083,10 @@ def reorder_itinerary(
                 ),
             )
 
+    # ── Validate layout ────────────────────────────────────────────────────
+    if body.layout is not None:
+        layout_tracks, layout_stops = _validate_layout(itinerary_id, body.layout, db)
+
     # ── Validate segments_to_delete ────────────────────────────────────────
     for seg_id in body.segments_to_delete:
         seg = db.execute(
@@ -1997,6 +2108,10 @@ def reorder_itinerary(
     # ── Apply stop_orders per-track two-phase rank rewrite ─────────────────
     for track_id, stop_ids in body.stop_orders.items():
         _two_phase_renumber([db.get(Stop, sid) for sid in stop_ids], db)
+
+    # ── Apply layout (exclusive with the two above) ────────────────────────
+    if body.layout is not None:
+        _apply_layout(itinerary_id, body.layout, layout_tracks, layout_stops, db)
 
     # ── Delete segments (cascade-removes legs) ─────────────────────────────
     for seg_id in body.segments_to_delete:

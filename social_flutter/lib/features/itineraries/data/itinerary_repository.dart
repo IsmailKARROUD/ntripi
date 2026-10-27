@@ -382,29 +382,23 @@ class ItineraryRepository {
         ),
       );
 
-  /// Apply a batch reorder in one atomic transaction.
+  /// Save a whole new layout of the trip in one atomic transaction.
   ///
-  /// At least one of [stopOrders], [trackOrder], or [segmentIdsToDelete] must
-  /// be non-empty / non-null.
-  ///
-  /// - [stopOrders] maps `trackId → [stopId, ...]` in the desired display
-  ///   order. The provided stop-id set per track must exactly match the
-  ///   track's current stop-id set, or the server returns 422.
-  /// - [trackOrder] is the full track order. If provided, must contain
-  ///   exactly the current track set.
+  /// - [layout] is every track in order, `{'track_id': id or null,
+  ///   'stop_ids': [...]}`, holding every stop of the trip exactly once
+  ///   (`TripArrangement.toLayoutJson`). A null id is a track the server
+  ///   creates; a track left out goes, since it holds nothing any more.
   /// - [segmentIdsToDelete] is the list of segment IDs to remove in the
-  ///   same transaction (typically those orphaned by a track reorder).
+  ///   same transaction (the ones the layout breaks).
   Future<TripEditAnswer> reorderItinerary(
     String itineraryId, {
-    Map<String, List<String>>? stopOrders,
-    List<String>? trackOrder,
+    required List<Map<String, dynamic>> layout,
     List<String>? segmentIdsToDelete,
     required String etag,
     required String? lockToken,
   }) {
     final body = <String, dynamic>{
-      if (stopOrders != null && stopOrders.isNotEmpty) 'stop_orders': stopOrders,
-      if (trackOrder != null) 'track_order': trackOrder,
+      'layout': layout,
       if (segmentIdsToDelete != null && segmentIdsToDelete.isNotEmpty)
         'segments_to_delete': segmentIdsToDelete,
     };

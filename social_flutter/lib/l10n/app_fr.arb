@@ -456,7 +456,6 @@
   "deleteAnnotationStopMessage": "Cette annotation sera définitivement supprimée.",
   "removeTransitTitle": "Supprimer le transit entre les étapes ?",
   "removeTransitMessage": "La connexion entre ces deux étapes sera supprimée. Vous pourrez en ajouter une nouvelle ultérieurement.",
-  "reorderTracksTitle": "Réorganiser les pistes",
   "shareTooltip": "Partager",
   "shareCopyLink": "Copier le lien",
   "shareLinkCopied": "Lien copié",
@@ -468,8 +467,15 @@
   "noAnnotationsYet": "Aucune annotation pour l'instant.",
   "stopsList": "Liste des étapes",
   "editStopsButton": "Modifier les étapes",
+  "arrangeStops": "Organiser les étapes",
+  "arrangeHint": "Faites glisser ou touchez une étape, puis choisissez sa place : entre deux pistes pour une piste à elle, ou sur une piste comme alternative. Faites glisser un numéro pour déplacer toute sa piste.",
+  "arrangeMovingStop": "Déplacement de {name} — touchez sa nouvelle place",
+  "arrangeMovingTrack": "Déplacement de la piste {number} — touchez sa nouvelle place",
+  "arrangeNewTrackHere": "Nouvelle piste ici",
+  "arrangeAddAsAlternative": "Ajouter comme alternative",
+  "arrangeMoveStop": "Déplacer {name}",
+  "arrangeMoveTrack": "Déplacer la piste {number}",
   "addStopTooltip": "Ajouter une étape",
-  "reorderTracksTooltip": "Réorganiser les pistes",
   "mapSection": "Carte",
   "openInMaps": "Ouvrir dans une app de cartes",
   "otherMapsApp": "Autre app de cartes",
@@ -593,21 +599,8 @@
   "editAnnotationTitle": "Modifier l'annotation",
   "addAnnotationDialogTitle": "Ajouter une annotation",
   "saveButton": "Enregistrer",
-  "moveStopTitle": "Déplacer l'étape",
-  "moveStopDescription": "Choisissez une piste existante, un espace pour créer une nouvelle piste, ou extrayez dans sa propre piste. Les pistes au maximum de {max} étapes sont désactivées.",
-  "extractIntoOwnTrack": "Extraire dans sa propre piste",
-  "moveButton": "Déplacer",
-  "moveStopMoved": "Déplacé vers {destination}",
   "itineraryChangedElsewhere": "Itinéraire modifié ailleurs — fermez et rouvrez pour voir la dernière version.",
-  "moveStopOrphan1": "C'est la dernière étape de sa piste — la piste sera supprimée de l'itinéraire.",
-  "moveStopOrphanSegments": "{count, plural, one{1 segment de transit sera supprimé car ses étapes ne seront plus dans des pistes adjacentes.} other{{count} segments de transit seront supprimés car leurs étapes ne seront plus dans des pistes adjacentes.}}",
-  "moveStopNewTrack": "Nouvelle piste",
-  "moveStopNewTrackBefore": "Nouvelle piste avant la piste {n}",
-  "moveStopNewTrackAfter": "Nouvelle piste après la piste {n}",
-  "moveStopNewTrackBetween": "Nouvelle piste entre la piste {a} et la piste {b}",
-  "moveStopCurrentSuffix": "  •  actuelle",
   "moveStopFull": "Pleine {max}/{max}",
-  "extractSubtitle": "Extrait cette étape de « {trackName} » — la nouvelle piste se place juste après.",
   "removeRatingTitle": "Supprimer votre évaluation ?",
   "removeRatingMessage": "Votre évaluation sera supprimée et la moyenne sera mise à jour pour tous les visiteurs de cet itinéraire.",
   "rateItineraryTitle": "Évaluer cet itinéraire",
@@ -758,10 +751,7 @@
   "otherOption": "Autre",
   "thisItineraryFallback": "cet itinéraire",
   "discardReorderMessage": "Votre réorganisation ne sera pas enregistrée.",
-  "emptyTrackName": "(vide)",
   "unnamedStop": "(sans nom)",
-  "unknownStop": "(inconnu)",
-  "dragToChangeTrackOrder": "Faites glisser pour changer l'ordre des pistes",
   "transitSegmentsWillBeDeleted": "{count, plural, one{1 segment de transit sera supprimé} other{{count} segments de transit seront supprimés}}",
   "@transitSegmentsWillBeDeleted": {
     "placeholders": {
@@ -778,14 +768,6 @@
       }
     }
   },
-  "altsCount": "{count, plural, one{{count} alt.} other{{count} alt.}}",
-  "@altsCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "segmentToWillBeDeleted": "→ {name}  —  le segment sera supprimé",
   "@segmentToWillBeDeleted": {
     "placeholders": {
@@ -794,10 +776,6 @@
       }
     }
   },
-  "reorderAlternativesTitle": "Réorganiser les alternatives",
-  "reorderAlternativesHint": "Faites glisser pour changer l'option qui apparaît en premier. Appuyez sur Enregistrer pour appliquer.",
-  "emptyTrackLabel": "(piste vide)",
-  "moveStopToLabel": "Déplacer l'étape vers",
   "messageLabel": "Message",
   "annotationKeepShortHint": "Restez concis — moins de 200 caractères pour une meilleure lisibilité sur petits écrans.",
   "transportModeSection": "Mode de transport",
@@ -850,8 +828,6 @@
   "stopWithNumber": "Étape {n}",
   "undoLabel": "Annuler",
   "updateYourRating": "Modifier votre évaluation",
-  "moveActionLabel": "déplacer",
-  "reorderActionLabel": "réorganiser",
   "addParallelStopLabel": "// étape",
   "aStopFallback": "Une étape",
   "locationLabel": "Localisation",

@@ -101,6 +101,7 @@ RELEASES: tuple[Release, ...] = (
             "**Una nueva foto de portada se guarda con lo demás.** Cambiar la portada de un viaje a la vez que su título, su moneda o su mejor época para viajar ya no te pide recargar: todo se guarda de una vez.",
             "**Copia solo el enlace.** El menú de compartir tiene una nueva opción, **Copiar enlace**, que copia el enlace sin el nombre del viaje, sus paradas ni su duración. En la web, el botón de compartir también la ofrece.",
             "**Los enlaces compartidos llevan adonde ya estás.** Con la sesión iniciada en Ntripi en tu navegador, un viaje o un perfil compartido se abre directamente en lugar de su vista previa, y en un teléfono la página ofrece **Abrir en Ntripi**. La barra de direcciones de la aplicación web muestra ahora la página en la que estás, así que al recargar sigues ahí.",
+            "**Organiza las paradas en un solo sitio.** En modo edición, **Organizar paradas** (las cuatro flechas) sobre las paradas convierte el viaje en filas de paradas. Arrastra o toca una parada para convertirla en alternativa de otra columna, o para darle su propia columna entre otras dos; arrastra el número de una columna para moverla entera. Nada cambia hasta que tocas **Guardar**, y los botones aparte para reordenar y mover en cada parada ya no están.",
         ),
     ),
     Release(
@@ -220,7 +221,7 @@ Los viajes nuevos son visibles **solo para ti** hasta que lo cambies, así que e
 - **Tiempo previsto** — cuánto tiempo reservar. Es lo que hace que un plan sea realista en vez de optimista.
 - **Notas** — cualquier cosa que quieras recordar.
 
-Añade las paradas en el orden en que las visitarás. Podrás arrastrarlas después.""",
+Añade las paradas en el orden en que las visitarás. Para cambiar el orden después, toca **Organizar paradas** sobre ellas en modo edición.""",
             ),
             Block(
                 anchor="connect-the-stops",
@@ -262,7 +263,7 @@ Consulta [cómo compartir un viaje sin hacerlo público](/help/share-an-itinerar
             "planificación",
         ),
         related=("plan-alternative-options", "share-an-itinerary-privately", "getting-started"),
-        updated="2026-09-01",
+        updated="2026-10-27",
         cta="Planifica tu propio itinerario: son unos diez minutos.",
     ),
     Article(
@@ -362,27 +363,36 @@ Ahora las dos paradas están una al lado de la otra. Ninguna es la «de verdad»
             ),
             Block(
                 anchor="move-a-stop",
-                heading="Mover una parada de una columna a otra",
+                heading="Mover una parada a otra columna",
                 kind=KIND_STEP,
-                body="""Una parada se puede mover a otra columna después, así que no quedas atado al orden en que fuiste añadiendo cosas. Abre la parada y usa la acción de mover para elegir su columna.
+                body="""Una parada puede cambiar de columna después, así que no quedas atado al orden en que fuiste añadiendo cosas. En modo edición, toca **Organizar paradas** (las cuatro flechas) sobre las paradas: el viaje se convierte en filas de paradas, una fila por columna. Arrastra una parada por su asa, o tócala y luego toca dónde va:
 
-Una columna existe solo mientras tenga al menos una parada. Mueve o borra la última parada y la columna vacía desaparece sola: no hay nada que recoger.""",
+- **sobre otra columna** para convertirla en una de sus alternativas;
+- **entre dos columnas** para darle su propia columna ahí.
+
+No se guarda nada hasta que tocas **Guardar**. Una columna existe solo mientras tenga al menos una parada. Mueve o borra la última parada y la columna vacía desaparece sola: no hay nada que recoger.""",
             ),
             Block(
                 anchor="reorder",
-                heading="Reordenar columnas y paradas",
+                heading="Reordenar columnas y alternativas",
                 kind=KIND_STEP,
-                body="Arrastra para reordenar las paradas dentro de una columna, y para reordenar las columnas entre sí. La primera columna de un viaje se trata como el punto de partida y la última como el destino, que es lo que el mapa une.",
+                body="En ese mismo modo, arrastra el número de una columna para mover la columna entera, con sus alternativas, o suelta una parada sobre otra parada de su columna para cambiar qué alternativa va primero. Todo espera a **Guardar**, así que puedes probar un orden y descartarlo con ✕. La primera columna de un viaje se trata como el punto de partida y la última como el destino, que es lo que el mapa une.",
             ),
             Block(
                 anchor="transport-warning",
                 heading="Por qué insertar una columna a veces te avisa",
                 body="""El transporte se anota entre dos columnas *vecinas*. Si insertas una columna nueva entre dos que ya están unidas por un transporte, esa conexión se queda sin sitio: las dos columnas ya no son vecinas.
 
-Ntripi pregunta antes de hacerlo en vez de descartar en silencio el transporte que introdujiste. Confirma y la conexión afectada se elimina; cancela y no cambia nada.""",
+Ntripi pregunta antes de hacerlo en vez de descartar en silencio el transporte que introdujiste. Confirma y la conexión afectada se elimina; cancela y no cambia nada.
+
+Al organizar pasa lo mismo: si un movimiento separa dos columnas unidas por un transporte, ese transporte se marca mientras organizas, y **Guardar** pregunta antes de eliminarlo.""",
             ),
         ),
         keywords=(
+            "organizar",
+            "reordenar",
+            "mover",
+            "arrastrar",
             "paralelo",
             "columna",
             "columnas",
@@ -399,7 +409,7 @@ Ntripi pregunta antes de hacerlo en vez de descartar en silencio el transporte q
             "elección",
         ),
         related=("plan-a-trip-itinerary", "getting-started"),
-        updated="2026-09-01",
+        updated="2026-10-27",
         cta="Planifica un viaje con alternativas reales, no una única línea frágil.",
     ),
     Article(
@@ -416,7 +426,7 @@ Ntripi pregunta antes de hacerlo en vez de descartar en silencio el transporte q
                 kind=KIND_STEP,
                 body="""Abre el viaje y toca **+**. Dale al lugar un nombre — el que dirías en voz alta, no su denominación oficial — y una dirección si la tienes.
 
-Las paradas se añaden en orden de visita. Puedes arrastrarlas a otro orden en cualquier momento después.""",
+Las paradas se añaden en orden de visita. Para ponerlas en otro orden después, toca **Organizar paradas** sobre ellas en modo edición.""",
             ),
             Block(
                 anchor="place-type",
@@ -471,7 +481,7 @@ Para un aviso que deba costar pasar por alto en vez de leerse de refilón, usa m
             "museo",
         ),
         related=("plan-a-trip-itinerary", "add-locations-from-google-maps", "travel-notes-and-warnings"),
-        updated="2026-09-01",
+        updated="2026-10-27",
         cta="Empieza un viaje y añade tu primera parada.",
     ),
     Article(

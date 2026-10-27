@@ -149,6 +149,13 @@ RELEASES: tuple[Release, ...] = (
             "of its preview, and on a phone the page offers **Open in Ntripi**. "
             "The web app's address bar now shows the page you are on, so a "
             "reload keeps you there.",
+            "**Arrange stops in one place.** In edit mode, **Arrange stops** "
+            "(the four arrows) above the stops turns the trip into rows of "
+            "stops. Drag or tap a stop to make it another track's "
+            "alternative, or to give it a track of its own between two "
+            "others; drag a track's number to move the whole track. Nothing "
+            "changes until you tap **Save**, and the separate reorder and "
+            "move buttons on each stop are gone.",
         ),
     ),
     Release(
@@ -281,7 +288,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="getting-started",
         schema=SCHEMA_HOWTO,
-        updated="2026-09-01",
+        updated="2026-10-27",
         keywords=(
             "trip planner", "travel itinerary", "itineraries", "day by day",
             "plan a holiday", "vacation planner", "route", "schedule",
@@ -335,8 +342,8 @@ ARTICLES: tuple[Article, ...] = (
                     "- **Time to spend** — how long to allow. This is what makes a "
                     "plan realistic rather than optimistic.\n"
                     "- **Notes** — anything you want to remember.\n\n"
-                    "Add stops in the order you will visit them. You can drag them "
-                    "around afterwards."
+                    "Add stops in the order you will visit them. To change the "
+                    "order later, tap **Arrange stops** above them in edit mode."
                 ),
             ),
             Block(
@@ -479,11 +486,12 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="building",
         schema=SCHEMA_HOWTO,
-        updated="2026-09-01",
+        updated="2026-10-27",
         keywords=(
             "parallel", "track", "tracks", "alternative", "alternatives",
             "options", "optional", "plan b", "backup", "branch", "column",
             "either or", "rainy day", "weather", "choice", "choices",
+            "arrange", "rearrange", "reorder", "move a stop", "drag",
         ),
         related=("plan-a-trip-itinerary", "getting-started"),
         cta="Plan a trip with real alternatives, not a single fragile line.",
@@ -525,24 +533,33 @@ ARTICLES: tuple[Article, ...] = (
             ),
             Block(
                 anchor="move-a-stop",
-                heading="Move a stop between tracks",
+                heading="Move a stop to another track",
                 kind=KIND_STEP,
                 body=(
-                    "A stop can be moved into another track after the fact, so you "
-                    "are not committed by the order you happened to add things in. "
-                    "Open the stop and use the move action to pick its track.\n\n"
-                    "A track exists only while it has at least one stop in it. Move "
-                    "or delete the last stop and the empty column disappears by "
-                    "itself — there is nothing to tidy up."
+                    "A stop can change track after the fact, so you are not "
+                    "committed by the order you happened to add things in. In edit "
+                    "mode, tap **Arrange stops** (the four arrows) above the stops: "
+                    "the trip turns into rows of stops, one row per track. Drag a "
+                    "stop by its handle, or tap it and then tap where it goes:\n\n"
+                    "- **onto another track** to make it one of that track's "
+                    "alternatives;\n"
+                    "- **between two tracks** to give it a track of its own there.\n\n"
+                    "Nothing is saved until you tap **Save**. A track exists only "
+                    "while it has at least one stop in it — move or delete the last "
+                    "stop and the empty column disappears by itself, so there is "
+                    "nothing to tidy up."
                 ),
             ),
             Block(
                 anchor="reorder",
-                heading="Reorder tracks and stops",
+                heading="Reorder tracks and alternatives",
                 kind=KIND_STEP,
                 body=(
-                    "Drag to reorder stops within a track, and to reorder the "
-                    "tracks themselves. The first track in a trip is treated as the "
+                    "In the same arrange mode, drag a track's number to move the "
+                    "whole track, alternatives and all, or drop a stop on another "
+                    "stop of its own track to change which alternative comes first. "
+                    "Every change waits for **Save**, so you can try an order and "
+                    "back out with ✕. The first track in a trip is treated as the "
                     "starting point and the last as the destination, which is what "
                     "the map draws between."
                 ),
@@ -557,7 +574,10 @@ ARTICLES: tuple[Article, ...] = (
                     "live — the two tracks are no longer neighbours.\n\n"
                     "Ntripi asks before doing this rather than quietly dropping the "
                     "transport you entered. Confirm, and the affected connection is "
-                    "removed; cancel, and nothing changes."
+                    "removed; cancel, and nothing changes.\n\n"
+                    "Arranging works the same way: if a move separates two tracks "
+                    "that have transport between them, that transport is marked "
+                    "while you arrange, and **Save** asks before removing it."
                 ),
             ),
         ),
@@ -571,7 +591,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="building",
         schema=SCHEMA_HOWTO,
-        updated="2026-09-01",
+        updated="2026-10-27",
         keywords=(
             "stop", "stops", "place", "places", "add", "budget", "price",
             "duration", "how long", "category", "restaurant", "hotel", "museum",
@@ -594,8 +614,8 @@ ARTICLES: tuple[Article, ...] = (
                     "Open the trip and tap **+**. Give the place a name — what you "
                     "would call it out loud, not its official title — and an "
                     "address if you have one.\n\n"
-                    "Stops are added in visiting order. You can drag them into a "
-                    "different order at any point afterwards."
+                    "Stops are added in visiting order. To put them in a different "
+                    "order later, tap **Arrange stops** above them in edit mode."
                 ),
             ),
             Block(

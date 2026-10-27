@@ -8,7 +8,7 @@
 //   Recommended period — best travel window + why note
 //   Description  — optional free-text
 //   Itinerary annotations — trip-wide notes as chips
-//   List/Map toggle — reorder-tracks, bookmark and route buttons
+//   List/Map toggle — arrange, bookmark and route buttons
 //   Map section  — OSM map with stop markers and polyline (ODbL requires attribution)
 //   Stop list    — interleaved stops + segments (read & edit mode)
 //
@@ -17,17 +17,22 @@
 //                       section to jump straight to its editor (LongPressToEdit)
 //   _editMode = true  → interleaved list with inline edit/delete buttons and
 //                       inline separators between stops
+//   _arrangement != null (inside edit mode) → arrange mode: the stop list is
+//                       ArrangeTripView, everything else on the page is inert,
+//                       and the header's ✓ saves the whole arrangement at once
 //   Edit mode is this device holding the edit claim, wherever it was taken —
 //   editing from a stop's page claims the trip, and this screen follows.
 //
 // Mutations are immediate — every stop/segment/annotation change PATCHes on
-// save from its own form or sheet. Reordering is not deferred either: it runs
-// through showTrackReorderSheet / showReorderParallelsSheet, so there is no
-// save bar and no pending-changes state to guard.
+// save from its own form or sheet. Arrange mode is the one deferred edit: the
+// order of tracks and alternatives, and which track a stop is in, change
+// locally until Save sends them in one request.
 //
 // Back-button guard (PopScope):
 //   While in edit mode the system back button exits edit mode instead of
-//   navigating away. Nothing is unsaved at that point, so nothing is asked.
+//   navigating away. Nothing is unsaved at that point, so nothing is asked —
+//   except in arrange mode, where Back leaves arranging and asks before
+//   discarding an unsaved arrangement.
 //
 // OSM attribution is required by the ODbL license and is always visible.
 
@@ -44,10 +49,12 @@ import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/cache/image_cache.dart';
 import 'package:ntripi/core/providers/long_press_hint_provider.dart';
 import 'package:ntripi/core/router/navigation_ext.dart';
+import 'package:ntripi/core/services/segment_orphan_service.dart';
 import 'package:ntripi/core/services/sfx_service.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/confirm_dialog.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
+import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
 import 'package:ntripi/features/itineraries/data/maps_launcher_service.dart';
 import 'package:ntripi/features/itineraries/domain/annotation.dart';
 import 'package:ntripi/features/itineraries/domain/edit_lock.dart';
@@ -56,6 +63,7 @@ import 'package:ntripi/features/itineraries/providers/saved_itineraries_provider
 import 'package:ntripi/features/itineraries/domain/track.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary_annotation.dart';
 import 'package:ntripi/features/itineraries/domain/transit_segment.dart';
+import 'package:ntripi/features/itineraries/domain/trip_arrangement.dart';
 import 'package:ntripi/features/itineraries/domain/recommended_period.dart';
 import 'package:ntripi/features/itineraries/presentation/annotation_screen.dart';
 import 'package:ntripi/features/itineraries/presentation/recommended_period_screen.dart';
@@ -68,14 +76,13 @@ import 'package:ntripi/features/itineraries/presentation/widgets/edit_pencil_but
 import 'package:ntripi/features/itineraries/presentation/widgets/leg_thoughts.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/long_press_to_edit.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
-import 'package:ntripi/features/itineraries/presentation/widgets/move_stop_to_track_sheet.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
 import 'package:ntripi/features/reports/domain/report_target.dart';
 import 'package:ntripi/features/reports/presentation/report_content_sheet.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/parallel_stop_group.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/segment_card.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/share_link_action.dart';
-import 'package:ntripi/features/itineraries/presentation/widgets/track_reorder_view.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/arrange_trip_view.dart';
 import 'package:ntripi/shared/widgets/field_help.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
@@ -124,9 +131,17 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   bool _savingPeriod = false;
   // Active parallel-stop index per track (trackId → page index).
   final Map<String, int> _activeParallelByTrack = {};
-  // GlobalKey per track widget so we can call Scrollable.ensureVisible after a
-  // cross-track move to scroll the destination track into view.
+  // GlobalKey per track widget: a group's State (its page index) survives the
+  // list rebuilding around it.
   final Map<String, GlobalKey> _trackKeys = {};
+  // Arrange mode: the trip as it is being rearranged; null when not arranging.
+  // Screen state, not a provider — nothing unsaved outlives the screen.
+  TripArrangement? _arrangement;
+  // The trip's stamp when arranging began. Another one means the trip changed
+  // underneath, and the arrangement no longer describes it.
+  DateTime? _arrangedFrom;
+  // The arrangement's one request is on its way.
+  bool _savingArrangement = false;
   final GlobalKey _editDetailsButtonKey = GlobalKey();
   // Anchors the one-time long-press tip at the Edit pencil, the affordance the
   // gesture shortcuts past.
@@ -363,7 +378,10 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   /// Leave edit mode and give the claim back, so the next editor does not wait
   /// out a timeout for a session that is over.
   void _exitEditMode() {
-    setState(() => _editMode = false);
+    setState(() {
+      _editMode = false;
+      _arrangement = null;
+    });
     unawaited(ref.read(editLockProvider(widget.itineraryId).notifier).release());
   }
 
@@ -426,21 +444,97 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     context.popOr('/itineraries');
   }
 
-  /// Scrolls the outer CustomScrollView so that the track with the given ID
-  /// becomes visible near the top. The post-frame callback waits for the
-  /// detail-provider refresh to rebuild the list before resolving the key's
-  /// context, otherwise the destination track may not yet be laid out.
-  void _scrollToTrack(String trackId) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final ctx = _trackKeys[trackId]?.currentContext;
-      if (ctx != null) {
-        Scrollable.ensureVisible(
-          ctx,
-          alignment: 0.1,
-          duration: const Duration(milliseconds: 300),
-        );
-      }
+  /// Enter arrange mode on the trip as it stands.
+  void _startArranging(Itinerary itinerary) {
+    setState(() {
+      _arrangement = TripArrangement.of(itinerary.tracks);
+      _arrangedFrom = itinerary.updatedAt;
     });
+  }
+
+  /// ✕ and Back in arrange mode: back to edit mode, asking first when the
+  /// arrangement holds something unsaved.
+  Future<void> _leaveArrangement() async {
+    final arrangement = _arrangement;
+    if (arrangement == null || _savingArrangement) return;
+    if (arrangement.isDirty) {
+      final l10n = AppLocalizations.of(context)!;
+      final discard = await confirmDestructiveAction(
+        context: context,
+        title: l10n.discardChangesTitle,
+        message: l10n.discardReorderMessage,
+        confirmLabel: l10n.discardButton,
+      );
+      if (!discard || !mounted) return;
+    }
+    setState(() => _arrangement = null);
+  }
+
+  /// Save the arrangement: one request carries the layout and deletes the
+  /// transit links it breaks, after the user has confirmed those.
+  Future<void> _saveArrangement(Itinerary itinerary) async {
+    final arrangement = _arrangement;
+    if (arrangement == null || !arrangement.isDirty || _savingArrangement) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final orphaned = computeOrphansForLayout(
+        layout: arrangement.tracks, segments: itinerary.segments);
+    if (orphaned.isNotEmpty) {
+      String name(String stopId) =>
+          arrangement.stop(stopId)?.placeName ?? l10n.unnamedStop;
+      final lines = orphaned
+          .map((seg) => '• ${name(seg.fromStopId)} → ${name(seg.toStopId)}')
+          .join('\n');
+      final confirmed = await confirmDestructiveAction(
+        context: context,
+        title: l10n.reorderOrphanTitle,
+        message: l10n.reorderOrphanMessage(orphaned.length, lines),
+        confirmLabel: l10n.save,
+      );
+      if (!confirmed || !mounted) return;
+    }
+
+    setState(() => _savingArrangement = true);
+    try {
+      await ref
+          .read(itineraryDetailProvider(widget.itineraryId).notifier)
+          .applyArrangement(
+            layout: arrangement.toLayoutJson(),
+            segmentIdsToDelete:
+                orphaned.isEmpty ? null : [for (final s in orphaned) s.id],
+          );
+    } on ItineraryStaleException {
+      if (!mounted) return;
+      setState(() => _savingArrangement = false);
+      messenger.showSnackBar(
+          SnackBar(content: Text(l10n.itineraryChangedElsewhere)));
+      return;
+    } on EditLockLostException catch (e) {
+      // No snackbar: the lock banner above the arrangement says why Save went
+      // grey and offers the claim back, and the arrangement stays as it is.
+      ref
+          .read(editLockProvider(widget.itineraryId).notifier)
+          .markLost(e.holder);
+      if (mounted) setState(() => _savingArrangement = false);
+      return;
+    } on Exception catch (e) {
+      // The arrangement stays on screen, to be saved again.
+      if (!mounted) return;
+      setState(() => _savingArrangement = false);
+      messenger.showSnackBar(
+          SnackBar(content: Text(extractErrorMessage(e as dynamic, l10n))));
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _savingArrangement = false;
+      _arrangement = null;
+      // Each track opens on the alternative the arrangement put first.
+      _activeParallelByTrack.clear();
+    });
+    messenger.showSnackBar(SnackBar(content: Text(l10n.orderSavedMessage)));
   }
 
   // Persist inline via onSaveAsync so the annotation screen shows its own save
@@ -697,15 +791,17 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
           _playCloseCue();
           return;
         }
-        unawaited(_requestExitEditMode());
+        unawaited(_arrangement != null
+            ? _leaveArrangement()
+            : _requestExitEditMode());
       },
       child: Scaffold(
         backgroundColor: nt.surface,
         // Waiting out a save before leaving edit mode: no new edit may start
         // under a claim about to be handed back, and the wait says why.
         body: SavingOverlay(
-          saving: _exitPending,
-          message: l10n.editModeLeaveAfterSave,
+          saving: _exitPending || _savingArrangement,
+          message: _exitPending ? l10n.editModeLeaveAfterSave : null,
           child: SafeArea(
           top: false, // cover hero extends behind status bar
           child: Center(
@@ -759,6 +855,36 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                   final allStops = itinerary.stops;
                   final tracks = itinerary.tracks;
                   final canEdit = mayEdit && _editMode;
+                  // Arrange mode lives inside edit mode; rights lost end it too.
+                  final arrangement = canEdit ? _arrangement : null;
+                  // Nothing on this page can change the trip while arranging, so
+                  // this is defence: an arrangement of another version of the trip
+                  // would save stops and tracks the user never saw.
+                  if (arrangement != null &&
+                      !_savingArrangement &&
+                      itinerary.updatedAt != _arrangedFrom) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!mounted || _arrangement == null) return;
+                      setState(() => _arrangement = null);
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(l10n.itineraryChangedElsewhere)));
+                    });
+                  }
+                  // Someone else holds the claim — this same person on another
+                  // device included. Absent while WE hold it: the banner is
+                  // about being blocked, and blocking yourself is not news.
+                  final lockBanner = mayEdit &&
+                          !lockSession.holdsClaim &&
+                          lockSession.lock != null
+                      ? EditLockBanner(
+                          lock: lockSession.lock!,
+                          // The owner never waits out the timeout.
+                          canTakeOverNow: isOwner || lockSession.canTakeOverNow,
+                          isOwner: isOwner,
+                          busy: lockSession.busy,
+                          onTakeOver: () => _confirmTakeOver(lockSession.lock!),
+                        )
+                      : null;
                   // One toggle swaps the header, every trip-wide note and the
                   // thoughts in every transit card.
                   final TranslationAnchor translationAnchor =
@@ -906,20 +1032,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                         itineraryId: widget.itineraryId,
                         editMode: canEdit,
                         trackIndex: trackIndex,
-                        // Only meaningful when there's somewhere to move to:
-                        // another track exists, or this track has parallels to extract.
-                        canMoveToTrack: canEdit &&
-                            (tracks.length > 1 || trackStops.length > 1),
-                        onMoveToTrack: canEdit
-                            ? (activeStop) => showMoveStopToTrackSheet(
-                                  context: context,
-                                  itineraryId: widget.itineraryId,
-                                  stop: activeStop,
-                                  tracks: tracks,
-                                  segments: itinerary.segments,
-                                  onMoved: _scrollToTrack,
-                                )
-                            : null,
                         getSegment: (fromStopId) {
                           // Read mode: transit is rendered before the destination
                           // stop in buildInterleavedList, not inside the group.
@@ -1065,6 +1177,10 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                       : null;
 
                   return RefreshIndicator(
+                    // A reload would change the trip under the arrangement.
+                    notificationPredicate: (notification) =>
+                        arrangement == null &&
+                        defaultScrollNotificationPredicate(notification),
                     onRefresh: () async {
                       // Offline: skip entirely — evicting the cover would
                       // delete an image the device can't re-download.
@@ -1087,352 +1203,347 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                     child: CustomScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       slivers: [
-                        // ── Cover hero (240px full-bleed) ──────────────────
-                        SliverToBoxAdapter(
-                          child: _CoverHero(
-                            coverUrl: coverUrl,
-                            itinerary: itinerary,
-                            canEdit: mayEdit,
-                            editMode: _editMode,
-                            editDetailsButtonKey: _editDetailsButtonKey,
-                            enterEditButtonKey: _enterEditButtonKey,
-                            onCoverTap: isOwner ? _showAddCoverHint : null,
-                            onBack: _leave,
-                            shareButtonKey: _shareButtonKey,
-                            onShare: itinerary.visibility !=
-                                    ItineraryVisibility.onlyMe
-                                ? () => shareLink(
-                                      _shareButtonKey.currentContext ?? context,
-                                      ref,
-                                      ref
-                                          .read(shareServiceProvider)
-                                          .itineraryLink(itinerary, l10n),
-                                    )
-                                : null,
-                            onReport: mayEdit
-                                ? null
-                                : () => showReportContentSheet(
+                        // ── Everything above the stop list ─────────────────
+                        // Dimmed and deaf to touch while arranging: the only
+                        // things left to do are arrange, save or leave.
+                        _InertWhileArranging(
+                          arranging: arrangement != null,
+                          slivers: [
+                            // ── Cover hero (240px full-bleed) ──────────────────
+                            SliverToBoxAdapter(
+                              child: _CoverHero(
+                                coverUrl: coverUrl,
+                                itinerary: itinerary,
+                                canEdit: mayEdit,
+                                editMode: _editMode,
+                                editDetailsButtonKey: _editDetailsButtonKey,
+                                enterEditButtonKey: _enterEditButtonKey,
+                                onCoverTap: isOwner ? _showAddCoverHint : null,
+                                onBack: _leave,
+                                shareButtonKey: _shareButtonKey,
+                                onShare: itinerary.visibility !=
+                                        ItineraryVisibility.onlyMe
+                                    ? () => shareLink(
+                                          _shareButtonKey.currentContext ?? context,
+                                          ref,
+                                          ref
+                                              .read(shareServiceProvider)
+                                              .itineraryLink(itinerary, l10n),
+                                        )
+                                    : null,
+                                onReport: mayEdit
+                                    ? null
+                                    : () => showReportContentSheet(
+                                        context,
+                                        ref,
+                                        ReportTarget.itinerary(widget.itineraryId),
+                                      ),
+                                // mayEdit: the form behind this button renders a
+                                // reduced set for an editor — title, currency and
+                                // best time to visit, all of which the server
+                                // already accepts from them — and hides every
+                                // owner-only control rather than the whole screen.
+                                onEditDetails: mayEdit ? _openDetailsForm : null,
+                                onEnterEdit:
+                                    mayEdit && !_editMode ? _enterEditMode : null,
+                                onExitEdit: mayEdit && _editMode
+                                    ? _requestExitEditMode
+                                    : null,
+                                // Long-press anywhere on the hero is a shortcut to
+                                // the same screen the tune button opens — so it
+                                // carries the same gate.
+                                onLongPressEdit:
+                                    mayEdit && !_editMode ? _openDetailsForm : null,
+                              ),
+                            ),
+
+                            // ── Someone else is editing ────────────────────────
+                            // Shown to anyone who could edit but currently cannot.
+                            // While arranging it sits above the arrangement instead.
+                            if (lockBanner != null && arrangement == null)
+                              SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                                  child: lockBanner,
+                                ),
+                              ),
+
+                            // ── Moderator-hidden notice (author only) ──────────
+                            // The server only sends hidden=true to the owner, so
+                            // the isOwner check is defense in depth.
+                            if (isOwner && itinerary.hidden)
+                              SliverToBoxAdapter(
+                                child: ModerationHiddenBanner(
+                                  message: l10n.hiddenBannerMessage,
+                                  onAppeal: () => showAppealSheet(
                                     context,
-                                    ref,
-                                    ReportTarget.itinerary(widget.itineraryId),
-                                  ),
-                            // mayEdit: the form behind this button renders a
-                            // reduced set for an editor — title, currency and
-                            // best time to visit, all of which the server
-                            // already accepts from them — and hides every
-                            // owner-only control rather than the whole screen.
-                            onEditDetails: mayEdit ? _openDetailsForm : null,
-                            onEnterEdit:
-                                mayEdit && !_editMode ? _enterEditMode : null,
-                            onExitEdit: mayEdit && _editMode
-                                ? _requestExitEditMode
-                                : null,
-                            // Long-press anywhere on the hero is a shortcut to
-                            // the same screen the tune button opens — so it
-                            // carries the same gate.
-                            onLongPressEdit:
-                                mayEdit && !_editMode ? _openDetailsForm : null,
-                          ),
-                        ),
-
-                        // ── Someone else is editing ────────────────────────
-                        // Shown to anyone who could edit but currently cannot,
-                        // including this same person on another device. Absent
-                        // while WE hold the claim — the banner is about being
-                        // blocked, and blocking yourself is not information.
-                        if (mayEdit &&
-                            !lockSession.holdsClaim &&
-                            lockSession.lock != null)
-                          SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                              child: EditLockBanner(
-                                lock: lockSession.lock!,
-                                // The owner never waits out the timeout.
-                                canTakeOverNow:
-                                    isOwner || lockSession.canTakeOverNow,
-                                isOwner: isOwner,
-                                busy: lockSession.busy,
-                                onTakeOver: () =>
-                                    _confirmTakeOver(lockSession.lock!),
-                              ),
-                            ),
-                          ),
-
-                        // ── Moderator-hidden notice (author only) ──────────
-                        // The server only sends hidden=true to the owner, so
-                        // the isOwner check is defense in depth.
-                        if (isOwner && itinerary.hidden)
-                          SliverToBoxAdapter(
-                            child: ModerationHiddenBanner(
-                              message: l10n.hiddenBannerMessage,
-                              onAppeal: () => showAppealSheet(
-                                context,
-                                targetType: 'itinerary',
-                                targetId: itinerary.id,
-                              ),
-                            ),
-                          ),
-
-                        // ── Owner row ──────────────────────────────────────
-                        if (ownerUserId.isNotEmpty)
-                          SliverToBoxAdapter(
-                            child: ref
-                                .watch(userProfileProvider(ownerUserId))
-                                .when(
-                                  loading: () => const OwnerRowSkeleton(),
-                                  error: (_, __) => const SizedBox.shrink(),
-                                  data: (owner) => _OwnerRow(
-                                    owner: owner,
-                                    itinerary: itinerary,
-                                    itineraryId: widget.itineraryId,
+                                    targetType: 'itinerary',
+                                    targetId: itinerary.id,
                                   ),
                                 ),
-                          ),
-
-                        // ── Meta chips ─────────────────────────────────────
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                            child: Wrap(
-                              spacing: 6,
-                              runSpacing: 4,
-                              children: [
-                                _DetailMetaChip(
-                                  icon: Icons.schedule_rounded,
-                                  label: itinerary.formattedDuration(l10n),
-                                ),
-                                _DetailMetaChip(
-                                  icon: Icons.payments_rounded,
-                                  label: itinerary.formattedCost(l10n),
-                                ),
-                                _DetailMetaChip(
-                                  icon: Icons.location_on_rounded,
-                                  label: l10n.stopCount(allStops.length),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        // ── Recommended period ─────────────────────────────
-                        // Own row rather than a 4th meta chip: the "why" note
-                        // is the useful half and needs more than a pill.
-                        if (canEdit)
-                          SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                              child: _RecommendedPeriodEditRow(
-                                period: itinerary.recommendedPeriod,
-                                saving: _savingPeriod,
-                                onTap: () => _editRecommendedPeriod(
-                                    itinerary.recommendedPeriod),
                               ),
-                            ),
-                          )
-                        else if (itinerary.recommendedPeriod != null)
-                          SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                              child: LongPressToEdit(
-                                onEdit: mayEdit
-                                    ? () => _editRecommendedPeriod(
-                                        itinerary.recommendedPeriod)
-                                    : null,
-                                child: _RecommendedPeriodRow(
-                                  period: itinerary.recommendedPeriod!,
-                                  itineraryId: itinerary.id,
-                                ),
-                              ),
-                            ),
-                          ),
 
-                        // ── Description ────────────────────────────────────
-                        // In edit mode the description is a tappable row that
-                        // opens the shared markdown editor.
-                        if (canEdit)
-                          SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                              child: _DescriptionEditRow(
-                                description: itinerary.description,
-                                onTap: () =>
-                                    _editDescription(itinerary.description),
-                              ),
-                            ),
-                          )
-                        else if (itinerary.description != null &&
-                            itinerary.description!.isNotEmpty)
-                          SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                              child: LongPressToEdit(
-                                onEdit: mayEdit
-                                    ? () =>
-                                        _editDescription(itinerary.description)
-                                    : null,
-                                child: _DescriptionRow(
-                                  description: itinerary.description!,
-                                  itineraryId: itinerary.id,
-                                ),
-                              ),
-                            ),
-                          ),
-
-                        // ── See translation ────────────────────────────────
-                        // Under the description, so it precedes the trip-wide
-                        // notes it also covers. Read mode only, and never on a
-                        // trip under takedown: the server refuses it even to
-                        // its owner, the only reader who can still open it.
-                        if (!_editMode && !itinerary.hidden)
-                          SliverToBoxAdapter(
-                            child: TranslationToggle(
-                              anchor: translationAnchor,
-                              members: translationMembers,
-                              padding:
-                                  const EdgeInsets.fromLTRB(16, 10, 16, 0),
-                            ),
-                          ),
-
-                        // ── Itinerary annotations ──────────────────────────
-                        if (itinerary.annotations.isNotEmpty || canEdit)
-                          SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        l10n.annotationsSection,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w700,
-                                          color: nt.text2,
-                                          letterSpacing: 0.6,
-                                        ),
-                                      ),
-                                      if (canEdit) ...[
-                                        const Spacer(),
-                                        // Tinted pill matching the stop-card "Add note" affordance.
-                                        OfflineGate(
-                                          builder: (online) => GestureDetector(
-                                          onTap: online
-                                              ? _addItineraryAnnotation
-                                              : null,
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 8, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: nt.editBlueTint,
-                                              borderRadius:
-                                                  BorderRadius.circular(999),
-                                              border: Border.all(
-                                                  color: nt.editBlue.withValues(
-                                                      alpha: 0.13)),
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(Icons.add_rounded,
-                                                    size: 13, color: nt.editBlue),
-                                                const SizedBox(width: 3),
-                                                Text(
-                                                  l10n.addAnnotationButton,
-                                                  style: TextStyle(
-                                                      fontSize: 12,
-                                                      color: nt.editBlue),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                  if (itinerary.annotations.isEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(
-                                          top: 4, bottom: 4),
-                                      child: Text(
-                                        l10n.noAnnotationsYet,
-                                        style: TextStyle(
-                                            color: nt.text3, fontSize: 13),
-                                      ),
-                                    )
-                                  else
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 8),
-                                      child: Wrap(
-                                        spacing: 6,
-                                        runSpacing: 6,
-                                        children: itinerary.annotations
-                                            .map(
-                                              (a) => TranslatableText(
-                                                anchor: translationAnchor,
-                                                contentType:
-                                                    'itinerary_annotation',
-                                                contentId: a.id,
-                                                field: 'content',
-                                                original: a.content,
-                                                enabled: !_editMode,
-                                                builder: (context, content) =>
-                                                    AnnotationChip(
-                                                      annotation: Annotation(
-                                                        id: a.id,
-                                                        stopId: a.itineraryId,
-                                                        type: a.type,
-                                                        // The translation in read
-                                                        // mode; editing works on
-                                                        // the outer `a`.
-                                                        content: content,
-                                                        createdAt: a.createdAt,
-                                                        updatedAt: a.updatedAt,
-                                                      ),
-                                                      onEdit: canEdit
-                                                          ? () =>
-                                                              _editItineraryAnnotation(
-                                                                  a)
-                                                          : null,
-                                                      onDelete: canEdit
-                                                          ? () =>
-                                                              _deleteItineraryAnnotation(
-                                                                  a)
-                                                          : null,
-                                                      // Built from the outer `a`:
-                                                      // the adapted Annotation above
-                                                      // carries the itinerary id in
-                                                      // its stopId field.
-                                                      onReport: mayEdit
-                                                          ? null
-                                                          : () =>
-                                                              showReportContentSheet(
-                                                                context,
-                                                                ref,
-                                                                ReportTarget
-                                                                    .itineraryAnnotation(
-                                                                  widget.itineraryId,
-                                                                  a.id,
-                                                                ),
-                                                              ),
-                                                      onLongPressEdit: mayEdit &&
-                                                              !_editMode
-                                                          ? () =>
-                                                              _editItineraryAnnotation(
-                                                                  a)
-                                                          : null,
-                                                    ),
-                                              ),
-                                            )
-                                            .toList(),
+                            // ── Owner row ──────────────────────────────────────
+                            if (ownerUserId.isNotEmpty)
+                              SliverToBoxAdapter(
+                                child: ref
+                                    .watch(userProfileProvider(ownerUserId))
+                                    .when(
+                                      loading: () => const OwnerRowSkeleton(),
+                                      error: (_, __) => const SizedBox.shrink(),
+                                      data: (owner) => _OwnerRow(
+                                        owner: owner,
+                                        itinerary: itinerary,
+                                        itineraryId: widget.itineraryId,
                                       ),
                                     ),
-                                ],
+                              ),
+
+                            // ── Meta chips ─────────────────────────────────────
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                                child: Wrap(
+                                  spacing: 6,
+                                  runSpacing: 4,
+                                  children: [
+                                    _DetailMetaChip(
+                                      icon: Icons.schedule_rounded,
+                                      label: itinerary.formattedDuration(l10n),
+                                    ),
+                                    _DetailMetaChip(
+                                      icon: Icons.payments_rounded,
+                                      label: itinerary.formattedCost(l10n),
+                                    ),
+                                    _DetailMetaChip(
+                                      icon: Icons.location_on_rounded,
+                                      label: l10n.stopCount(allStops.length),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
+
+                            // ── Recommended period ─────────────────────────────
+                            // Own row rather than a 4th meta chip: the "why" note
+                            // is the useful half and needs more than a pill.
+                            if (canEdit)
+                              SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                                  child: _RecommendedPeriodEditRow(
+                                    period: itinerary.recommendedPeriod,
+                                    saving: _savingPeriod,
+                                    onTap: () => _editRecommendedPeriod(
+                                        itinerary.recommendedPeriod),
+                                  ),
+                                ),
+                              )
+                            else if (itinerary.recommendedPeriod != null)
+                              SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                                  child: LongPressToEdit(
+                                    onEdit: mayEdit
+                                        ? () => _editRecommendedPeriod(
+                                            itinerary.recommendedPeriod)
+                                        : null,
+                                    child: _RecommendedPeriodRow(
+                                      period: itinerary.recommendedPeriod!,
+                                      itineraryId: itinerary.id,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                            // ── Description ────────────────────────────────────
+                            // In edit mode the description is a tappable row that
+                            // opens the shared markdown editor.
+                            if (canEdit)
+                              SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                                  child: _DescriptionEditRow(
+                                    description: itinerary.description,
+                                    onTap: () =>
+                                        _editDescription(itinerary.description),
+                                  ),
+                                ),
+                              )
+                            else if (itinerary.description != null &&
+                                itinerary.description!.isNotEmpty)
+                              SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                                  child: LongPressToEdit(
+                                    onEdit: mayEdit
+                                        ? () =>
+                                            _editDescription(itinerary.description)
+                                        : null,
+                                    child: _DescriptionRow(
+                                      description: itinerary.description!,
+                                      itineraryId: itinerary.id,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                            // ── See translation ────────────────────────────────
+                            // Under the description, so it precedes the trip-wide
+                            // notes it also covers. Read mode only, and never on a
+                            // trip under takedown: the server refuses it even to
+                            // its owner, the only reader who can still open it.
+                            if (!_editMode && !itinerary.hidden)
+                              SliverToBoxAdapter(
+                                child: TranslationToggle(
+                                  anchor: translationAnchor,
+                                  members: translationMembers,
+                                  padding:
+                                      const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                                ),
+                              ),
+
+                            // ── Itinerary annotations ──────────────────────────
+                            if (itinerary.annotations.isNotEmpty || canEdit)
+                              SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(
+                                            l10n.annotationsSection,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w700,
+                                              color: nt.text2,
+                                              letterSpacing: 0.6,
+                                            ),
+                                          ),
+                                          if (canEdit) ...[
+                                            const Spacer(),
+                                            // Tinted pill matching the stop-card "Add note" affordance.
+                                            OfflineGate(
+                                              builder: (online) => GestureDetector(
+                                              onTap: online
+                                                  ? _addItineraryAnnotation
+                                                  : null,
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                    horizontal: 8, vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  color: nt.editBlueTint,
+                                                  borderRadius:
+                                                      BorderRadius.circular(999),
+                                                  border: Border.all(
+                                                      color: nt.editBlue.withValues(
+                                                          alpha: 0.13)),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(Icons.add_rounded,
+                                                        size: 13, color: nt.editBlue),
+                                                    const SizedBox(width: 3),
+                                                    Text(
+                                                      l10n.addAnnotationButton,
+                                                      style: TextStyle(
+                                                          fontSize: 12,
+                                                          color: nt.editBlue),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                      if (itinerary.annotations.isEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                              top: 4, bottom: 4),
+                                          child: Text(
+                                            l10n.noAnnotationsYet,
+                                            style: TextStyle(
+                                                color: nt.text3, fontSize: 13),
+                                          ),
+                                        )
+                                      else
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 8),
+                                          child: Wrap(
+                                            spacing: 6,
+                                            runSpacing: 6,
+                                            children: itinerary.annotations
+                                                .map(
+                                                  (a) => TranslatableText(
+                                                    anchor: translationAnchor,
+                                                    contentType:
+                                                        'itinerary_annotation',
+                                                    contentId: a.id,
+                                                    field: 'content',
+                                                    original: a.content,
+                                                    enabled: !_editMode,
+                                                    builder: (context, content) =>
+                                                        AnnotationChip(
+                                                          annotation: Annotation(
+                                                            id: a.id,
+                                                            stopId: a.itineraryId,
+                                                            type: a.type,
+                                                            // The translation in read
+                                                            // mode; editing works on
+                                                            // the outer `a`.
+                                                            content: content,
+                                                            createdAt: a.createdAt,
+                                                            updatedAt: a.updatedAt,
+                                                          ),
+                                                          onEdit: canEdit
+                                                              ? () =>
+                                                                  _editItineraryAnnotation(
+                                                                      a)
+                                                              : null,
+                                                          onDelete: canEdit
+                                                              ? () =>
+                                                                  _deleteItineraryAnnotation(
+                                                                      a)
+                                                              : null,
+                                                          // Built from the outer `a`:
+                                                          // the adapted Annotation above
+                                                          // carries the itinerary id in
+                                                          // its stopId field.
+                                                          onReport: mayEdit
+                                                              ? null
+                                                              : () =>
+                                                                  showReportContentSheet(
+                                                                    context,
+                                                                    ref,
+                                                                    ReportTarget
+                                                                        .itineraryAnnotation(
+                                                                      widget.itineraryId,
+                                                                      a.id,
+                                                                    ),
+                                                                  ),
+                                                          onLongPressEdit: mayEdit &&
+                                                                  !_editMode
+                                                              ? () =>
+                                                                  _editItineraryAnnotation(
+                                                                      a)
+                                                              : null,
+                                                        ),
+                                                  ),
+                                                )
+                                                .toList(),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
 
                         // ── List / Map toggle ──────────────────────────────
                         SliverToBoxAdapter(
@@ -1440,37 +1551,65 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
                             child: Row(
                               children: [
-                                Text(
-                                  _mapVisible
-                                      ? l10n.mapSection
-                                      : canEdit
-                                          ? l10n.editStopsButton
-                                          : l10n.stopsList,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: nt.text2,
-                                    letterSpacing: 0.6,
+                                Expanded(
+                                  child: Text(
+                                    arrangement != null
+                                        ? l10n.arrangeStops
+                                        : _mapVisible
+                                            ? l10n.mapSection
+                                            : canEdit
+                                                ? l10n.editStopsButton
+                                                : l10n.stopsList,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: nt.text2,
+                                      letterSpacing: 0.6,
+                                    ),
                                   ),
                                 ),
-                                const Spacer(),
-                                // Edit mode controls
-                                if (canEdit &&
-                                    itineraryAsync.value != null &&
-                                    itineraryAsync.value!.tracks.length >=
-                                        2) ...[
-                                  EditPencilButton(
-                                    icon: Icons.reorder,
-                                    iconSize: 20,
-                                    tooltip: l10n.reorderTracksTooltip,
-                                    onTap: () => showTrackReorderSheet(
-                                      context: context,
-                                      itineraryId: widget.itineraryId,
-                                      tracks:
-                                          itineraryAsync.value!.tracks,
-                                      segments:
-                                          itineraryAsync.value!.segments,
+                                // Arrange mode: leave it, or save it — the
+                                // save takes the place of the button that
+                                // opened it.
+                                if (arrangement != null) ...[
+                                  IconButton(
+                                    onPressed: _leaveArrangement,
+                                    tooltip: l10n.cancel,
+                                    visualDensity: VisualDensity.compact,
+                                    icon: Icon(Icons.close_rounded,
+                                        color: nt.text2),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  OfflineGate(
+                                    builder: (online) => FilledButton.icon(
+                                      onPressed: online &&
+                                              arrangement.isDirty &&
+                                              lockSession.holdsClaim
+                                          ? () => _saveArrangement(itinerary)
+                                          : null,
+                                      style: FilledButton.styleFrom(
+                                        visualDensity: VisualDensity.compact,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12),
+                                      ),
+                                      icon: const Icon(Icons.check_rounded,
+                                          size: 18),
+                                      label: Text(l10n.save),
                                     ),
+                                  ),
+                                ] else if (canEdit &&
+                                    TripArrangement.hasAnythingToArrange(
+                                        tracks)) ...[
+                                  // The one way into reordering tracks and
+                                  // alternatives, and moving stops between
+                                  // tracks: arrange mode.
+                                  EditPencilButton(
+                                    icon: Icons.open_with_rounded,
+                                    iconSize: 20,
+                                    tooltip: l10n.arrangeStops,
+                                    onTap: () => _startArranging(itinerary),
                                   ),
                                   const SizedBox(width: 8),
                                 ],
@@ -1499,18 +1638,19 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                   const SizedBox(width: 8),
                                 ],
                                 // List/Map pill toggle
-                                _SegmentToggle(
-                                  showMap: _mapVisible,
-                                  onChanged: (showMap) =>
-                                      setState(() => _mapVisible = showMap),
-                                ),
+                                if (arrangement == null)
+                                  _SegmentToggle(
+                                    showMap: _mapVisible,
+                                    onChanged: (showMap) =>
+                                        setState(() => _mapVisible = showMap),
+                                  ),
                               ],
                             ),
                           ),
                         ),
 
                         // ── Map ────────────────────────────────────────────
-                        if (_mapVisible)
+                        if (_mapVisible && arrangement == null)
                           SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
@@ -1590,8 +1730,32 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             ),
                           ),
 
-                        // ── Stop list or empty state ────────────────────────
-                        if (tracks.isEmpty)
+                        // ── Stop list, arrangement or empty state ──────────
+                        if (arrangement != null)
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  // A lost claim is why Save went grey, and
+                                  // taking it back keeps the arrangement.
+                                  if (lockBanner != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 8),
+                                      child: lockBanner,
+                                    ),
+                                  ArrangeTripView(
+                                    arrangement: arrangement,
+                                    segments: itinerary.segments,
+                                    onChanged: (next) =>
+                                        setState(() => _arrangement = next),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else if (tracks.isEmpty)
                           SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 48),
@@ -2670,4 +2834,23 @@ class _RateCta extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// The trip page above its stop list while arrange mode is on: dimmed, and
+/// deaf to touch. Always built, so the sections keep their state either way.
+class _InertWhileArranging extends StatelessWidget {
+  const _InertWhileArranging({required this.arranging, required this.slivers});
+
+  final bool arranging;
+  final List<Widget> slivers;
+
+  @override
+  Widget build(BuildContext context) => SliverIgnorePointer(
+        ignoring: arranging,
+        sliver: SliverAnimatedOpacity(
+          opacity: arranging ? 0.35 : 1,
+          duration: const Duration(milliseconds: 150),
+          sliver: SliverMainAxisGroup(slivers: slivers),
+        ),
+      );
 }

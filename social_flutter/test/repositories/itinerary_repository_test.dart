@@ -277,29 +277,34 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
-  // reorderItinerary — Phase 2a/2b
+  // reorderItinerary — arrange mode's one save
   // -------------------------------------------------------------------------
 
   group('ItineraryRepository.reorderItinerary', () {
-    test('stop_orders-only body answers with the parsed trip', () async {
+    const layout = [
+      {
+        'track_id': 't2',
+        'stop_ids': ['s2', 's1'],
+      },
+      {
+        'track_id': null,
+        'stop_ids': ['s3'],
+      },
+    ];
+
+    test('the layout body answers with the parsed trip', () async {
       final (dio, adapter) = _makeDio();
       adapter.onPost(
         itineraryReorderEndpoint(_itinId),
         (server) => server.reply(200, tripAnswer(_itineraryJson())),
-        data: {
-          'stop_orders': {
-            't1': ['s2', 's1'],
-          },
-        },
+        data: {'layout': layout},
         queryParameters: {'return': 'itinerary'},
       );
 
       final repo = ItineraryRepository(dio);
       final answer = await repo.reorderItinerary(
         _itinId,
-        stopOrders: {
-          't1': ['s2', 's1'],
-        },
+        layout: layout,
         etag: _etag, lockToken: 'lock-token',
       );
 
@@ -307,14 +312,13 @@ void main() {
       expect(answer.itinerary!.title, 'Trip');
     });
 
-    test('track_order + segments_to_delete body forwarded correctly',
-        () async {
+    test('segments the layout breaks ride in the same body', () async {
       final (dio, adapter) = _makeDio();
       adapter.onPost(
         itineraryReorderEndpoint(_itinId),
         (server) => server.reply(200, tripAnswer(_itineraryJson())),
         data: {
-          'track_order': ['t3', 't1', 't2'],
+          'layout': layout,
           'segments_to_delete': ['seg-1'],
         },
       );
@@ -322,7 +326,7 @@ void main() {
       final repo = ItineraryRepository(dio);
       final answer = await repo.reorderItinerary(
         _itinId,
-        trackOrder: ['t3', 't1', 't2'],
+        layout: layout,
         segmentIdsToDelete: ['seg-1'],
         etag: _etag, lockToken: 'lock-token',
       );
@@ -330,22 +334,21 @@ void main() {
       expect(answer.itinerary!.id, _itinId);
     });
 
-    test('empty optional fields are omitted from the body', () async {
-      // The repo's body builder uses `if (xs != null && xs.isNotEmpty)` for
-      // stop_orders and segments_to_delete; trackOrder uses `if (xs != null)`.
-      // Passing only an empty stopOrders + null others → body is {}.
+    test('an empty segment list is left out of the body', () async {
       final (dio, adapter) = _makeDio();
       adapter.onPost(
         itineraryReorderEndpoint(_itinId),
         (server) => server.reply(200, tripAnswer(_itineraryJson())),
-        data: <String, dynamic>{}, // exactly empty body expected
+        data: {'layout': layout}, // exactly this body expected
       );
 
       final repo = ItineraryRepository(dio);
-      // Don't await — server-side would 422 in real flow; we only care that
-      // the *client* sends the empty body it has built.
       await expectLater(
-        repo.reorderItinerary(_itinId, stopOrders: {}, etag: _etag, lockToken: 'lock-token'),
+        repo.reorderItinerary(_itinId,
+            layout: layout,
+            segmentIdsToDelete: const [],
+            etag: _etag,
+            lockToken: 'lock-token'),
         completes,
       );
     });
@@ -355,11 +358,7 @@ void main() {
       adapter.onPost(
         itineraryReorderEndpoint(_itinId),
         (server) => server.reply(412, {'detail': 'itinerary modified'}),
-        data: {
-          'stop_orders': {
-            't1': ['s1'],
-          },
-        },
+        data: {'layout': layout},
       );
 
       final repo = ItineraryRepository(dio);
@@ -367,9 +366,7 @@ void main() {
       await expectLater(
         repo.reorderItinerary(
           _itinId,
-          stopOrders: {
-            't1': ['s1'],
-          },
+          layout: layout,
           etag: _etag, lockToken: 'lock-token',
         ),
         throwsA(isA<ItineraryStaleException>()),
@@ -381,11 +378,7 @@ void main() {
       adapter.onPost(
         itineraryReorderEndpoint(_itinId),
         (server) => server.reply(200, tripAnswer(_itineraryJson())),
-        data: {
-          'stop_orders': {
-            't1': ['s1'],
-          },
-        },
+        data: {'layout': layout},
         headers: {'If-Match': _etag, 'content-type': 'application/json'},
       );
 
@@ -393,9 +386,7 @@ void main() {
       await expectLater(
         repo.reorderItinerary(
           _itinId,
-          stopOrders: {
-            't1': ['s1'],
-          },
+          layout: layout,
           etag: _etag, lockToken: 'lock-token',
         ),
         completes,

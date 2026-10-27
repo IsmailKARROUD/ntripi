@@ -1436,9 +1436,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Se borrará la conexión entre estas dos paradas. Puedes añadir una nueva más tarde.';
 
   @override
-  String get reorderTracksTitle => 'Reordenar columnas';
-
-  @override
   String get shareTooltip => 'Compartir';
 
   @override
@@ -1472,10 +1469,40 @@ class AppLocalizationsEs extends AppLocalizations {
   String get editStopsButton => 'Editar paradas';
 
   @override
-  String get addStopTooltip => 'Añadir parada';
+  String get arrangeStops => 'Organizar paradas';
 
   @override
-  String get reorderTracksTooltip => 'Reordenar columnas';
+  String get arrangeHint =>
+      'Arrastra o toca una parada y elige dónde va: entre dos columnas para tener su propia columna, o sobre una columna como alternativa. Arrastra un número para mover toda su columna.';
+
+  @override
+  String arrangeMovingStop(String name) {
+    return 'Moviendo $name: toca dónde va';
+  }
+
+  @override
+  String arrangeMovingTrack(int number) {
+    return 'Moviendo la columna $number: toca dónde va';
+  }
+
+  @override
+  String get arrangeNewTrackHere => 'Nueva columna aquí';
+
+  @override
+  String get arrangeAddAsAlternative => 'Añadir como alternativa';
+
+  @override
+  String arrangeMoveStop(String name) {
+    return 'Mover $name';
+  }
+
+  @override
+  String arrangeMoveTrack(int number) {
+    return 'Mover la columna $number';
+  }
+
+  @override
+  String get addStopTooltip => 'Añadir parada';
 
   @override
   String get mapSection => 'Mapa';
@@ -1905,74 +1932,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get saveButton => 'Guardar';
 
   @override
-  String get moveStopTitle => 'Mover parada';
-
-  @override
-  String moveStopDescription(int max) {
-    return 'Elige una columna existente, un hueco para crear una nueva columna o extráela a su propia columna. Las columnas con el máximo de $max paradas están desactivadas.';
-  }
-
-  @override
-  String get extractIntoOwnTrack => 'Extraer a su propia columna nueva';
-
-  @override
-  String get moveButton => 'Mover';
-
-  @override
-  String moveStopMoved(String destination) {
-    return 'Movido a $destination';
-  }
-
-  @override
   String get itineraryChangedElsewhere =>
       'El itinerario cambió en otro lugar: cierra y vuelve a abrir para ver el orden más reciente.';
 
   @override
-  String get moveStopOrphan1 =>
-      'Esta es la última parada de su columna: la columna se eliminará del itinerario.';
-
-  @override
-  String moveStopOrphanSegments(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other:
-          'Se eliminarán $count segmentos de transporte porque sus paradas ya no estarán en columnas adyacentes.',
-      one:
-          'Se eliminará 1 segmento de transporte porque sus paradas ya no estarán en columnas adyacentes.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get moveStopNewTrack => 'Nueva columna';
-
-  @override
-  String moveStopNewTrackBefore(int n) {
-    return 'Nueva columna antes de la columna $n';
-  }
-
-  @override
-  String moveStopNewTrackAfter(int n) {
-    return 'Nueva columna después de la columna $n';
-  }
-
-  @override
-  String moveStopNewTrackBetween(int a, int b) {
-    return 'Nueva columna entre la columna $a y la columna $b';
-  }
-
-  @override
-  String get moveStopCurrentSuffix => '  •  actual';
-
-  @override
   String moveStopFull(int max) {
     return 'Llena $max/$max';
-  }
-
-  @override
-  String extractSubtitle(String trackName) {
-    return 'Separa esta parada de \"$trackName\": la nueva columna aparece justo después.';
   }
 
   @override
@@ -2243,17 +2208,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get discardReorderMessage => 'Tu nuevo orden no se guardará.';
 
   @override
-  String get emptyTrackName => '(vacía)';
-
-  @override
   String get unnamedStop => '(sin nombre)';
-
-  @override
-  String get unknownStop => '(desconocida)';
-
-  @override
-  String get dragToChangeTrackOrder =>
-      'Arrastra para cambiar el orden de las columnas';
 
   @override
   String transitSegmentsWillBeDeleted(int count) {
@@ -2272,33 +2227,9 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String altsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count alt.',
-      one: '$count alt.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String segmentToWillBeDeleted(String name) {
     return '→ $name  —  se eliminará el segmento';
   }
-
-  @override
-  String get reorderAlternativesTitle => 'Reordenar alternativas';
-
-  @override
-  String get reorderAlternativesHint =>
-      'Arrastra para cambiar qué opción aparece primero. Toca Guardar para aplicar.';
-
-  @override
-  String get emptyTrackLabel => '(columna vacía)';
-
-  @override
-  String get moveStopToLabel => 'Mover parada a';
 
   @override
   String get messageLabel => 'Mensaje';
@@ -2452,12 +2383,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get updateYourRating => 'Actualiza tu valoración';
-
-  @override
-  String get moveActionLabel => 'mover';
-
-  @override
-  String get reorderActionLabel => 'reordenar';
 
   @override
   String get addParallelStopLabel => '// parada';

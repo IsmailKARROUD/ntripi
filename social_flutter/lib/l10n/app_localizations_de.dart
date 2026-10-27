@@ -1444,9 +1444,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Verbindung zwischen diesen beiden Stopps wird gelöscht. Du kannst später eine neue hinzufügen.';
 
   @override
-  String get reorderTracksTitle => 'Spalten neu anordnen';
-
-  @override
   String get shareTooltip => 'Teilen';
 
   @override
@@ -1480,10 +1477,40 @@ class AppLocalizationsDe extends AppLocalizations {
   String get editStopsButton => 'Stopps bearbeiten';
 
   @override
-  String get addStopTooltip => 'Stopp hinzufügen';
+  String get arrangeStops => 'Stopps anordnen';
 
   @override
-  String get reorderTracksTooltip => 'Spalten neu anordnen';
+  String get arrangeHint =>
+      'Ziehe einen Stopp oder tippe ihn an und wähle dann seinen Platz: zwischen zwei Spalten für eine eigene Spalte oder auf eine Spalte als Alternative. Ziehe eine Nummer, um ihre ganze Spalte zu verschieben.';
+
+  @override
+  String arrangeMovingStop(String name) {
+    return '$name wird verschoben – tippe auf den neuen Platz';
+  }
+
+  @override
+  String arrangeMovingTrack(int number) {
+    return 'Spalte $number wird verschoben – tippe auf den neuen Platz';
+  }
+
+  @override
+  String get arrangeNewTrackHere => 'Neue Spalte hier';
+
+  @override
+  String get arrangeAddAsAlternative => 'Als Alternative hinzufügen';
+
+  @override
+  String arrangeMoveStop(String name) {
+    return '$name verschieben';
+  }
+
+  @override
+  String arrangeMoveTrack(int number) {
+    return 'Spalte $number verschieben';
+  }
+
+  @override
+  String get addStopTooltip => 'Stopp hinzufügen';
 
   @override
   String get mapSection => 'Karte';
@@ -1918,74 +1945,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get saveButton => 'Speichern';
 
   @override
-  String get moveStopTitle => 'Stopp verschieben';
-
-  @override
-  String moveStopDescription(int max) {
-    return 'Wähle eine vorhandene Spalte, eine Lücke für eine neue Spalte oder lagere den Stopp in eine eigene Spalte aus. Spalten mit dem Maximum von $max Stopps sind deaktiviert.';
-  }
-
-  @override
-  String get extractIntoOwnTrack => 'In eine eigene neue Spalte auslagern';
-
-  @override
-  String get moveButton => 'Verschieben';
-
-  @override
-  String moveStopMoved(String destination) {
-    return 'Verschoben nach $destination';
-  }
-
-  @override
   String get itineraryChangedElsewhere =>
       'Reiseroute wurde anderswo geändert – schließe sie und öffne sie erneut, um die neueste Reihenfolge zu sehen.';
 
   @override
-  String get moveStopOrphan1 =>
-      'Dies ist der letzte Stopp in seiner Spalte – die Spalte wird aus der Reiseroute entfernt.';
-
-  @override
-  String moveStopOrphanSegments(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other:
-          '$count Transportabschnitte werden gelöscht, weil ihre Stopps nicht mehr in benachbarten Spalten liegen.',
-      one:
-          '1 Transportabschnitt wird gelöscht, weil seine Stopps nicht mehr in benachbarten Spalten liegen.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get moveStopNewTrack => 'Neue Spalte';
-
-  @override
-  String moveStopNewTrackBefore(int n) {
-    return 'Neue Spalte vor Spalte $n';
-  }
-
-  @override
-  String moveStopNewTrackAfter(int n) {
-    return 'Neue Spalte nach Spalte $n';
-  }
-
-  @override
-  String moveStopNewTrackBetween(int a, int b) {
-    return 'Neue Spalte zwischen Spalte $a und Spalte $b';
-  }
-
-  @override
-  String get moveStopCurrentSuffix => '  •  aktuell';
-
-  @override
   String moveStopFull(int max) {
     return 'Voll $max/$max';
-  }
-
-  @override
-  String extractSubtitle(String trackName) {
-    return 'Trennt diesen Stopp aus \"$trackName\" ab – die neue Spalte erscheint direkt danach.';
   }
 
   @override
@@ -2256,17 +2221,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Deine neue Reihenfolge wird nicht gespeichert.';
 
   @override
-  String get emptyTrackName => '(leer)';
-
-  @override
   String get unnamedStop => '(unbenannt)';
-
-  @override
-  String get unknownStop => '(unbekannt)';
-
-  @override
-  String get dragToChangeTrackOrder =>
-      'Ziehen, um die Spaltenreihenfolge zu ändern';
 
   @override
   String transitSegmentsWillBeDeleted(int count) {
@@ -2285,33 +2240,9 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String altsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count Alt.',
-      one: '$count Alt.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String segmentToWillBeDeleted(String name) {
     return '→ $name  —  Abschnitt wird gelöscht';
   }
-
-  @override
-  String get reorderAlternativesTitle => 'Alternativen neu anordnen';
-
-  @override
-  String get reorderAlternativesHint =>
-      'Ziehen, um zu ändern, welche Option zuerst erscheint. Tippe auf Speichern, um zu übernehmen.';
-
-  @override
-  String get emptyTrackLabel => '(leere Spalte)';
-
-  @override
-  String get moveStopToLabel => 'Stopp verschieben nach';
 
   @override
   String get messageLabel => 'Nachricht';
@@ -2466,12 +2397,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get updateYourRating => 'Aktualisiere deine Bewertung';
-
-  @override
-  String get moveActionLabel => 'verschieben';
-
-  @override
-  String get reorderActionLabel => 'neu anordnen';
 
   @override
   String get addParallelStopLabel => '// Stopp';

@@ -392,56 +392,23 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary>
       _save((repo, lockToken) => repo.updateStop(arg, stopId, data,
           etag: _etag, lockToken: lockToken));
 
-  /// Commit a batch reorder in one server transaction.
+  /// Save what arrange mode made of the trip, in one server transaction.
   ///
-  /// At least one of [stopOrders], [trackOrder], or [segmentIdsToDelete] must
-  /// be provided. The server validates set-equality (for stop_orders and
-  /// track_order), recomputes fractional-index ranks, deletes any requested
-  /// segments, and answers with the full updated itinerary, which is adopted
-  /// as the server-confirmed state.
-  Future<void> applyReorder({
-    Map<String, List<String>>? stopOrders,
-    List<String>? trackOrder,
+  /// [layout] is `TripArrangement.toLayoutJson()`: every track in order with
+  /// every stop in it, so stops changing track, tracks created and tracks
+  /// emptied all land at once or not at all. [segmentIdsToDelete] are the
+  /// transit segments the layout breaks. The answered trip is adopted as the
+  /// server-confirmed state.
+  Future<void> applyArrangement({
+    required List<Map<String, dynamic>> layout,
     List<String>? segmentIdsToDelete,
   }) =>
       _save((repo, lockToken) => repo.reorderItinerary(
             arg,
-            stopOrders: stopOrders,
-            trackOrder: trackOrder,
+            layout: layout,
             segmentIdsToDelete: segmentIdsToDelete,
             etag: _etag, lockToken: lockToken,
           ));
-
-  /// Move a stop to a new position.
-  ///
-  /// Three move modes, mutually exclusive:
-  ///   1. Within-track reorder: pass [afterStopId] / [beforeStopId] only.
-  ///   2. Cross-track move into an existing track: pass [targetTrackId].
-  ///   3. New-track move: pass [afterTrackId] and/or [beforeTrackId]
-  ///      (with [targetTrackId] null). Server creates a brand-new track at
-  ///      that position and moves this stop into it as the sole member.
-  ///
-  /// Adopts the answered trip, ETag included. Returns the moved [Stop] so
-  /// callers can read its (possibly newly created) `trackId`.
-  Future<Stop> moveStop(
-    String stopId, {
-    String? afterStopId,
-    String? beforeStopId,
-    String? targetTrackId,
-    String? afterTrackId,
-    String? beforeTrackId,
-  }) async {
-    final body = <String, dynamic>{
-      if (afterStopId != null) 'after_stop_id': afterStopId,
-      if (beforeStopId != null) 'before_stop_id': beforeStopId,
-      if (targetTrackId != null) 'track_id': targetTrackId,
-      if (afterTrackId != null) 'after_track_id': afterTrackId,
-      if (beforeTrackId != null) 'before_track_id': beforeTrackId,
-    };
-    final saved = await _saveTrip((repo, lockToken) =>
-        repo.updateStop(arg, stopId, body, etag: _etag, lockToken: lockToken));
-    return saved.trip.stops.firstWhere((s) => s.id == stopId);
-  }
 
   /// Delete a stop.
   Future<void> deleteStop(String stopId) => _save((repo, lockToken) =>

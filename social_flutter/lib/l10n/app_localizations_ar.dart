@@ -1447,9 +1447,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'سيتم مسح الاتصال بين هاتين المحطتين. يمكنك إضافة واحد جديد لاحقًا.';
 
   @override
-  String get reorderTracksTitle => 'إعادة ترتيب الممرات';
-
-  @override
   String get shareTooltip => 'مشاركة';
 
   @override
@@ -1483,10 +1480,40 @@ class AppLocalizationsAr extends AppLocalizations {
   String get editStopsButton => 'تعديل المحطات';
 
   @override
-  String get addStopTooltip => 'إضافة محطة';
+  String get arrangeStops => 'ترتيب المحطات';
 
   @override
-  String get reorderTracksTooltip => 'إعادة ترتيب الممرات';
+  String get arrangeHint =>
+      'اسحب محطة أو انقر عليها، ثم اختر مكانها: بين ممرين لتكون في ممر خاص بها، أو على ممر لتكون بديلًا فيه. اسحب رقمًا لنقل ممره بالكامل.';
+
+  @override
+  String arrangeMovingStop(String name) {
+    return 'نقل $name — انقر على مكانها الجديد';
+  }
+
+  @override
+  String arrangeMovingTrack(int number) {
+    return 'نقل الممر $number — انقر على مكانه الجديد';
+  }
+
+  @override
+  String get arrangeNewTrackHere => 'ممر جديد هنا';
+
+  @override
+  String get arrangeAddAsAlternative => 'إضافة كبديل';
+
+  @override
+  String arrangeMoveStop(String name) {
+    return 'نقل $name';
+  }
+
+  @override
+  String arrangeMoveTrack(int number) {
+    return 'نقل الممر $number';
+  }
+
+  @override
+  String get addStopTooltip => 'إضافة محطة';
 
   @override
   String get mapSection => 'الخريطة';
@@ -1924,76 +1951,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get saveButton => 'حفظ';
 
   @override
-  String get moveStopTitle => 'نقل المحطة';
-
-  @override
-  String moveStopDescription(int max) {
-    return 'اختر ممرًا موجودًا، أو فجوة لإنشاء ممر جديد، أو استخرجها إلى ممر خاص بها. الممرات التي بلغت الحد الأقصى ($max محطات) معطّلة.';
-  }
-
-  @override
-  String get extractIntoOwnTrack => 'استخراج إلى ممر جديد خاص بها';
-
-  @override
-  String get moveButton => 'نقل';
-
-  @override
-  String moveStopMoved(String destination) {
-    return 'نُقلت إلى $destination';
-  }
-
-  @override
   String get itineraryChangedElsewhere =>
       'تغيّر المسار من مكان آخر — أغلق وأعد الفتح لرؤية أحدث ترتيب.';
 
   @override
-  String get moveStopOrphan1 =>
-      'هذه آخر محطة في ممرها — سيُزال الممر من المسار.';
-
-  @override
-  String moveStopOrphanSegments(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'سيُحذف $count مقطع تنقّل لأن محطاتها لن تكون في ممرات متجاورة.',
-      many: 'سيُحذف $count مقطع تنقّل لأن محطاتها لن تكون في ممرات متجاورة.',
-      few: 'ستُحذف $count مقاطع تنقّل لأن محطاتها لن تكون في ممرات متجاورة.',
-      two: 'سيُحذف مقطعا تنقّل لأن محطاتهما لن تكون في ممرات متجاورة.',
-      one: 'سيُحذف مقطع تنقّل واحد لأن محطتيه لن تكونا في ممرين متجاورين.',
-      zero: 'لن يُحذف أي مقطع تنقّل.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get moveStopNewTrack => 'ممر جديد';
-
-  @override
-  String moveStopNewTrackBefore(int n) {
-    return 'ممر جديد قبل الممر $n';
-  }
-
-  @override
-  String moveStopNewTrackAfter(int n) {
-    return 'ممر جديد بعد الممر $n';
-  }
-
-  @override
-  String moveStopNewTrackBetween(int a, int b) {
-    return 'ممر جديد بين الممر $a والممر $b';
-  }
-
-  @override
-  String get moveStopCurrentSuffix => '  •  الحالي';
-
-  @override
   String moveStopFull(int max) {
     return 'ممتلئ $max/$max';
-  }
-
-  @override
-  String extractSubtitle(String trackName) {
-    return 'يفصل هذه المحطة عن \"$trackName\" — يُنشأ الممر الجديد بعده مباشرة.';
   }
 
   @override
@@ -2266,16 +2229,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get discardReorderMessage => 'لن يتم حفظ إعادة الترتيب.';
 
   @override
-  String get emptyTrackName => '(فارغ)';
-
-  @override
   String get unnamedStop => '(بدون اسم)';
-
-  @override
-  String get unknownStop => '(غير معروف)';
-
-  @override
-  String get dragToChangeTrackOrder => 'اسحب لتغيير ترتيب الممرات';
 
   @override
   String transitSegmentsWillBeDeleted(int count) {
@@ -2298,37 +2252,9 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String altsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count بديل',
-      many: '$count بديلًا',
-      few: '$count بدائل',
-      two: 'بديلان',
-      one: 'بديل واحد',
-      zero: 'لا بدائل',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String segmentToWillBeDeleted(String name) {
     return '← $name  —  سيُحذف المقطع';
   }
-
-  @override
-  String get reorderAlternativesTitle => 'إعادة ترتيب البدائل';
-
-  @override
-  String get reorderAlternativesHint =>
-      'اسحب لتغيير الخيار الذي يظهر أولًا. اضغط حفظ للتطبيق.';
-
-  @override
-  String get emptyTrackLabel => '(ممر فارغ)';
-
-  @override
-  String get moveStopToLabel => 'نقل المحطة إلى';
 
   @override
   String get messageLabel => 'الرسالة';
@@ -2482,12 +2408,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get updateYourRating => 'حدّث تقييمك';
-
-  @override
-  String get moveActionLabel => 'نقل';
-
-  @override
-  String get reorderActionLabel => 'إعادة ترتيب';
 
   @override
   String get addParallelStopLabel => '// محطة';

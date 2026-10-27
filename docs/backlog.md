@@ -110,14 +110,6 @@ User-uploaded cover image (Phase 1 — this release). 2. Auto-generated map imag
 (Phase 2 — future) … Phase 2 map-image fallback goes here."* →
 [features/sharing.md](features/sharing.md)
 
-### idea — "Phase 2b: whole-track reorder"
-
-Referenced by name in `move_stop_to_track_sheet.dart:20`, which clears segments
-now specifically so a future Phase 2b restoring track adjacency cannot resurrect a
-stale one. Sibling phases are labelled in `reorder_parallels_sheet.dart:11`
-(Phase 2a) and `move_stop_to_track_sheet.dart:4,9` (Phase 2c). →
-[features/tracks-and-stops.md](features/tracks-and-stops.md)
-
 ---
 
 ## Error-contract cleanup
