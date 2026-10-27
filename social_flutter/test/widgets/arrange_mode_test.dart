@@ -9,6 +9,8 @@
 // Every drag ends clean: let go where it was, a stop changes nothing, and after
 // any drop nothing is left picked or offered as a target.
 
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,16 +22,20 @@ import 'package:ntripi/core/connectivity/connectivity_service.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary.dart';
+import 'package:ntripi/features/itineraries/domain/stop.dart';
+import 'package:ntripi/features/itineraries/domain/track.dart';
 import 'package:ntripi/features/itineraries/domain/trip_arrangement.dart';
 import 'package:ntripi/features/itineraries/presentation/itinerary_detail_screen.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/arrange_trip_view.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/edit_lock_banner.dart';
+import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
 import 'package:ntripi/features/itineraries/providers/edit_lock_provider.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/features/translation/domain/translation.dart';
 import 'package:ntripi/features/translation/providers/translation_providers.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/models/user.dart';
+import 'package:ntripi/shared/widgets/saving_overlay.dart';
 
 import '../support/held_claim.dart';
 import '../support/recording_dio.dart';
@@ -37,7 +43,10 @@ import '../support/trip_json.dart';
 
 final _reorder = itineraryReorderEndpoint(kTripId);
 
-Map<String, dynamic> _s1() => stopJson('s1', trackId: 't1', placeName: 'Harbour');
+Map<String, dynamic> _s1() => {
+      ...stopJson('s1', trackId: 't1', placeName: 'Harbour'),
+      'place_type': 'eatDrink',
+    };
 Map<String, dynamic> _s2() => stopJson('s2', trackId: 't2', placeName: 'Museum');
 Map<String, dynamic> _s3() => stopJson('s3', trackId: 't2', placeName: 'Market');
 Map<String, dynamic> _s4() => stopJson('s4', trackId: 't3', placeName: 'Beach');
@@ -87,8 +96,9 @@ class _Owner extends MyProfileNotifier {
 Future<AppLocalizations> _pump(
   WidgetTester tester,
   RecordingDio api,
-  Map<String, dynamic> trip,
-) async {
+  Map<String, dynamic> trip, {
+  Stream<bool>? online,
+}) async {
   // Tall enough that the whole page is on screen without scrolling.
   tester.view.physicalSize = const Size(1080, 4000);
   tester.view.devicePixelRatio = 1.0;
@@ -103,7 +113,7 @@ Future<AppLocalizations> _pump(
           .overrideWithValue(ItineraryRepository(api.dio)),
       editLockProvider.overrideWith2(HeldClaim.new),
       myProfileProvider.overrideWith(_Owner.new),
-      isOnlineProvider.overrideWith((ref) => Stream.value(true)),
+      isOnlineProvider.overrideWith((ref) => online ?? Stream.value(true)),
       translationConfigProvider
           .overrideWith((ref) async => TranslationConfig.disabled),
     ],
@@ -117,6 +127,27 @@ Future<AppLocalizations> _pump(
   await tester.pumpAndSettle();
   return lookupAppLocalizations(const Locale('en'));
 }
+
+/// [view] alone, outside the trip page: for what only its own rows decide.
+Future<void> _pumpView(WidgetTester tester, Widget view, {double? width}) =>
+    tester.pumpWidget(MaterialApp(
+      theme: buildNtripiTheme(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: width,
+            child: SingleChildScrollView(child: view),
+          ),
+        ),
+      ),
+    ));
+
+/// Whether the page is under the saving overlay.
+bool _saving(WidgetTester tester) =>
+    tester.widget<SavingOverlay>(find.byType(SavingOverlay)).saving;
 
 /// Answers the arrangement's save with [answer].
 void _answersSave(RecordingDio api, Map<String, dynamic> answer, {int status = 200}) =>
@@ -187,6 +218,8 @@ void main() {
     for (final name in ['Harbour', 'Museum', 'Market', 'Beach']) {
       expect(_inArrangement(find.text(name)), findsOneWidget);
     }
+    expect(_inArrangement(find.byIcon(PlaceType.eatDrink.icon)), findsOneWidget,
+        reason: "Harbour's chip says what kind of place it is");
     expect(find.text(l10n.addParallelStopLabel), findsNothing);
     // The hero's ✓ is still drawn but deaf: the one ✓ that answers is Save.
     expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
@@ -237,6 +270,109 @@ void main() {
     expect(find.byType(ArrangeTripView), findsNothing);
     expect(find.text(l10n.editStopsButton), findsOneWidget);
     expect(find.text(l10n.orderSavedMessage), findsOneWidget);
+  });
+
+  testWidgets(
+      'while the save is on the wire the page is under the saving overlay, '
+      'which takes no second tap; the answer lifts it', (tester) async {
+    final api = RecordingDio();
+    final l10n = await _pump(tester, api, _trip());
+    _answersSave(api, _answer([
+      trackJson('t3', [_s4()], rank: 'a'),
+      trackJson('t1', [_s1()], rank: 'b'),
+      trackJson('t2', [_s2(), _s3()], rank: 'c'),
+    ]));
+    await _arrange(tester, l10n);
+    await tester.tap(_inArrangement(find.text('Beach')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.arrangeNewTrackHere).first);
+    await tester.pumpAndSettle();
+    api.sent.clear();
+
+    final reply = api.hold(_reorder);
+    await tester.tap(_save);
+    // The overlay's loader never settles: frames are stepped by hand.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(_saving(tester), isTrue);
+    expect(find.byType(ArrangeTripView), findsOneWidget);
+    await tester.tap(_save, warnIfMissed: false);
+    await tester.pump();
+
+    reply.complete();
+    await tester.pumpAndSettle();
+    expect(_saving(tester), isFalse);
+    expect(api.lines, ['POST $_reorder'],
+        reason: 'one save, however often Save was tapped');
+    expect(find.byType(ArrangeTripView), findsNothing);
+  });
+
+  for (final (status, answer, said) in [
+    (
+      412,
+      <String, dynamic>{'detail': 'itinerary modified, please reload'},
+      (AppLocalizations l10n) => l10n.itineraryChangedElsewhere,
+    ),
+    (500, <String, dynamic>{}, (AppLocalizations l10n) => l10n.errorGeneric),
+  ]) {
+    testWidgets(
+        'a save answered $status says so and keeps the arrangement, to be '
+        'saved again', (tester) async {
+      final api = RecordingDio();
+      final l10n = await _pump(tester, api, _trip());
+      _answersSave(api, answer, status: status);
+      await _arrange(tester, l10n);
+      await tester.tap(_inArrangement(find.text('Beach')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.arrangeNewTrackHere).first);
+      await tester.pumpAndSettle();
+      api.sent.clear();
+
+      await tester.tap(_save);
+      await tester.pumpAndSettle();
+
+      expect(api.lines, ['POST $_reorder'], reason: 'and nothing downloaded');
+      expect(find.text(said(l10n)), findsOneWidget);
+      expect(find.byType(ArrangeTripView), findsOneWidget);
+      expect(_saving(tester), isFalse);
+      expect(_saveEnabled(tester), isTrue);
+    });
+  }
+
+  testWidgets('offline, the Arrange button says why instead of opening',
+      (tester) async {
+    final api = RecordingDio();
+    final l10n =
+        await _pump(tester, api, _trip(), online: Stream.value(false));
+    await _arrange(tester, l10n);
+
+    expect(find.text(l10n.offlineActionTitle), findsOneWidget);
+    expect(find.byType(ArrangeTripView), findsNothing);
+  });
+
+  testWidgets(
+      'when the connection drops while arranging, Save goes grey and the '
+      'arrangement stays, to be saved once it is back', (tester) async {
+    final online = StreamController<bool>();
+    addTearDown(online.close);
+    online.add(true);
+    final api = RecordingDio();
+    final l10n = await _pump(tester, api, _trip(), online: online.stream);
+    await _arrange(tester, l10n);
+    await tester.tap(_inArrangement(find.text('Beach')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.arrangeNewTrackHere).first);
+    await tester.pumpAndSettle();
+    expect(_saveEnabled(tester), isTrue);
+
+    online.add(false);
+    await tester.pumpAndSettle();
+    expect(_saveEnabled(tester), isFalse);
+    expect(find.byType(ArrangeTripView), findsOneWidget);
+
+    online.add(true);
+    await tester.pumpAndSettle();
+    expect(_saveEnabled(tester), isTrue);
   });
 
   testWidgets(
@@ -442,6 +578,82 @@ void main() {
     });
   });
 
+  for (final (lifted, from, held) in [
+    ('a held stop', _inArrangement(find.text('Museum')), true),
+    ("a stop's handle", _handleOf('Museum'), false),
+    ("a track's number", _inArrangement(find.text('2')), false),
+  ]) {
+    testWidgets(
+        '$lifted let go where nothing takes it changes nothing, and leaves '
+        'nothing picked or offered', (tester) async {
+      final api = RecordingDio();
+      final l10n = await _pump(tester, api, _trip());
+      await _arrange(tester, l10n);
+
+      final drag = await tester.startGesture(tester.getCenter(from));
+      if (held) await tester.pump(kLongPressTimeout + kPressTimeout);
+      await drag.moveBy(const Offset(0, 30)); // under way: the targets open
+      await tester.pump();
+      expect(find.text(l10n.arrangeNewTrackHere), findsWidgets);
+      // The hint above the rows takes nothing.
+      await drag.moveTo(tester.getCenter(find.text(l10n.arrangeHint)));
+      await tester.pump();
+      await drag.up();
+      await tester.pumpAndSettle();
+
+      expect(_selected(tester), isEmpty);
+      expect(find.text(l10n.arrangeNewTrackHere), findsNothing);
+      expect(find.text(l10n.arrangeAddAsAlternative), findsNothing);
+      expect(_saveEnabled(tester), isFalse, reason: 'nothing moved');
+    });
+  }
+
+  testWidgets(
+      'a track with four alternatives is full: it says so, and takes no other '
+      'stop by tap or by drag', (tester) async {
+    final api = RecordingDio();
+    final l10n = await _pump(
+        tester,
+        api,
+        tripJson(tracks: [
+          trackJson('t1', [_s1()], rank: 'a'),
+          trackJson('t2', [
+            _s2(),
+            _s3(),
+            stopJson('s5', trackId: 't2', placeName: 'Park'),
+            stopJson('s6', trackId: 't2', placeName: 'Tower'),
+          ], rank: 'b'),
+          trackJson('t3', [_s4()], rank: 'c'),
+        ]));
+    final full = find.text(l10n.moveStopFull(Track.maxParallelStops));
+    await _arrange(tester, l10n);
+
+    await tester.tap(_inArrangement(find.text('Harbour')));
+    await tester.pumpAndSettle();
+    expect(full, findsOneWidget);
+    await tester.tap(full);
+    await tester.pumpAndSettle();
+    expect(_selected(tester), ['Harbour'], reason: 'still waiting for a place');
+    expect(_saveEnabled(tester), isFalse);
+
+    // Given up on: Cancel puts it down.
+    await tester.tap(_inArrangement(find.text(l10n.cancel)));
+    await tester.pumpAndSettle();
+    expect(_selected(tester), isEmpty);
+    expect(find.text(l10n.arrangeHint), findsOneWidget);
+
+    final drag =
+        await tester.startGesture(tester.getCenter(_handleOf('Beach')));
+    await drag.moveBy(const Offset(0, -30)); // past the slop: it lifts
+    await tester.pump();
+    expect(full, findsOneWidget);
+    await drag.moveTo(tester.getCenter(_inArrangement(find.text('Park'))));
+    await tester.pump();
+    await drag.up();
+    await tester.pumpAndSettle();
+    expect(_saveEnabled(tester), isFalse, reason: 'nothing moved');
+  });
+
   testWidgets(
       'a move that breaks transport is marked at once, confirmed on Save, and '
       'deletes it in the same request', (tester) async {
@@ -495,6 +707,31 @@ void main() {
   });
 
   testWidgets(
+      'turning down the transport confirmation sends nothing and keeps the '
+      'arrangement, marks and all', (tester) async {
+    final api = RecordingDio();
+    final l10n = await _pump(
+        tester, api, _trip(segments: [segmentJson('seg-1', 's1', 's2')]));
+    await _arrange(tester, l10n);
+    await tester.tap(_inArrangement(find.text('2')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.arrangeNewTrackHere).last);
+    await tester.pumpAndSettle();
+    api.sent.clear();
+
+    await tester.tap(_save);
+    await tester.pumpAndSettle();
+    expect(find.text(l10n.reorderOrphanTitle), findsOneWidget);
+    await tester.tap(find.text(l10n.cancel));
+    await tester.pumpAndSettle();
+
+    expect(api.sent, isEmpty);
+    expect(find.byType(ArrangeTripView), findsOneWidget);
+    expect(find.text(l10n.segmentToWillBeDeleted('Museum')), findsOneWidget);
+    expect(_saveEnabled(tester), isTrue);
+  });
+
+  testWidgets(
       'leaving with an unsaved arrangement asks first, and discarding sends '
       'nothing', (tester) async {
     final api = RecordingDio();
@@ -531,26 +768,15 @@ void main() {
             placeName: 'The Calouste Gulbenkian Museum and its gardens'),
       ], rank: 'b'),
     ])).tracks;
-    await tester.pumpWidget(MaterialApp(
-      theme: buildNtripiTheme(),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(
-        body: Align(
-          alignment: Alignment.topLeft,
-          child: SizedBox(
-            width: 280,
-            child: SingleChildScrollView(
-              child: ArrangeTripView(
-                arrangement: TripArrangement.of(tracks),
-                segments: const [],
-                onChanged: (_) {},
-              ),
-            ),
-          ),
-        ),
+    await _pumpView(
+      tester,
+      ArrangeTripView(
+        arrangement: TripArrangement.of(tracks),
+        segments: const [],
+        onChanged: (_) {},
       ),
-    ));
+      width: 280,
+    );
     final l10n = lookupAppLocalizations(const Locale('en'));
 
     await tester.tap(find.text('Harbour'));
@@ -558,6 +784,67 @@ void main() {
 
     expect(find.text(l10n.arrangeAddAsAlternative), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'more than three broken transport links are summed up: three named, the '
+      'rest counted', (tester) async {
+    final trip = Itinerary.fromJson(tripJson(
+      tracks: [
+        trackJson('t1', [_s1()], rank: 'a'),
+        trackJson('t2', [
+          _s2(),
+          _s3(),
+          stopJson('s5', trackId: 't2', placeName: 'Park'),
+          stopJson('s6', trackId: 't2', placeName: 'Tower'),
+        ], rank: 'b'),
+      ],
+      segments: [
+        for (final to in ['s2', 's3', 's5', 's6'])
+          segmentJson('seg-$to', 's1', to),
+      ],
+    ));
+    // Harbour's track last: none of its four links reaches the next track.
+    await _pumpView(
+      tester,
+      ArrangeTripView(
+        arrangement: TripArrangement.of(trip.tracks).moveTrack('t1', 2),
+        segments: trip.segments,
+        onChanged: (_) {},
+      ),
+    );
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
+    expect(find.text(l10n.transitSegmentsWillBeDeleted(4)), findsOneWidget);
+    expect(find.textContaining('Harbour → '), findsNWidgets(3));
+    expect(find.text(l10n.andMoreCount(1)), findsOneWidget);
+  });
+
+  testWidgets('a picked track that leaves the arrangement is put down',
+      (tester) async {
+    var arrangement = TripArrangement.of(Itinerary.fromJson(_trip()).tracks);
+    late StateSetter rearrange;
+    await _pumpView(
+      tester,
+      StatefulBuilder(builder: (context, setState) {
+        rearrange = setState;
+        return ArrangeTripView(
+          arrangement: arrangement,
+          segments: const [],
+          onChanged: (_) {},
+        );
+      }),
+    );
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    await tester.tap(find.text('3'));
+    await tester.pumpAndSettle();
+    expect(find.text(l10n.arrangeMovingTrack(3)), findsOneWidget);
+
+    // Handed an arrangement in which Beach, track 3's only stop, has joined
+    // track 1: track 3 is gone, and so is the pick.
+    rearrange(() => arrangement = arrangement.moveStopToRow('s4', 't1'));
+    await tester.pumpAndSettle();
+    expect(find.text(l10n.arrangeHint), findsOneWidget);
   });
 
   testWidgets('Back with nothing arranged leaves arrange mode, not edit mode',
@@ -600,5 +887,36 @@ void main() {
     await tester.tap(find.byTooltip(l10n.cancel));
     await tester.pumpAndSettle();
     expect(find.text(l10n.discardChangesTitle), findsOneWidget);
+  });
+
+  testWidgets(
+      'a newer version of the trip arriving while arranging ends arrange mode, '
+      'so the arrangement of the old one is never saved over it',
+      (tester) async {
+    final api = RecordingDio();
+    final l10n = await _pump(tester, api, _trip());
+    await _arrange(tester, l10n);
+    await tester.tap(_inArrangement(find.text('Beach')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.arrangeNewTrackHere).first);
+    await tester.pumpAndSettle();
+
+    // Someone else's save, brought in by a reload.
+    api.adapter.onGet(
+      itineraryEndpoint(kTripId),
+      (server) => server.reply(200, _trip()..['updated_at'] = kSavedAt),
+    );
+    final container = ProviderScope.containerOf(
+        tester.element(find.byType(ItineraryDetailScreen)));
+    final reload =
+        container.read(itineraryDetailProvider(kTripId).notifier).refresh();
+    await tester.pumpAndSettle();
+    await reload;
+
+    expect(find.byType(ArrangeTripView), findsNothing);
+    expect(find.text(l10n.itineraryChangedElsewhere), findsOneWidget);
+    expect(find.text(l10n.editStopsButton), findsOneWidget,
+        reason: 'still in edit mode');
+    expect(api.lines.where((line) => line.startsWith('POST')), isEmpty);
   });
 }
