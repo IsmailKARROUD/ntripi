@@ -980,7 +980,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
               color: selected ? nt.forest : Colors.transparent,
-              borderRadius: BorderRadius.circular(9),
+              borderRadius: BorderRadius.circular(NtripiRadius.inset),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1012,7 +1012,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: nt.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(NtripiRadius.toggle),
           border: Border.all(color: nt.border),
         ),
         child: Row(
@@ -1240,15 +1240,15 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                       )
                                       : null,
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(NtripiRadius.field),
                                 borderSide: BorderSide(color: nt.border),
                               ),
                               enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(NtripiRadius.field),
                                 borderSide: BorderSide(color: nt.border),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(NtripiRadius.field),
                                 borderSide: BorderSide(
                                   color: nt.forest,
                                   width: 1.5,
@@ -1282,7 +1282,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                   color: nt.surface,
                                   clipBehavior: Clip.antiAlias,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
+                                    borderRadius: BorderRadius.circular(NtripiRadius.tile),
                                     side: BorderSide(color: nt.border),
                                   ),
                                   child: Column(
@@ -1302,7 +1302,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                             decoration: BoxDecoration(
                                               color: nt.sand,
                                               borderRadius:
-                                                  BorderRadius.circular(10),
+                                                  BorderRadius.circular(NtripiRadius.icon),
                                             ),
                                             alignment: Alignment.center,
                                             child: Icon(
@@ -1722,7 +1722,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                           padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
                           decoration: BoxDecoration(
                             color: nt.transitBg,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(NtripiRadius.tile),
                             border: Border.all(color: nt.transitBorder),
                           ),
                           child: Row(
@@ -1759,7 +1759,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                   () => setState(
                                     () => _showOptional = !_showOptional,
                                   ),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(NtripiRadius.tile),
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 12,
@@ -1832,7 +1832,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                     height: 32,
                                     decoration: BoxDecoration(
                                       color: nt.mist,
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.circular(NtripiRadius.icon),
                                     ),
                                     alignment: Alignment.center,
                                     child: Icon(
@@ -2102,9 +2102,6 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     final nt = context.nt;
     final picked = await showModalBottomSheet<Object>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder:
           (ctx) => SafeArea(
             child: Padding(
@@ -2121,7 +2118,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       height: 4,
                       decoration: BoxDecoration(
                         color: nt.text3.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.circular(NtripiRadius.pill),
                       ),
                     ),
                   ),
@@ -2152,7 +2149,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                 height: 36,
                                 decoration: BoxDecoration(
                                   color: t.color(nt).withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(NtripiRadius.icon),
                                 ),
                                 alignment: Alignment.center,
                                 child: Icon(
@@ -2192,7 +2189,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                         height: 36,
                         decoration: BoxDecoration(
                           color: nt.border,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(NtripiRadius.icon),
                         ),
                         alignment: Alignment.center,
                         child: Icon(
@@ -2366,7 +2363,7 @@ class _SFPickerRow extends StatelessWidget {
               height: 32,
               decoration: BoxDecoration(
                 color: nt.mist,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(NtripiRadius.icon),
               ),
               alignment: Alignment.center,
               child: Icon(icon, size: 16, color: tint),

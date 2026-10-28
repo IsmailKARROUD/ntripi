@@ -56,8 +56,8 @@ class _MarkdownNotesEditorState extends State<MarkdownNotesEditor> {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: borderColor),
-        // 14 — the radius inputDecorationTheme gives every other field.
-        borderRadius: BorderRadius.circular(14),
+        // A field's, like the ones inputDecorationTheme draws around it.
+        borderRadius: BorderRadius.circular(NtripiRadius.field),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

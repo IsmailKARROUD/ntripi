@@ -6,6 +6,7 @@
 // in the app so users learn the affordance once.
 
 import 'package:flutter/material.dart';
+import 'package:ntripi/core/ui/app_radii.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 
 /// Small circular "?" icon button. Tapping it opens a popover positioned
@@ -248,12 +249,12 @@ class _FieldHelpCard extends StatelessWidget {
     return Material(
       type: MaterialType.card,
       elevation: 8,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(NtripiRadius.tile),
       color: cs.surface,
       shadowColor: cs.shadow.withValues(alpha: 0.25),
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(NtripiRadius.tile),
           border: Border.all(color: cs.outlineVariant, width: 1),
         ),
         padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 8, 12),

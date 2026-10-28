@@ -652,7 +652,7 @@ class _StopHero extends StatelessWidget {
                 height: 56,
                 decoration: BoxDecoration(
                   color: nt.surface,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(NtripiRadius.card),
                   boxShadow: [
                     BoxShadow(
                       color: nt.forest.withValues(alpha: 0.18),
@@ -691,7 +691,7 @@ class _StopHero extends StatelessWidget {
                     // onTap is null (inert) when the stop has no coordinates.
                     InkWell(
                       onTap: onOpenInMaps,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(NtripiRadius.tile),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -766,12 +766,12 @@ class _OpenInMapsButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(NtripiRadius.icon),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: nt.mist,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(NtripiRadius.icon),
               border: Border.all(color: nt.forest.withValues(alpha: 0.13)),
             ),
             child:
@@ -800,12 +800,12 @@ class _ReportButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(NtripiRadius.icon),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: nt.surface,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(NtripiRadius.icon),
               border: Border.all(color: nt.border),
             ),
             child: Icon(Icons.flag_outlined, size: 20, color: nt.text2),
@@ -829,7 +829,7 @@ class _PlaceTypeChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: placeType.color(nt).withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(NtripiRadius.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -867,7 +867,7 @@ class _StopStat extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
         decoration: BoxDecoration(
           color: nt.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(NtripiRadius.tile),
           border: Border.all(color: nt.border),
         ),
         child: Column(
@@ -944,7 +944,7 @@ class _AnnotationFullRow extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
         decoration: BoxDecoration(
           color: t.bg(nt),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(NtripiRadius.tile),
           border: Border.all(color: t.fg(nt).withValues(alpha: 0.13)),
         ),
         child: Row(
@@ -955,7 +955,7 @@ class _AnnotationFullRow extends StatelessWidget {
               height: 28,
               decoration: BoxDecoration(
                 color: t.fg(nt).withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(NtripiRadius.icon),
               ),
               alignment: Alignment.center,
               child: Icon(t.icon, size: 15, color: t.fg(nt)),
@@ -1094,7 +1094,7 @@ class _TransitFullRow extends StatelessWidget {
           Container(
             decoration: BoxDecoration(
               color: nt.transitBg,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(NtripiRadius.tile),
               border: Border.all(color: nt.transitBorder),
             ),
             child: Column(
@@ -1122,7 +1122,7 @@ class _TransitFullRow extends StatelessWidget {
                           height: 32,
                           decoration: BoxDecoration(
                             color: nt.transitIcon.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(NtripiRadius.icon),
                           ),
                           alignment: Alignment.center,
                           child: Icon(legs[i].mode.icon,
@@ -1285,7 +1285,7 @@ class _SectionCard extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       decoration: BoxDecoration(
         color: nt.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(NtripiRadius.card),
         border: Border.all(color: nt.border),
       ),
       clipBehavior: Clip.antiAlias,

@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'app_radii.dart';
+
+// The radius scale travels with the colors: whoever draws a box has both.
+export 'app_radii.dart';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // This file is the single source of truth for EVERY color in the app.
 // Rule: no Color literal may exist outside this file (Colors.transparent
@@ -582,7 +587,7 @@ ThemeData _buildTheme(NtripiColors nt, ColorScheme scheme) {
       elevation: 0,
       shadowColor: Colors.transparent,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(NtripiRadius.card),
         side: BorderSide(color: nt.border),
       ),
       margin: EdgeInsets.zero,
@@ -593,23 +598,23 @@ ThemeData _buildTheme(NtripiColors nt, ColorScheme scheme) {
       fillColor: nt.surface,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(NtripiRadius.field),
         borderSide: BorderSide(color: nt.border),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(NtripiRadius.field),
         borderSide: BorderSide(color: nt.border),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(NtripiRadius.field),
         borderSide: BorderSide(color: nt.forest, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(NtripiRadius.field),
         borderSide: BorderSide(color: nt.danger),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(NtripiRadius.field),
         borderSide: BorderSide(color: nt.danger, width: 1.5),
       ),
       labelStyle: GoogleFonts.dmSans(
@@ -624,7 +629,8 @@ ThemeData _buildTheme(NtripiColors nt, ColorScheme scheme) {
         foregroundColor: scheme.onPrimary,
         disabledBackgroundColor: nt.forest.withValues(alpha: 0.4),
         disabledForegroundColor: scheme.onPrimary.withValues(alpha: 0.7),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(NtripiRadius.button)),
         padding: const EdgeInsets.symmetric(vertical: 15),
         elevation: 0,
         shadowColor: Colors.transparent,
@@ -636,7 +642,8 @@ ThemeData _buildTheme(NtripiColors nt, ColorScheme scheme) {
       style: FilledButton.styleFrom(
         backgroundColor: nt.forest,
         foregroundColor: scheme.onPrimary,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(NtripiRadius.button)),
         padding: const EdgeInsets.symmetric(vertical: 15),
         textStyle: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.w700),
       ),
@@ -646,7 +653,8 @@ ThemeData _buildTheme(NtripiColors nt, ColorScheme scheme) {
       style: OutlinedButton.styleFrom(
         foregroundColor: nt.forest,
         side: BorderSide(color: nt.border),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(NtripiRadius.button)),
         padding: const EdgeInsets.symmetric(vertical: 14),
         textStyle: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600),
       ),
@@ -664,7 +672,7 @@ ThemeData _buildTheme(NtripiColors nt, ColorScheme scheme) {
       foregroundColor: scheme.onPrimary,
       elevation: 4,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(16)),
+        borderRadius: BorderRadius.all(Radius.circular(NtripiRadius.button)),
       ),
     ),
 
@@ -685,11 +693,39 @@ ThemeData _buildTheme(NtripiColors nt, ColorScheme scheme) {
       // nt.border hairline, exactly as they do on the form screens.
       modalBackgroundColor: nt.surface,
       surfaceTintColor: Colors.transparent,
+      // The one place a sheet's corners are set — never a shape: per call.
+      shape: const RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(NtripiRadius.modal)),
+      ),
     ),
 
     dialogTheme: DialogThemeData(
       backgroundColor: nt.surface,
       surfaceTintColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(NtripiRadius.modal)),
+      ),
+    ),
+
+    datePickerTheme: const DatePickerThemeData(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(NtripiRadius.modal)),
+      ),
+    ),
+
+    popupMenuTheme: const PopupMenuThemeData(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(NtripiRadius.tile)),
+      ),
+    ),
+
+    segmentedButtonTheme: const SegmentedButtonThemeData(
+      style: ButtonStyle(
+        shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(NtripiRadius.toggle)),
+        )),
+      ),
     ),
 
     dividerTheme: DividerThemeData(color: nt.border, space: 1, thickness: 1),
@@ -700,7 +736,8 @@ ThemeData _buildTheme(NtripiColors nt, ColorScheme scheme) {
         return Colors.transparent;
       }),
       side: BorderSide(color: nt.border, width: 1.5),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(NtripiRadius.checkbox)),
     ),
 
     snackBarTheme: SnackBarThemeData(
@@ -708,7 +745,8 @@ ThemeData _buildTheme(NtripiColors nt, ColorScheme scheme) {
       // inverseSurface flips per mode — dark snackbar on light, light on dark
       backgroundColor: scheme.inverseSurface,
       contentTextStyle: GoogleFonts.dmSans(color: scheme.onInverseSurface),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(NtripiRadius.tile)),
     ),
 
     chipTheme: ChipThemeData(

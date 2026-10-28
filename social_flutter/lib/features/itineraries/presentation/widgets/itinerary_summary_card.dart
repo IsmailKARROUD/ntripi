@@ -54,7 +54,7 @@ class ItinerarySummaryCard extends ConsumerWidget {
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           color: nt.surface,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(NtripiRadius.card),
           border: Border.all(color: nt.border),
         ),
         clipBehavior: Clip.antiAlias,
@@ -179,7 +179,7 @@ class _MetaChip extends StatelessWidget {
         // bark (ink), not shadow: a translucent fill must flip per theme, else
         // black-on-dark makes the pill vanish against the dark surface.
         color: nt.bark.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(NtripiRadius.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

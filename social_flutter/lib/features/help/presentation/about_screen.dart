@@ -74,7 +74,7 @@ class AboutScreen extends ConsumerWidget {
                               horizontal: 12, vertical: 5),
                           decoration: BoxDecoration(
                             color: nt.mist,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(NtripiRadius.pill),
                           ),
                           child: Text(
                             '${l10n.aboutVersion} $version',

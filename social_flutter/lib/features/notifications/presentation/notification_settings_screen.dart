@@ -217,7 +217,7 @@ class _SwitchRow extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: nt.mist,
-                  borderRadius: BorderRadius.circular(9),
+                  borderRadius: BorderRadius.circular(NtripiRadius.icon),
                 ),
                 child: pending
                     ? const NTripiRingLoader(size: 20)

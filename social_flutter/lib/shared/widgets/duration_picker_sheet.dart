@@ -58,9 +58,6 @@ Future<DurationParts?> showDurationPickerSheet({
   // No backgroundColor: bottomSheetTheme already paints nt.surface, the one ground.
   return showModalBottomSheet<DurationParts>(
     context: context,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
     builder:
         (_) => _DurationPickerSheet(
           title: title,
@@ -110,7 +107,7 @@ class _DurationPickerSheetState extends State<_DurationPickerSheet> {
             height: 4,
             decoration: BoxDecoration(
               color: nt.text3.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(NtripiRadius.pill),
             ),
           ),
           Padding(
@@ -167,7 +164,7 @@ class _DurationPickerSheetState extends State<_DurationPickerSheet> {
                         margin: const EdgeInsets.symmetric(horizontal: 16),
                         decoration: BoxDecoration(
                           color: nt.mist,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(NtripiRadius.inset),
                         ),
                       ),
                     ),

@@ -518,7 +518,7 @@ class _ErrorBanner extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: cs.errorContainer,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(NtripiRadius.tile),
         border: Border.all(color: cs.error.withValues(alpha: 0.4)),
       ),
       child: Column(
@@ -617,7 +617,7 @@ class _SocialButton extends StatelessWidget {
         disabledBackgroundColor: fill,
         side: BorderSide(
             color: enabled ? stroke : stroke.withValues(alpha: 0.45)),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(NtripiRadius.button)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,

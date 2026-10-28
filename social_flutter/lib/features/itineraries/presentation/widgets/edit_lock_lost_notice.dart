@@ -51,7 +51,7 @@ class EditLockLostNotice extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: nt.cautionBg,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(NtripiRadius.tile),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

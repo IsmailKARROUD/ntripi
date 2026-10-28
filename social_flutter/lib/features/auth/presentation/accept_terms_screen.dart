@@ -145,7 +145,7 @@ class _AcceptTermsScreenState extends ConsumerState<AcceptTermsScreen> {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: nt.dangerTint,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(NtripiRadius.tile),
                         ),
                         child: Text(
                           _errorMessage!,

@@ -191,7 +191,7 @@ class _ErrorBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.errorContainer,
         border: Border.all(color: cs.error.withValues(alpha: 0.4)),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(NtripiRadius.tile),
       ),
       child: Text(
         message,

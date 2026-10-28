@@ -174,9 +174,6 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
     final result = await showModalBottomSheet<({int? fromDay, int? toDay})>(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder: (_) => _ExactDaysSheet(window: window),
     );
     if (result == null || !mounted) return;
@@ -438,7 +435,7 @@ class _ExactDaysSheetState extends State<_ExactDaysSheet> {
                 height: 4,
                 decoration: BoxDecoration(
                   color: nt.text3.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(NtripiRadius.pill),
                 ),
               ),
             ),
@@ -552,6 +549,7 @@ class _DayPickerRow extends StatelessWidget {
         DropdownButton<int?>(
           value: day,
           underline: const SizedBox.shrink(),
+          borderRadius: BorderRadius.circular(NtripiRadius.tile),
           hint: Text(
             l10n.periodWholeMonth,
             style: TextStyle(fontSize: 13, color: nt.text3),
@@ -610,12 +608,12 @@ class _ToggleCell extends StatelessWidget {
     final nt = context.nt;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(NtripiRadius.tile),
       child: Container(
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected ? nt.forest : nt.mist,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(NtripiRadius.tile),
           border: Border.all(color: selected ? nt.forest : nt.border),
         ),
         child: Text(
@@ -647,12 +645,12 @@ class _ToggleChip extends StatelessWidget {
     final nt = context.nt;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: BorderRadius.circular(NtripiRadius.pill),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: selected ? nt.forest : nt.mist,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(NtripiRadius.pill),
           border: Border.all(color: selected ? nt.forest : nt.border),
         ),
         child: Text(
@@ -684,12 +682,12 @@ class _PresetChip extends StatelessWidget {
     final nt = context.nt;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: BorderRadius.circular(NtripiRadius.pill),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: selected ? nt.editBlueTint : Colors.transparent,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(NtripiRadius.pill),
           border: Border.all(color: selected ? nt.editBlue : nt.border),
         ),
         child: Text(
@@ -722,7 +720,7 @@ class _WindowRow extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(NtripiRadius.tile),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(

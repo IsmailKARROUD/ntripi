@@ -71,12 +71,12 @@ class EditorsScreen extends ConsumerWidget {
           OfflineGate(
             builder: (online) => InkWell(
               onTap: online ? () => _openAddDialog(context, ref) : null,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(NtripiRadius.button),
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(NtripiRadius.button),
                   border: Border.all(color: nt.text3),
                 ),
                 child: Row(
@@ -142,7 +142,7 @@ class _EditorList extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: nt.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(NtripiRadius.card),
         border: Border.all(color: nt.border),
       ),
       clipBehavior: Clip.antiAlias,

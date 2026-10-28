@@ -77,7 +77,7 @@ class _PassportRow extends StatelessWidget {
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: nt.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(NtripiRadius.tile),
         border: Border.all(color: nt.border),
       ),
       child: Row(
@@ -152,7 +152,7 @@ class _IdentityFactChip extends StatelessWidget {
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: nt.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(NtripiRadius.tile),
         border: Border.all(color: nt.border),
       ),
       child: Row(

@@ -136,7 +136,7 @@ class _ViolationCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: nt.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(NtripiRadius.tile),
         border: Border.all(color: nt.border),
       ),
       child: Column(
@@ -157,7 +157,7 @@ class _ViolationCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: isLifted ? nt.mist : nt.cautionBg,
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(NtripiRadius.pill),
                 ),
                 child: Text(
                   _statusLabel(l10n),

@@ -43,9 +43,6 @@ void showLegalDocSheet(BuildContext context, LegalDoc doc) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
     builder: (_) => _LegalDocSheet(doc: doc),
   );
 }
@@ -74,7 +71,7 @@ class _LegalDocSheet extends ConsumerWidget {
             height: 4,
             decoration: BoxDecoration(
               color: nt.border,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(NtripiRadius.pill),
             ),
           ),
           Padding(
@@ -126,7 +123,7 @@ class _LegalDocBody extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: nt.cautionBg,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(NtripiRadius.tile),
               ),
               child: Text(
                 document.notice,

@@ -382,7 +382,7 @@ def _email_html(heading: str, body: str, button_label: str, link: str) -> str:
   <h3 style="margin:0 0 8px">{heading}</h3>
   <p style="color:#52615a;font-size:14px;margin:0 0 20px">{body}</p>
   <a href="{link}" style="display:inline-block;background:#1F5E3A;color:#fff;
-     text-decoration:none;font-weight:700;padding:12px 22px;border-radius:50px">{button_label}</a>
+     text-decoration:none;font-weight:700;padding:12px 22px;border-radius:14px">{button_label}</a>
   <p style="color:#8a9690;font-size:12px;margin:24px 0 0">
     If the button doesn't work, paste this link into your browser:<br>{link}
   </p>

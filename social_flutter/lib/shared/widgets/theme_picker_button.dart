@@ -30,7 +30,6 @@ class ThemePickerButton extends ConsumerWidget {
       onSelected: (mode) =>
           ref.read(themeModeProvider.notifier).setMode(mode),
       color: nt.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       itemBuilder: (_) => ThemeMode.values
           .map(
             (mode) => PopupMenuItem<ThemeMode>(
@@ -59,7 +58,7 @@ class ThemePickerButton extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: nt.inverseSurface,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(NtripiRadius.pill),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

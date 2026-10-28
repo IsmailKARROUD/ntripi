@@ -227,7 +227,7 @@ class _ArrangeTripViewState extends State<ArrangeTripView> {
         Container(
           decoration: BoxDecoration(
             color: nt.surface,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(NtripiRadius.card),
             border: Border.all(color: nt.border),
           ),
           clipBehavior: Clip.antiAlias,
@@ -578,14 +578,14 @@ class _GapTarget extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       child: Material(
         color: hovered ? nt.mist : nt.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(NtripiRadius.tile),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(NtripiRadius.tile),
           child: Container(
             height: 36,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(NtripiRadius.tile),
               border: Border.all(
                 color: hovered ? nt.forest : nt.canopy.withValues(alpha: 0.6),
                 width: hovered ? 1.5 : 1,
@@ -688,7 +688,7 @@ class _StopChip extends StatelessWidget {
             EdgeInsetsDirectional.fromSTEB(handle == null ? 10 : 0, 0, 10, 0),
         decoration: BoxDecoration(
           color: picked ? nt.mist : nt.surface,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(NtripiRadius.pill),
           border: Border.all(
             color: picked ? nt.forest : nt.border,
             width: picked ? 1.5 : 1,
@@ -735,7 +735,7 @@ class _InsertMarker extends StatelessWidget {
         margin: const EdgeInsetsDirectional.only(end: 4),
         decoration: BoxDecoration(
           color: context.nt.forest,
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(NtripiRadius.pill),
         ),
       );
 }
@@ -761,7 +761,7 @@ class _Tag extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: active ? nt.mist : nt.border.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(NtripiRadius.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -799,7 +799,7 @@ class _DragProxy extends StatelessWidget {
       elevation: 4,
       shadowColor: nt.shadow.withValues(alpha: 0.26),
       color: nt.sand,
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: BorderRadius.circular(NtripiRadius.pill),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 240),
         child: child,
@@ -869,7 +869,7 @@ class _BrokenLinksBanner extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
         color: nt.transitBg,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(NtripiRadius.tile),
         border: Border.all(color: nt.transitBorder),
       ),
       child: Column(

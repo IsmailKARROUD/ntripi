@@ -299,7 +299,7 @@ class _ItineraryListScreenState extends ConsumerState<ItineraryListScreen> {
             // onPrimary, not white — dark mode lightens the green fill
             foregroundColor: Theme.of(context).colorScheme.onPrimary,
             shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(NtripiRadius.button)),
           ),
         ),
       ),
@@ -411,7 +411,7 @@ class _SummaryPill extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: nt.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(NtripiRadius.tile),
           border: Border.all(color: nt.border),
         ),
         child: Row(

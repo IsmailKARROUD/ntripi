@@ -217,7 +217,7 @@ class _Feed extends ConsumerWidget {
               // pane would square them off. Clipping here rather than in
               // SectionCard, which the whole app draws with.
               ClipRRect(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(NtripiRadius.card),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [

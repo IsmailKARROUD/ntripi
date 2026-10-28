@@ -105,7 +105,7 @@ class _VerifyEmailBannerState extends ConsumerState<VerifyEmailBanner> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: nt.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(NtripiRadius.tile),
         border: Border.all(color: nt.border),
       ),
       child: Column(

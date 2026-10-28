@@ -35,12 +35,12 @@ class EditPencilButton extends ConsumerWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: online ? onTap : () => showOfflineHint(context),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(NtripiRadius.icon),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: online ? nt.editBlueTint : nt.border.withValues(alpha: 0.45),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(NtripiRadius.icon),
             border: Border.all(
                 color: (online ? nt.editBlue : nt.text3).withValues(alpha: 0.13)),
           ),

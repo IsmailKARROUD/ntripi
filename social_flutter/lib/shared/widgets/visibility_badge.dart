@@ -57,7 +57,7 @@ class VisibilityBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(NtripiRadius.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

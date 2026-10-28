@@ -42,7 +42,7 @@ class ModerationHiddenBanner extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: nt.cautionBg,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(NtripiRadius.tile),
           border: Border.all(color: nt.border),
         ),
         child: Column(

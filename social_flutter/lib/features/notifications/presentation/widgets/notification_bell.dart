@@ -42,7 +42,7 @@ class NotificationBell extends ConsumerWidget {
               height: 18,
               decoration: BoxDecoration(
                 color: nt.danger,
-                borderRadius: BorderRadius.circular(9),
+                borderRadius: BorderRadius.circular(NtripiRadius.pill),
                 // Ring in the chrome colour so the badge stays legible over a
                 // busy cover photo, the same trick the hero buttons use.
                 border: Border.all(color: NtripiBrand.chrome, width: 1.5),

@@ -233,7 +233,7 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
                   margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                   decoration: BoxDecoration(
                     color: nt.surface,
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(NtripiRadius.card),
                     border: Border.all(color: nt.border),
                   ),
                   clipBehavior: Clip.antiAlias,
@@ -259,7 +259,7 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
                                 height: 32,
                                 decoration: BoxDecoration(
                                   color: nt.mist,
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(NtripiRadius.icon),
                                 ),
                                 alignment: Alignment.center,
                                 child: Icon(mode.icon, size: 16, color: nt.forest),
@@ -403,7 +403,7 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
                         height: 32,
                         decoration: BoxDecoration(
                           color: nt.mist,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(NtripiRadius.icon),
                         ),
                         alignment: Alignment.center,
                         child: Icon(Icons.payments_rounded,
@@ -621,7 +621,7 @@ class _LFPickerRow extends StatelessWidget {
                 height: 32,
                 decoration: BoxDecoration(
                   color: nt.mist,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(NtripiRadius.icon),
                 ),
                 alignment: Alignment.center,
                 child: Icon(icon, size: 16, color: nt.forest),

@@ -81,7 +81,7 @@ class AnnotationChip extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: config.bg,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(NtripiRadius.pill),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

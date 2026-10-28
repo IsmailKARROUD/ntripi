@@ -88,7 +88,7 @@ class DateOfBirthField extends StatelessWidget {
           children: [
             InkWell(
               onTap: enabled ? () => _pick(context) : null,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(NtripiRadius.field),
               child: InputDecorator(
                 decoration: InputDecoration(
                   errorText: state.errorText,

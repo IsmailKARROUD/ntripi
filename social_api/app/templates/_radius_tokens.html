@@ -1,0 +1,22 @@
+{#- _radius_tokens.html — the corner radii every page draws with.
+
+    The app's scale, mirrored: NtripiRadius in
+    social_flutter/lib/core/ui/app_radii.dart names one radius per job, so two
+    boxes doing the same job cannot drift apart. test_radius_scale.py fails when
+    this file and that one disagree, and when a template types a radius instead
+    of taking one of these. Included by every layout, ahead of its own styles.
+-#}
+<style>
+  :root {
+    --radius-card:     18px;  /* grouping cards, large boxes on the page, icon tiles from 56 px */
+    --radius-field:    14px;  /* text fields */
+    --radius-button:   14px;  /* every button */
+    --radius-tile:     12px;  /* banners, small tiles, boxes inside a card, image clips, menus */
+    --radius-icon:     10px;  /* icon badges and icon tiles up to 48 px */
+    --radius-toggle:   12px;  /* a segmented toggle's track */
+    --radius-inset:     8px;  /* a box inside another's padding: a toggle's thumb, a menu's item */
+    --radius-pill:    999px;  /* chips, tags, badges, round buttons, bars */
+    --radius-modal:    28px;  /* sheet tops, dialogs */
+    --radius-checkbox:  4px;
+  }
+</style>

@@ -117,7 +117,7 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
       decoration: BoxDecoration(
         color: nt.transitBg,
         border: Border.all(color: nt.transitBorder),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(NtripiRadius.tile),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -340,7 +340,7 @@ class _TransitRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: nt.transitBg,
         border: Border.all(color: nt.transitBorder),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(NtripiRadius.tile),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

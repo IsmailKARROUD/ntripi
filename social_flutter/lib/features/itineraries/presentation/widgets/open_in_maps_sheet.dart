@@ -102,7 +102,7 @@ class _OpenInMapsSheetState extends ConsumerState<_OpenInMapsSheet> {
     final nt = context.nt;
     return InkWell(
       onTap: () => _open(app),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(NtripiRadius.tile),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
         child: Row(
@@ -112,7 +112,7 @@ class _OpenInMapsSheetState extends ConsumerState<_OpenInMapsSheet> {
               height: 36,
               decoration: BoxDecoration(
                 color: nt.mist,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(NtripiRadius.icon),
               ),
               alignment: Alignment.center,
               child: _appIcon(app),
@@ -165,7 +165,7 @@ class _OpenInMapsSheetState extends ConsumerState<_OpenInMapsSheet> {
               Container(
                 decoration: BoxDecoration(
                   color: nt.surface,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(NtripiRadius.card),
                   border: Border.all(color: nt.border),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),

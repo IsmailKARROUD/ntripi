@@ -194,7 +194,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: nt.sand,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(NtripiRadius.tile),
                               border: Border.all(color: nt.border),
                             ),
                             child: Row(

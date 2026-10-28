@@ -202,7 +202,7 @@ class _EditNotesSectionState extends State<_EditNotesSection> {
       children: [
         InkWell(
           onTap: () => setState(() => _expanded = !_expanded),
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(NtripiRadius.tile),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(
@@ -279,7 +279,7 @@ class _AnnotationChipsRow extends StatelessWidget {
                   const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: nt.editBlueTint,
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: BorderRadius.circular(NtripiRadius.pill),
                 border: Border.all(color: nt.editBlue.withValues(alpha: 0.13)),
               ),
               child: Row(

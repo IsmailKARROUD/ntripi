@@ -785,7 +785,7 @@ class _ActionPill extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             color: filled ? nt.forest : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(NtripiRadius.button),
             border: filled
                 ? null
                 : Border.all(color: nt.border, width: 1.5),

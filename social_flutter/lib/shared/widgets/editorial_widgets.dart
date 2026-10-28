@@ -300,7 +300,7 @@ class SectionCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: nt.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(NtripiRadius.card),
         border: Border.all(color: nt.border),
       ),
       clipBehavior: clipBehavior,
@@ -373,7 +373,7 @@ class EditorialRow extends StatelessWidget {
         InkWell(
           onTap: onTap,
           borderRadius: isLast
-              ? const BorderRadius.vertical(bottom: Radius.circular(16))
+              ? const BorderRadius.vertical(bottom: Radius.circular(NtripiRadius.card))
               : BorderRadius.zero,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
@@ -384,7 +384,7 @@ class EditorialRow extends StatelessWidget {
                   height: 30,
                   decoration: BoxDecoration(
                     color: iconBg,
-                    borderRadius: BorderRadius.circular(9),
+                    borderRadius: BorderRadius.circular(NtripiRadius.icon),
                   ),
                   child: Icon(icon, size: 16, color: iconColor),
                 ),

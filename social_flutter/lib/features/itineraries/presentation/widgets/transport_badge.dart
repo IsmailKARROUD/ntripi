@@ -40,7 +40,7 @@ class TransportBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: nt.sand,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(NtripiRadius.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -75,7 +75,7 @@ class AddTransportBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: nt.sand,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(NtripiRadius.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

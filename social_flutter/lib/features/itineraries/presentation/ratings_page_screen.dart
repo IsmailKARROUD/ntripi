@@ -202,7 +202,7 @@ class _OverallHero extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
         decoration: BoxDecoration(
           color: nt.surface,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(NtripiRadius.card),
           border: Border.all(color: nt.border),
         ),
         child: Center(
@@ -231,7 +231,7 @@ class _OverallHero extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
       decoration: BoxDecoration(
         color: nt.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(NtripiRadius.card),
         border: Border.all(color: nt.border),
       ),
       child: Column(
@@ -324,7 +324,7 @@ class _DimensionSection extends StatelessWidget {
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
           decoration: BoxDecoration(
             color: nt.surface,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(NtripiRadius.card),
             border: Border.all(color: nt.border),
           ),
           clipBehavior: Clip.antiAlias,
@@ -379,7 +379,7 @@ class _DimRow extends StatelessWidget {
                   height: 28,
                   decoration: BoxDecoration(
                     color: nt.mist,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(NtripiRadius.icon),
                   ),
                   alignment: Alignment.center,
                   child: Icon(dim.icon, size: 15, color: nt.forest),
@@ -419,7 +419,7 @@ class _DimRow extends StatelessWidget {
             Padding(
               padding: const EdgeInsetsDirectional.only(start: 36, top: 6),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(3),
+                borderRadius: BorderRadius.circular(NtripiRadius.pill),
                 child: SizedBox(
                   height: 6,
                   child: LinearProgressIndicator(
@@ -491,7 +491,7 @@ class _YourRatingSection extends StatelessWidget {
             // nt.mist tint makes the viewer's own rating visually distinct
             // from the community stats above (which use plain nt.surface).
             color: nt.mist.withValues(alpha: 0.35),
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(NtripiRadius.card),
             border: Border.all(color: nt.forest.withValues(alpha: 0.18)),
           ),
           child: Padding(
@@ -543,7 +543,7 @@ class _YourRatingSection extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 7),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(NtripiRadius.button),
                             border: Border.all(color: nt.border, width: 1.5),
                           ),
                           child: Text(
@@ -657,7 +657,7 @@ class RatingDistributionBars extends StatelessWidget {
                   minHeight: 8,
                   backgroundColor: nt.border,
                   color: nt.rating(stars.toDouble()),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(NtripiRadius.pill),
                 ),
               ),
               const SizedBox(width: 8),

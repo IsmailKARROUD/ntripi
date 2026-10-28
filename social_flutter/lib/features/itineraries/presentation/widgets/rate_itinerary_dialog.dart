@@ -36,9 +36,6 @@ Future<void> showRateItineraryDialog(
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
     builder: (_) => _RateItinerarySheet(
       itineraryId: itineraryId,
       current: current,

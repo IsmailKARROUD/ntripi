@@ -9,6 +9,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <title>{{ page_title }} — Ntripi admin</title>
+  {% include "_radius_tokens.html" %}
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -22,7 +23,6 @@
       --text2:   oklch(48% 0.04 150);
       --border:  oklch(90% 0.02 150);
       --surface: #ffffff;
-      --radius:  12px;
       --warn-bg: #FFF4D6;
       --warn-fg: #6B4E00;
       --late-bg: #FFDAD6;
@@ -57,7 +57,7 @@
     header nav a:has(.badge) { opacity: 1; }
     header nav .badge {
       display: inline-block; min-width: 16px; padding: 0 5px;
-      margin-inline-start: 4px; border-radius: 9px;
+      margin-inline-start: 4px; border-radius: var(--radius-pill);
       background: #fff; color: var(--forest);
       font-size: 11px; font-weight: 700; line-height: 16px; text-align: center;
       vertical-align: 1px;
@@ -78,10 +78,10 @@
 
     .card {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 16px; margin-bottom: 16px;
+      border-radius: var(--radius-card); padding: 16px; margin-bottom: 16px;
     }
 
-    .flash { padding: 10px 14px; border-radius: var(--radius); margin-bottom: 16px; font-size: 14px; }
+    .flash { padding: 10px 14px; border-radius: var(--radius-tile); margin-bottom: 16px; font-size: 14px; }
     .flash.error  { background: var(--late-bg); color: var(--late-fg); }
     .flash.notice { background: var(--ok-bg);   color: var(--ok-fg); }
     .flash.warn   { background: var(--warn-bg); color: var(--warn-fg); }
@@ -94,7 +94,7 @@
     th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--text2); }
     tr:last-child td { border-bottom: 0; }
 
-    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; }
     .sla-ok   { background: var(--ok-bg);   color: var(--ok-fg); }
     .sla-warn { background: var(--warn-bg); color: var(--warn-fg); }
     .sla-late { background: var(--late-bg); color: var(--late-fg); }
@@ -104,14 +104,14 @@
 
     input[type=text], input[type=password], textarea, input[type=search] {
       font: inherit; padding: 7px 10px; border: 1px solid var(--border);
-      border-radius: 8px; width: 100%; background: #fff; color: var(--text);
+      border-radius: var(--radius-field); width: 100%; background: #fff; color: var(--text);
     }
     textarea { min-height: 60px; resize: vertical; }
     label { font-size: 13px; color: var(--text2); display: block; margin-bottom: 4px; }
 
     button, .btn {
       font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
-      padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border);
+      padding: 7px 12px; border-radius: var(--radius-button); border: 1px solid var(--border);
       background: #fff; color: var(--text);
     }
     button:hover { border-color: var(--canopy); }
@@ -122,15 +122,15 @@
     .stats { display: flex; gap: 12px; flex-wrap: wrap; }
     .stat {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 14px 18px; min-width: 150px; flex: 1 1 150px;
+      border-radius: var(--radius-tile); padding: 14px 18px; min-width: 150px; flex: 1 1 150px;
     }
     .stat .n { font-size: 26px; font-weight: 700; }
     .stat .l { font-size: 13px; color: var(--text2); }
 
-    .thumb { width: 72px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
+    .thumb { width: 72px; height: 40px; object-fit: cover; border-radius: var(--radius-tile); border: 1px solid var(--border); }
     /* Bug-report screenshots are portrait — the landscape .thumb crop would
        show only a sliver of the screen the reporter is complaining about. */
-    .thumb-tall { width: 60px; height: 108px; object-fit: cover; object-position: top; border-radius: 6px; border: 1px solid var(--border); }
+    .thumb-tall { width: 60px; height: 108px; object-fit: cover; object-position: top; border-radius: var(--radius-tile); border: 1px solid var(--border); }
     .pager { display: flex; gap: 10px; margin-top: 14px; font-size: 14px; }
   </style>
 </head>

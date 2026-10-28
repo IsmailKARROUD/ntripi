@@ -57,9 +57,6 @@ Future<void> showReportContentSheet(
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
     builder: (_) => _ReportContentSheet(target: target, parentRef: ref),
   );
 }
@@ -182,11 +179,11 @@ class _ReportContentSheetState extends State<_ReportContentSheet> {
                     filled: true,
                     fillColor: nt.surface,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(NtripiRadius.field),
                       borderSide: BorderSide(color: nt.border),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(NtripiRadius.field),
                       borderSide: BorderSide(color: nt.border),
                     ),
                   ),

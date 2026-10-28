@@ -125,7 +125,7 @@ class ConfirmDialog extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(26, 26, 26, 18),
           decoration: BoxDecoration(
             color: nt.surface,
-            borderRadius: BorderRadius.circular(26),
+            borderRadius: BorderRadius.circular(NtripiRadius.modal),
             boxShadow: [
               BoxShadow(
                 color: nt.bark.withValues(alpha: 0.18),
@@ -143,7 +143,7 @@ class ConfirmDialog extends StatelessWidget {
                 height: 56,
                 decoration: BoxDecoration(
                   color: badgeBg,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(NtripiRadius.card),
                 ),
                 child: Icon(icon, color: accent, size: 26),
               ),
@@ -234,7 +234,7 @@ class _ConfirmButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(14);
+    final radius = BorderRadius.circular(NtripiRadius.button);
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: radius,

@@ -36,9 +36,6 @@ Future<GoogleConsentResult?> showGoogleTosConsentSheet(
     // Not dismissible by tapping away: closing it is a decision, and the only
     // ways out are the explicit Cancel button and the system back gesture.
     isDismissible: false,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
     builder: (_) => _GoogleTosConsentSheet(prefill: prefill),
   );
 }
@@ -85,7 +82,7 @@ class _GoogleTosConsentSheetState extends State<_GoogleTosConsentSheet> {
                 height: 4,
                 decoration: BoxDecoration(
                   color: nt.border,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(NtripiRadius.pill),
                 ),
               ),
             ),

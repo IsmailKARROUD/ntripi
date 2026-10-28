@@ -104,15 +104,15 @@ class _CountryPickerScreenState extends State<CountryPickerScreen> {
                 fillColor: nt.surface,
                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(NtripiRadius.field),
                   borderSide: BorderSide(color: nt.border),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(NtripiRadius.field),
                   borderSide: BorderSide(color: nt.border),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(NtripiRadius.field),
                   borderSide: BorderSide(color: nt.forest, width: 1.5),
                 ),
               ),

@@ -468,7 +468,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                     label: l10n.bioLabel,
                     child: InkWell(
                       onTap: _editBio,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(NtripiRadius.tile),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Row(
@@ -615,7 +615,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                       onTap: _saving
                           ? null
                           : () => context.push('/settings/change-password'),
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(NtripiRadius.card),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 13),
@@ -626,7 +626,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                               height: 32,
                               decoration: BoxDecoration(
                                 color: nt.mist,
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(NtripiRadius.icon),
                               ),
                               child: Icon(Icons.password_rounded,
                                   size: 16, color: nt.forest),
@@ -659,7 +659,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                 SectionCard(children: [
                   InkWell(
                     onTap: _saving ? null : widget.onDeleteAccount,
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(NtripiRadius.card),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 13),
@@ -670,7 +670,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                             height: 32,
                             decoration: BoxDecoration(
                               color: nt.dangerTint,
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(NtripiRadius.icon),
                             ),
                             child: Icon(Icons.delete_outline_rounded,
                                 size: 16, color: nt.danger),
@@ -730,7 +730,7 @@ class _EditFieldRow extends StatelessWidget {
             height: 32,
             decoration: BoxDecoration(
               color: nt.mist,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(NtripiRadius.icon),
             ),
             child: Icon(icon, size: 16, color: nt.forest),
           ),
@@ -789,7 +789,7 @@ class _ToggleRow extends StatelessWidget {
             height: 32,
             decoration: BoxDecoration(
               color: value ? nt.mist : nt.sand,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(NtripiRadius.icon),
             ),
             child: Icon(icon,
                 size: 16, color: value ? nt.forest : nt.text2),
@@ -856,7 +856,7 @@ class _PickerRow extends StatelessWidget {
               height: 32,
               decoration: BoxDecoration(
                 color: nt.mist,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(NtripiRadius.icon),
               ),
               child: Icon(icon, size: 16, color: nt.forest),
             ),
@@ -926,7 +926,7 @@ class _CodeChipsRow extends StatelessWidget {
             height: 32,
             decoration: BoxDecoration(
               color: nt.mist,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(NtripiRadius.icon),
             ),
             child: Icon(icon, size: 16, color: nt.forest),
           ),
@@ -979,7 +979,7 @@ class _Chip extends StatelessWidget {
           const EdgeInsetsDirectional.only(start: 10, end: 4, top: 5, bottom: 5),
       decoration: BoxDecoration(
         color: nt.mist,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(NtripiRadius.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1016,7 +1016,7 @@ class _AddChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(NtripiRadius.pill),
           border:
               Border.all(color: nt.text3, style: BorderStyle.solid, width: 1.5),
         ),

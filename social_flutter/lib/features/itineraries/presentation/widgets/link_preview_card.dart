@@ -132,11 +132,11 @@ class LinkPreviewCard extends ConsumerWidget {
         onTap: onTap,
         onLongPress: onLongPress,
         onDoubleTap: onLongPress,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(NtripiRadius.tile),
         child: Container(
           decoration: BoxDecoration(
             color: nt.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(NtripiRadius.tile),
             border: Border.all(color: nt.border),
           ),
           clipBehavior: Clip.antiAlias,

@@ -120,7 +120,7 @@ class _BugReportSheetState extends State<BugReportSheet> {
             Container(
               decoration: BoxDecoration(
                 color: nt.surface,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(NtripiRadius.card),
                 border: Border.all(color: nt.border),
               ),
               clipBehavior: Clip.antiAlias,
@@ -164,11 +164,11 @@ class _BugReportSheetState extends State<BugReportSheet> {
                 filled: true,
                 fillColor: nt.surface,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(NtripiRadius.field),
                   borderSide: BorderSide(color: nt.border),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(NtripiRadius.field),
                   borderSide: BorderSide(color: nt.border),
                 ),
               ),

@@ -22,7 +22,6 @@ class LocalePickerButton extends ConsumerWidget {
       onSelected: (code) =>
           ref.read(localeProvider.notifier).setLocale(Locale(code)),
       color: nt.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       itemBuilder: (_) => kAppLocales
           .map(
             (l) => PopupMenuItem<String>(
@@ -51,7 +50,7 @@ class LocalePickerButton extends ConsumerWidget {
         decoration: BoxDecoration(
           color: nt.surface,
           border: Border.all(color: nt.border),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(NtripiRadius.pill),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

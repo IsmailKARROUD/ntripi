@@ -19,7 +19,7 @@ class FollowRequestsBanner extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: nt.mist,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(NtripiRadius.tile),
         ),
         child: Row(
           children: [

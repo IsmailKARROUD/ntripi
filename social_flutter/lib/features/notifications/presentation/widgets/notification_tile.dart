@@ -39,7 +39,7 @@ class NotificationTile extends StatelessWidget {
         InkWell(
           onTap: onTap,
           borderRadius: isLast
-              ? const BorderRadius.vertical(bottom: Radius.circular(18))
+              ? const BorderRadius.vertical(bottom: Radius.circular(NtripiRadius.card))
               : BorderRadius.zero,
           child: Container(
             // Unread rows are tinted rather than badged: the whole row is the

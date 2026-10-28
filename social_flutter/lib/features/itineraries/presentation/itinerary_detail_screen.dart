@@ -1436,7 +1436,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                                 decoration: BoxDecoration(
                                                   color: nt.editBlueTint,
                                                   borderRadius:
-                                                      BorderRadius.circular(999),
+                                                      BorderRadius.circular(NtripiRadius.pill),
                                                   border: Border.all(
                                                       color: nt.editBlue.withValues(
                                                           alpha: 0.13)),
@@ -1655,7 +1655,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                               child: ClipRRect(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(NtripiRadius.card),
                                 child: SizedBox(
                                   height: 200,
                                   child: Stack(
@@ -1774,7 +1774,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                               margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                               decoration: BoxDecoration(
                                 color: nt.surface,
-                                borderRadius: BorderRadius.circular(18),
+                                borderRadius: BorderRadius.circular(NtripiRadius.card),
                                 border: Border.all(color: nt.border),
                               ),
                               clipBehavior: Clip.antiAlias,
@@ -1813,40 +1813,49 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   }
 }
 
-// ─── Description (read-only) ─────────────────────────────────────────────────
-// Card styled to match _RecommendedPeriodRow so the two blocks read as one
-// system; the owner sees _DescriptionEditRow instead.
-class _DescriptionRow extends StatelessWidget {
-  final String description;
-  final String itineraryId;
+// ─── Info boxes ──────────────────────────────────────────────────────────────
+// The two frames Best time to visit and Description share — one for read mode,
+// one for edit mode — so a change to one box is a change to both. Copied, the
+// edit pair kept a 4 px corner after the field they imitated had moved to 14.
 
-  const _DescriptionRow({required this.description, required this.itineraryId});
+// Read mode: an ink-tinted card with an icon and a small label.
+class _InfoBox extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  /// What sits under [label], spacing included.
+  final List<Widget> children;
+
+  const _InfoBox({
+    required this.icon,
+    required this.label,
+    required this.children,
+  });
 
   @override
   Widget build(BuildContext context) {
     final nt = context.nt;
-    final l10n = AppLocalizations.of(context)!;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
-        // bark (ink), not shadow — same reason as _RecommendedPeriodRow: a
-        // translucent fill must flip per theme or it vanishes on dark.
+        // bark (ink), not shadow: a translucent fill must flip per theme, else
+        // black-on-dark makes the block vanish against the dark surface.
         color: nt.bark.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(NtripiRadius.tile),
         border: Border.all(color: nt.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.notes_rounded, size: 16, color: nt.forest),
+          Icon(icon, size: 16, color: nt.forest),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  l10n.descriptionLabel,
+                  label,
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -1854,15 +1863,7 @@ class _DescriptionRow extends StatelessWidget {
                     letterSpacing: 0.4,
                   ),
                 ),
-                const SizedBox(height: 2),
-                TranslatableText(
-                  anchor: (contentType: 'itinerary', contentId: itineraryId),
-                  contentType: 'itinerary',
-                  contentId: itineraryId,
-                  field: 'description',
-                  original: description,
-                  builder: (context, text) => InertMarkdownBody(data: text),
-                ),
+                ...children,
               ],
             ),
           ),
@@ -1872,9 +1873,120 @@ class _DescriptionRow extends StatelessWidget {
   }
 }
 
+// Edit mode: a bordered, tappable summary that opens the box's editor.
+class _EditableInfoBox extends StatelessWidget {
+  final String label;
+  final String? helpTitle;
+  final String? helpMessage;
+  final VoidCallback onTap;
+
+  /// The save behind [onTap] is still in flight: the pencil gives way to a
+  /// spinner, [child] dims and taps are refused.
+  final bool saving;
+  final Widget child;
+
+  const _EditableInfoBox({
+    required this.label,
+    this.helpTitle,
+    this.helpMessage,
+    required this.onTap,
+    this.saving = false,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    final labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.w500,
+        );
+    final radius = BorderRadius.circular(NtripiRadius.card);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        // Refused mid-save: a second picker would open on the value being
+        // replaced, and its Done would race the PATCH already in flight.
+        onTap: saving ? null : onTap,
+        borderRadius: radius,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: nt.border),
+            borderRadius: radius,
+          ),
+          padding: const EdgeInsets.fromLTRB(12, 8, 8, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(label, style: labelStyle),
+                  if (helpTitle != null && helpMessage != null) ...[
+                    const SizedBox(width: 2),
+                    // Stays interactive inside the InkWell — its own tap wins.
+                    FieldHelpIcon(
+                      helpTitle: helpTitle!,
+                      helpMessage: helpMessage!,
+                      size: 16,
+                    ),
+                  ],
+                  const Spacer(),
+                  // Same 18px box as the pencil it stands in for, so the header
+                  // does not reflow for the length of the save.
+                  if (saving)
+                    const NTripiRingLoader(size: 18)
+                  else
+                    Icon(Icons.edit_outlined, size: 18, color: nt.forest),
+                ],
+              ),
+              const SizedBox(height: 6),
+              // Dimmed rather than blanked: the old value is still the true one
+              // until the PATCH answers, and an empty row would read as cleared.
+              AnimatedOpacity(
+                duration: const Duration(milliseconds: 150),
+                opacity: saving ? 0.4 : 1,
+                child: child,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Description (read-only) ─────────────────────────────────────────────────
+// The owner sees _DescriptionEditRow instead.
+class _DescriptionRow extends StatelessWidget {
+  final String description;
+  final String itineraryId;
+
+  const _DescriptionRow({required this.description, required this.itineraryId});
+
+  @override
+  Widget build(BuildContext context) {
+    return _InfoBox(
+      icon: Icons.notes_rounded,
+      label: AppLocalizations.of(context)!.descriptionLabel,
+      children: [
+        const SizedBox(height: 2),
+        TranslatableText(
+          anchor: (contentType: 'itinerary', contentId: itineraryId),
+          contentType: 'itinerary',
+          contentId: itineraryId,
+          field: 'description',
+          original: description,
+          builder: (context, text) => InertMarkdownBody(data: text),
+        ),
+      ],
+    );
+  }
+}
+
 // ─── Description edit row ────────────────────────────────────────────────────
-// Shown only in edit mode. Mirrors MarkdownNotesEditor's bordered-header look
-// but is a tappable summary that opens the shared markdown editor.
+// Shown only in edit mode: a tappable summary that opens the shared markdown
+// editor.
 class _DescriptionEditRow extends StatelessWidget {
   final String? description;
   final VoidCallback onTap;
@@ -1883,56 +1995,22 @@ class _DescriptionEditRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final hasText = description != null && description!.trim().isNotEmpty;
-    final labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Theme.of(context).colorScheme.primary,
-          fontWeight: FontWeight.w500,
-        );
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: context.nt.border),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          padding: const EdgeInsets.fromLTRB(12, 8, 8, 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(l10n.descriptionLabel, style: labelStyle),
-                  const SizedBox(width: 2),
-                  // Stays interactive inside the InkWell — its own tap wins.
-                  FieldHelpIcon(
-                    helpTitle: l10n.descriptionLabel,
-                    helpMessage: l10n.descriptionHelp,
-                    size: 16,
-                  ),
-                  const Spacer(),
-                  Icon(Icons.edit_outlined, size: 18, color: nt.forest),
-                ],
-              ),
-              const SizedBox(height: 6),
-              // IgnorePointer so the markdown's selectable text doesn't swallow
-              // the tap meant for the row's InkWell.
-              if (hasText)
-                IgnorePointer(child: InertMarkdownBody(data: description!))
-              else
-                Text(
-                  l10n.addDescriptionLabel,
-                  style: TextStyle(color: Theme.of(context).hintColor),
-                ),
-            ],
-          ),
-        ),
-      ),
+    return _EditableInfoBox(
+      label: l10n.descriptionLabel,
+      helpTitle: l10n.descriptionLabel,
+      helpMessage: l10n.descriptionHelp,
+      onTap: onTap,
+      // IgnorePointer so the markdown's selectable text doesn't swallow the tap
+      // meant for the box's InkWell.
+      child: hasText
+          ? IgnorePointer(child: InertMarkdownBody(data: description!))
+          : Text(
+              l10n.addDescriptionLabel,
+              style: TextStyle(color: Theme.of(context).hintColor),
+            ),
     );
   }
 }
@@ -2210,7 +2288,7 @@ class _GlassButton extends StatelessWidget {
         decoration: BoxDecoration(
           // dark tint ensures visibility against any cover image, incl. white
           color: nt.buttonTransparent,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(NtripiRadius.icon),
           border: Border.all(color: NtripiBrand.chrome.withValues(alpha: 0.2)),
         ),
         alignment: Alignment.center,
@@ -2327,7 +2405,7 @@ class _OwnerRow extends ConsumerWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: BorderRadius.circular(NtripiRadius.pill),
                       border: Border.all(color: nt.forest),
                     ),
                     child: Row(
@@ -2415,80 +2493,53 @@ class _RecommendedPeriodRow extends StatelessWidget {
     final weekdays = period.weekdaysLabel(l10n, localeName);
     final note = period.note?.trim();
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-      decoration: BoxDecoration(
-        // bark (ink), not shadow: a translucent fill must flip per theme, else
-        // black-on-dark makes the block vanish against the dark surface.
-        color: nt.bark.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: nt.border),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.event_available_rounded, size: 16, color: nt.forest),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.bestTimeToVisit,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: nt.text2,
-                    letterSpacing: 0.4,
-                  ),
-                ),
-                // Dates and weekdays are independent — an author may give only
-                // one, so each line renders on its own terms.
-                if (dates != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    dates,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: nt.bark,
-                    ),
-                  ),
-                ],
-                if (weekdays != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    weekdays,
-                    style: TextStyle(fontSize: 12.5, color: nt.text2),
-                  ),
-                ],
-                if (note != null && note.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  TranslatableText(
-                    anchor: (contentType: 'itinerary', contentId: itineraryId),
-                    contentType: 'itinerary',
-                    contentId: itineraryId,
-                    field: 'recommended_period_note',
-                    // Untrimmed: the same string the toggle's member names.
-                    original: period.note!,
-                    builder: (context, text) => Text(
-                      text.trim(),
-                      style: TextStyle(fontSize: 12.5, color: nt.text2),
-                    ),
-                  ),
-                ],
-              ],
+    return _InfoBox(
+      icon: Icons.event_available_rounded,
+      label: l10n.bestTimeToVisit,
+      children: [
+        // Dates and weekdays are independent — an author may give only one,
+        // so each line renders on its own terms.
+        if (dates != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            dates,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: nt.bark,
             ),
           ),
         ],
-      ),
+        if (weekdays != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            weekdays,
+            style: TextStyle(fontSize: 12.5, color: nt.text2),
+          ),
+        ],
+        if (note != null && note.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          TranslatableText(
+            anchor: (contentType: 'itinerary', contentId: itineraryId),
+            contentType: 'itinerary',
+            contentId: itineraryId,
+            field: 'recommended_period_note',
+            // Untrimmed: the same string the toggle's member names.
+            original: period.note!,
+            builder: (context, text) => Text(
+              text.trim(),
+              style: TextStyle(fontSize: 12.5, color: nt.text2),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
 
-// Edit-mode variant, styled after _DescriptionEditRow. Always rendered for the
-// owner, even with nothing set — otherwise an empty period is invisible and the
-// feature is undiscoverable outside the Edit details form.
+// Edit-mode variant. Always rendered for the owner, even with nothing set —
+// otherwise an empty period is invisible and the feature is undiscoverable
+// outside the Edit details form.
 class _RecommendedPeriodEditRow extends StatelessWidget {
   final RecommendedPeriod? period;
   final VoidCallback onTap;
@@ -2509,80 +2560,40 @@ class _RecommendedPeriodEditRow extends StatelessWidget {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final localeName = l10n.localeName;
-    final labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Theme.of(context).colorScheme.primary,
-          fontWeight: FontWeight.w500,
-        );
     final dates = period?.dateLabel(localeName);
     final weekdays = period?.weekdaysLabel(l10n, localeName);
     final note = period?.note?.trim();
     final hasAny = period != null && !period!.isEmpty;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        // Refused mid-save: a second picker would open on the value being
-        // replaced, and its Done would race the PATCH already in flight.
-        onTap: saving ? null : onTap,
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: context.nt.border),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          padding: const EdgeInsets.fromLTRB(12, 8, 8, 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(l10n.bestTimeToVisit, style: labelStyle),
-                  const Spacer(),
-                  // Same 18px box as the pencil it stands in for, so the header
-                  // does not reflow for the length of the save.
-                  if (saving)
-                    const NTripiRingLoader(size: 18)
-                  else
-                    Icon(Icons.edit_outlined, size: 18, color: nt.forest),
-                ],
-              ),
-              const SizedBox(height: 6),
-              // Dimmed rather than blanked: the old value is still the true one
-              // until the PATCH answers, and an empty row would read as cleared.
-              AnimatedOpacity(
-                duration: const Duration(milliseconds: 150),
-                opacity: saving ? 0.4 : 1,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (!hasAny)
-                      Text(
-                        l10n.addBestTimeToVisit,
-                        style: TextStyle(color: Theme.of(context).hintColor),
-                      )
-                    else ...[
-                      if (dates != null)
-                        Text(
-                          dates,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: nt.bark,
-                          ),
-                        ),
-                      if (weekdays != null)
-                        Text(weekdays,
-                            style: TextStyle(fontSize: 12.5, color: nt.text2)),
-                      if (note != null && note.isNotEmpty)
-                        Text(note,
-                            style: TextStyle(fontSize: 12.5, color: nt.text2)),
-                    ],
-                  ],
+    return _EditableInfoBox(
+      label: l10n.bestTimeToVisit,
+      onTap: onTap,
+      saving: saving,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!hasAny)
+            Text(
+              l10n.addBestTimeToVisit,
+              style: TextStyle(color: Theme.of(context).hintColor),
+            )
+          else ...[
+            if (dates != null)
+              Text(
+                dates,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: nt.bark,
                 ),
               ),
-            ],
-          ),
-        ),
+            if (weekdays != null)
+              Text(weekdays,
+                  style: TextStyle(fontSize: 12.5, color: nt.text2)),
+            if (note != null && note.isNotEmpty)
+              Text(note, style: TextStyle(fontSize: 12.5, color: nt.text2)),
+          ],
+        ],
       ),
     );
   }
@@ -2604,7 +2615,7 @@ class _DetailMetaChip extends StatelessWidget {
         // bark (ink), not shadow: a translucent fill must flip per theme, else
         // black-on-dark makes the pill vanish against the dark surface.
         color: nt.bark.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(NtripiRadius.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -2643,12 +2654,12 @@ class _RoutePillButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(NtripiRadius.icon),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: nt.mist,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(NtripiRadius.icon),
               border: Border.all(color: nt.forest.withValues(alpha: 0.13)),
             ),
             child:
@@ -2681,12 +2692,12 @@ class _BookmarkPillButton extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: online ? onTap : null,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(NtripiRadius.icon),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: nt.mist,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(NtripiRadius.icon),
                 border: Border.all(color: nt.forest.withValues(alpha: 0.13)),
               ),
               child: Icon(
@@ -2716,7 +2727,7 @@ class _SegmentToggle extends StatelessWidget {
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: nt.mist,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(NtripiRadius.toggle),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -2753,7 +2764,7 @@ class _Tab extends StatelessWidget {
         height: 28,
         decoration: BoxDecoration(
           color: active ? nt.surface : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(NtripiRadius.inset),
           boxShadow: active
               ? [
                   BoxShadow(
@@ -2803,7 +2814,7 @@ class _RateCta extends ConsumerWidget {
           style: FilledButton.styleFrom(
             backgroundColor: nt.editBlue,
             shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(NtripiRadius.button)),
           ),
         ),
       );
@@ -2828,7 +2839,7 @@ class _RateCta extends ConsumerWidget {
           style: FilledButton.styleFrom(
             backgroundColor: nt.forest,
             shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(NtripiRadius.button)),
           ),
         ),
       ),

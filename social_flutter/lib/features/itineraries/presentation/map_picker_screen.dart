@@ -381,15 +381,15 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
                     )
                     : null,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(NtripiRadius.field),
               borderSide: BorderSide(color: nt.border),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(NtripiRadius.field),
               borderSide: BorderSide(color: nt.border),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(NtripiRadius.field),
               borderSide: BorderSide(color: nt.forest, width: 1.5),
             ),
           ),
@@ -424,6 +424,8 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
               return Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Card(
+                  // A map overlay, like its neighbours — not a page card.
+                  shape: _overlayShape(context),
                   child: Padding(
                     padding: const EdgeInsets.all(12),
                     child: Text(
@@ -481,8 +483,16 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
     );
   }
 
+  // cardTheme's shape is a page card's; over the map, a panel takes the
+  // overlays' tile corners — cardTheme's border kept.
+  ShapeBorder _overlayShape(BuildContext context) => RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(NtripiRadius.tile),
+        side: BorderSide(color: context.nt.border),
+      );
+
   Widget _buildInstructionBanner(BuildContext context) {
     return Card(
+      shape: _overlayShape(context),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Text(
@@ -509,7 +519,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
         color: nt.surface,
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(NtripiRadius.tile),
           side: BorderSide(color: nt.border),
         ),
         // Shrink-wrapped: as tall as its rows until the keyboard bounds it.
@@ -526,7 +536,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
                   height: 36,
                   decoration: BoxDecoration(
                     color: nt.sand,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(NtripiRadius.icon),
                   ),
                   alignment: Alignment.center,
                   child: Icon(
@@ -581,7 +591,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
       elevation: 2,
       shadowColor: NtripiBrand.backdrop.withValues(alpha: 0.26),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(NtripiRadius.tile),
         side: BorderSide(color: nt.border),
       ),
       child: Padding(
@@ -622,7 +632,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: nt.sand,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(NtripiRadius.pill),
                       ),
                       child: Text(
                         _prettifyCategory(place.category!),

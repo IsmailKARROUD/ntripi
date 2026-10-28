@@ -156,7 +156,7 @@ class ReportBugScreen extends ConsumerWidget {
             height: 72,
             decoration: BoxDecoration(
               color: nt.mist,
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(NtripiRadius.card),
             ),
             child: Icon(Icons.bug_report_outlined, size: 34, color: nt.forest),
           ),

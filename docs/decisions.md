@@ -2343,3 +2343,67 @@ stop goes in front of it. This supersedes the 2026-10-27 arrange-mode entry's
 - **Tap targets between the chips while a stop is picked**, to keep putting a
   stop in front of a particular alternative by tap: more targets on every row
   of a compact view, for a precision the drag already gives.
+
+### 2026-10-28 — One radius scale for the app and the web
+
+**Context.** In the trip page's edit mode, Best time to visit and Description
+had 4 px corners among boxes of 16 and 18. Both rows had copied
+`MarkdownNotesEditor`'s bordered look; the editor later moved to 14, the field
+radius, and the copies stayed at 4. No radius in the app had a name: 247
+corners were typed as 18 different numbers in 70 files, the documented scale
+(card 18 · input 14 · icon pill 9) was enforced by nothing, and one job wore
+several numbers — banners at 12, 14 and 16, filled buttons at 16 beside
+outlined ones at 14, sheet tops at 20, 24 and 28. The web pages carried a second
+copy of the problem: 76 `border-radius` declarations and two `--radius`
+variables that disagreed (14px in `_base.html`, 12px in admin).
+
+**Decision.** One named scale, one token per job: `NtripiRadius` in
+`social_flutter/lib/core/ui/app_radii.dart` — card 18, field 14, button 14,
+tile 12, icon 10, toggle 12, inset 8, pill 999, modal 28, checkbox 4. Every
+corner in the app takes the token of its job, and values that did the same job
+were merged into one. Sheets, dialogs, the date picker, popup menus and
+`SegmentedButton` take their corners from the theme, never from a `shape:` per
+call. The web pages mirror the scale in `social_api/app/templates/_radius_tokens.html`,
+which all four layouts include, and every declaration uses `var(--radius-*)`.
+The trip page's two info-box pairs share one frame each — `_EditableInfoBox` at
+`card` for edit mode, `_InfoBox` at `tile` for read mode — so the next change to
+one box is a change to both.
+
+**Consequences.**
+- What moved: the edit-mode Best time to visit and Description 4 → 18 (read
+  mode stays at 12); every button and the FAB to 14 (the theme's filled,
+  elevated and FAB were 16); every sheet top and dialog to 28 (`ConfirmDialog`
+  was 26, nine sheets 20 or 24); banners and small tiles 14 → 12; icon badges
+  12/9/8 → 10, `EditorialRow`'s icon pill included; the trip page's map
+  16 → 18; the List/Map toggle's track 10 → 12; the three `SegmentedButton`s
+  from pill to 12; popup menus 4 → 12. On the web: buttons from pill to 14, the
+  email button too; the homepage's CTA band 28 → 18; the waitlist and report
+  dialogs to 28; admin cards 12 → 18, its inputs and buttons 8 → 14.
+- `test/radius_scale_guard_test.dart` fails on a typed radius, a per-call sheet
+  or dialog `shape:`, and an `OutlineInputBorder` without a radius.
+  `social_api/test/test_radius_scale.py` is the first test that reads across
+  the two codebases: it parses `app_radii.dart` and fails when the CSS partial
+  disagrees with it, when a template types a `border-radius`, and when the
+  email button — a literal, since email clients drop CSS variables — is not
+  `button`.
+- Exempt as artwork drawn to scale: `loaders.dart` (by name), the homepage's
+  phone mockup and help articles' inline code (by selector). Circles stay
+  `50%` / `CircleBorder`.
+- The copies of shared chrome found on the way now draw their corners from the
+  scale but are not yet replaced by the shared widgets — see
+  [backlog](backlog.md#planned--replace-the-remaining-copies-of-shared-chrome).
+
+**Alternatives rejected.**
+- **One radius for every box**: a box nested in another needs a smaller one or
+  its corners look pinched — the 12 transit rows inside the 18 stop list — and
+  pills and drag handles cannot share a box's radius.
+- **One token per number in use**: it names the drift instead of ending it.
+- **Radii on `NtripiColors` (`context.nt`)**: radii do not change between light
+  and dark, and a theme extension needs a `BuildContext` at every corner and
+  turns `const` decorations non-const.
+- **Top-level `kRadius…` constants**: a scale is picked from; a class lists the
+  whole of it in one autocomplete.
+- **Each codebase pinning its own copy of the table**: a change made on one
+  side only fails nothing.
+- **Pill buttons on the web**: the share pages' buttons and store badges
+  already matched the app's 14, and one look across the app and the web won.

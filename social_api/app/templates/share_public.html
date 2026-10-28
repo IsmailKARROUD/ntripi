@@ -25,7 +25,7 @@
 
 {% block style %}
     #report-dialog {
-      border: none; border-radius: 18px; padding: 0; margin: auto;
+      border: none; border-radius: var(--radius-modal); padding: 0; margin: auto;
       width: min(92vw, 440px); background: var(--surface); color: var(--bark);
       box-shadow: 0 12px 40px rgba(var(--scrim), .18);
     }
@@ -38,7 +38,7 @@
     }
     .report-select, .report-textarea {
       width: 100%; font: inherit; font-size: 15px; color: var(--bark);
-      background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-field);
       padding: 10px 12px; margin-bottom: 16px;
     }
     .report-textarea { resize: vertical; min-height: 72px; }

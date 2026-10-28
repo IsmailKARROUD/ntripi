@@ -125,7 +125,7 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
       child: Material(
         color: nt.surface,
         clipBehavior: Clip.antiAlias,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(NtripiRadius.modal)),
         // A fixed height, not a maximum: the sheet is bottom-anchored, so any
         // height change (keyboard inset, a search that narrows the list) would
         // walk its top edge — and Done with it — up and down the screen.
@@ -140,7 +140,7 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
                 height: 4,
                 decoration: BoxDecoration(
                   color: nt.border,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(NtripiRadius.pill),
                 ),
               ),
               Padding(
@@ -205,15 +205,15 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
                     fillColor: nt.surface,
                     contentPadding: const EdgeInsets.symmetric(vertical: 12),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(NtripiRadius.field),
                       borderSide: BorderSide(color: nt.border),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(NtripiRadius.field),
                       borderSide: BorderSide(color: nt.border),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(NtripiRadius.field),
                       borderSide: BorderSide(color: nt.forest, width: 1.5),
                     ),
                   ),

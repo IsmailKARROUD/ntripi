@@ -37,7 +37,7 @@ class FollowActionRow extends StatelessWidget {
           height: 46,
           decoration: BoxDecoration(
             border: Border.all(color: nt.border, width: 1.5),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(NtripiRadius.button),
           ),
           child: Icon(Icons.mail_outline_rounded,
               size: 20, color: nt.bark),

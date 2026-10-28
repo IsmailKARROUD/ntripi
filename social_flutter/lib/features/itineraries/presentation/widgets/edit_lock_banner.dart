@@ -124,7 +124,7 @@ class _EditLockBannerState extends State<EditLockBanner> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(NtripiRadius.tile),
       ),
       child: Row(
         children: [

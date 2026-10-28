@@ -50,7 +50,7 @@ class ItineraryCoverPlaceholder extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: nt.mapLabelBg,
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: BorderRadius.circular(NtripiRadius.pill),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,

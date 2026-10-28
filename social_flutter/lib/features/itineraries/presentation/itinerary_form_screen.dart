@@ -412,9 +412,6 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder: (ctx) => _CurrencyPickerSheet(
         currencies: _currencies,
         selected: _currency,
@@ -651,7 +648,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                     child: InkWell(
                       onTap: () =>
                           setState(() => _showOptional = !_showOptional),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(NtripiRadius.tile),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 8),
@@ -899,7 +896,7 @@ class _PickerRow extends StatelessWidget {
               height: 32,
               decoration: BoxDecoration(
                 color: nt.mist,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(NtripiRadius.icon),
               ),
               alignment: Alignment.center,
               child: Icon(icon, size: 16, color: tint),
@@ -990,7 +987,7 @@ class _CurrencyPickerSheetState extends State<_CurrencyPickerSheet> {
               height: 4,
               decoration: BoxDecoration(
                 color: nt.text3.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(NtripiRadius.pill),
               ),
             ),
           ),
@@ -1004,15 +1001,15 @@ class _CurrencyPickerSheetState extends State<_CurrencyPickerSheet> {
                 filled: true,
                 fillColor: nt.sand,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(NtripiRadius.field),
                   borderSide: BorderSide(color: nt.border),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(NtripiRadius.field),
                   borderSide: BorderSide(color: nt.border),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(NtripiRadius.field),
                   borderSide: BorderSide(color: nt.forest, width: 1.5),
                 ),
               ),

@@ -189,7 +189,7 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
                 padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                 decoration: BoxDecoration(
                   color: nt.surface,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(NtripiRadius.tile),
                   border: Border.all(color: nt.border),
                 ),
                 child: Row(
@@ -263,7 +263,7 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: active ? t.bg(nt) : nt.surface,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(NtripiRadius.tile),
                       border: Border.all(
                         color: active ? t.fg(nt) : nt.border,
                         width: active ? 2 : 1,
@@ -279,7 +279,7 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
                             color: active
                                 ? t.fg(nt).withValues(alpha: 0.2)
                                 : t.bg(nt),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(NtripiRadius.icon),
                           ),
                           alignment: Alignment.center,
                           child: Icon(t.icon, size: 16, color: t.fg(nt)),
@@ -338,7 +338,7 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
               child: Container(
                 decoration: BoxDecoration(
                   color: nt.surface,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(NtripiRadius.field),
                   border: Border.all(color: nt.border),
                 ),
                 child: TextField(

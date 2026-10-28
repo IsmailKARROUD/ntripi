@@ -506,7 +506,7 @@ class ProfileMapHero extends StatelessWidget {
                       horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: nt.buttonTransparent,
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: BorderRadius.circular(NtripiRadius.pill),
                     border: Border.all(
                         color: NtripiBrand.chrome.withValues(alpha: 0.3)),
                   ),
@@ -606,7 +606,7 @@ class GlassIconChrome extends StatelessWidget {
   Widget build(BuildContext context) {
     final nt = context.nt;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(NtripiRadius.icon),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
         child: Container(
@@ -614,7 +614,7 @@ class GlassIconChrome extends StatelessWidget {
           height: 40,
           decoration: BoxDecoration(
             color: nt.buttonTransparent,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(NtripiRadius.icon),
             border: Border.all(color: NtripiBrand.chrome.withValues(alpha: 0.22)),
           ),
           child: Icon(icon, color: NtripiBrand.chrome, size: 22),

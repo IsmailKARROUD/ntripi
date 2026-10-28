@@ -266,6 +266,54 @@ enumeration-safe body (`/web/appeal-request` has the same shape). →
 
 ---
 
+## Design consistency
+
+### planned — replace the remaining copies of shared chrome
+
+The radius scale ([decisions](decisions.md), 2026-10-28) made every corner a
+token, so these copies can no longer drift on their corners. Everything else in
+them can: margins, insets, borders. CLAUDE.md forbids each of them, and each
+differs a little from the widget it copies, so replacing them is a structural
+change, not a find-and-replace:
+
+- `stop_detail_screen.dart`'s private `_SectionCard` (one child,
+  `Clip.antiAlias`) and `_SectionLabel` (16 from the edge instead of 22, and it
+  uppercases itself) → `SectionCard` / `SectionLabel`.
+- About 14 inline look-alikes of `SectionCard` — a `Container` with
+  `nt.surface`, `nt.border` and `NtripiRadius.card` — e.g. the trip page's stop
+  list, `ratings_page_screen.dart`, `profile_settings_sheet.dart`,
+  `leg_form_dialog.dart`, `open_in_maps_sheet.dart`, `editors_screen.dart`,
+  `visibility_screen.dart`, `bug_report_sheet.dart`.
+- `_ErrorBanner`, copied into `login_screen.dart`, `register_screen.dart`,
+  `forgot_password_screen.dart` and `accept_terms_screen.dart`.
+- 22 per-call `OutlineInputBorder` copies of `inputDecorationTheme` (e.g.
+  `stop_form_screen.dart`, `map_picker_screen.dart`, `visibility_screen.dart`,
+  `language_picker_sheet.dart`).
+- 8 hand-rolled 36×4 drag handles where CLAUDE.md asks for
+  `showDragHandle: true`: `google_tos_consent_sheet.dart`,
+  `legal_doc_sheet.dart`, `stop_form_screen.dart` (place type),
+  `itinerary_form_screen.dart` (currency), `recommended_period_screen.dart`,
+  `language_picker_sheet.dart`, `profile_settings_sheet.dart`,
+  `duration_picker_sheet.dart`.
+
+### idea — spacing tokens
+
+The geometry scale in [constraints.md](constraints.md) keeps two spacing values
+beside the radii — card margin 16, label inset 22 — and both are still typed at
+every call site. A token for each, held by a guard like
+`radius_scale_guard_test.dart`, would do for spacing what `NtripiRadius` did for
+corners. Not built: the 2026-10-28 change was scoped to corners.
+
+### idea — the duplicate-stop warning in the stop form may run edge to edge
+
+A bug spotted during the radius sweep, not yet checked on a device: the warning
+shown when a new stop duplicates one already in the trip
+(`stop_form_screen.dart`, "Duplicate warning") has a top margin and no side
+margin, while the widgets around it pad themselves 16 in — so it likely runs to
+both edges of the form.
+
+---
+
 ## Dead and unread code
 
 ### planned — retire `POST`/`DELETE /itineraries/{id}/image`

@@ -151,7 +151,7 @@ class _VisibilityScreenState extends ConsumerState<VisibilityScreen> {
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                 decoration: BoxDecoration(
                   color: nt.transitBg,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(NtripiRadius.tile),
                   border: Border.all(color: nt.transitBorder),
                 ),
                 child: Row(
@@ -209,13 +209,13 @@ class _VisCard extends StatelessWidget {
     final nt = context.nt;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(NtripiRadius.tile),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
         decoration: BoxDecoration(
           color: active ? nt.mist : nt.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(NtripiRadius.tile),
           border: Border.all(
             color: active ? nt.forest : nt.border,
             width: active ? 2 : 1,
@@ -229,7 +229,7 @@ class _VisCard extends StatelessWidget {
               height: 36,
               decoration: BoxDecoration(
                 color: active ? nt.surface : nt.mist,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(NtripiRadius.icon),
               ),
               alignment: Alignment.center,
               child: Icon(opt.icon, size: 18, color: nt.forest),
@@ -329,7 +329,7 @@ class _AllowlistSection extends ConsumerWidget {
           Container(
             decoration: BoxDecoration(
               color: nt.surface,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(NtripiRadius.card),
               border: Border.all(color: nt.border),
             ),
             clipBehavior: Clip.antiAlias,
@@ -384,12 +384,12 @@ class _AllowlistSection extends ConsumerWidget {
         OfflineGate(
           builder: (online) => InkWell(
           onTap: (submitting || !online) ? null : onAddPeople,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(NtripiRadius.button),
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(NtripiRadius.button),
               border: Border.all(color: nt.text3, style: BorderStyle.solid),
             ),
             child: submitting
@@ -573,7 +573,6 @@ class _AddPersonDialogState extends ConsumerState<_AddPersonDialog> {
     // watch (not read) so open dialogs react to connectivity changes live
     final online = ref.watch(isOnlineProvider).value ?? true;
     return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text(AppLocalizations.of(context)!.visibilityAddPerson,
           style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
       content: SizedBox(
@@ -591,15 +590,15 @@ class _AddPersonDialogState extends ConsumerState<_AddPersonDialog> {
                 filled: true,
                 fillColor: nt.surface,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(NtripiRadius.field),
                   borderSide: BorderSide(color: nt.border),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(NtripiRadius.field),
                   borderSide: BorderSide(color: nt.border),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(NtripiRadius.field),
                   borderSide:
                       BorderSide(color: nt.forest, width: 1.5),
                 ),

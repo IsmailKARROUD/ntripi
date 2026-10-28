@@ -35,6 +35,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap" rel="stylesheet">
+  {% include "_radius_tokens.html" %}
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -74,7 +75,7 @@
     .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; }
     .brand-text { font-size: 17px; font-weight: 800; color: var(--forest); letter-spacing: -.2px; }
     .topbar-cta {
-      padding: 8px 16px; border-radius: 999px; background: var(--forest);
+      padding: 8px 16px; border-radius: var(--radius-button); background: var(--forest);
       color: var(--surface); font-size: 13px; font-weight: 700;
       text-decoration: none; white-space: nowrap;
     }
@@ -85,7 +86,7 @@
     {#- SectionCard / SectionLabel #}
     .card {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: 18px; margin: 16px 16px 0; padding: 18px;
+      border-radius: var(--radius-card); margin: 16px 16px 0; padding: 18px;
     }
     .label {
       margin: 22px 22px 8px; font-size: 12px; font-weight: 700;
@@ -95,7 +96,7 @@
 
     {#- Cover hero: itinerary_detail_screen.dart _CoverHero #}
     .hero { position: relative; height: 240px; overflow: hidden; background: var(--forest); }
-    @media (min-width: 600px) { .hero { margin: 16px 16px 0; border-radius: 18px; } }
+    @media (min-width: 600px) { .hero { margin: 16px 16px 0; border-radius: var(--radius-card); } }
     .hero-img, .hero-map { position: absolute; inset: 0; width: 100%; height: 100%; }
     .hero-img { object-fit: cover; }
     .hero-map { opacity: .22; }
@@ -118,7 +119,7 @@
     .hero-bottom { position: absolute; bottom: 16px; inset-inline: 16px; z-index: 2; }
     .badge {
       display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
-      border-radius: 999px; background: var(--glass);
+      border-radius: var(--radius-pill); background: var(--glass);
       color: var(--surface); font-size: 11px; font-weight: 600;
     }
     .hero-title {
@@ -168,7 +169,7 @@
     html[data-app="installed"] .gate-web .btn-primary { background: var(--mist); color: var(--forest); }
     .btn {
       display: flex; align-items: center; justify-content: center; gap: 8px;
-      min-height: 52px; padding: 12px 20px; border-radius: 14px;
+      min-height: 52px; padding: 12px 20px; border-radius: var(--radius-button);
       font: inherit; font-size: 16px; font-weight: 700; text-decoration: none;
       text-align: center; cursor: pointer; border: none;
     }
@@ -178,7 +179,7 @@
     .store-row { display: flex; gap: 10px; flex-wrap: wrap; }
     .store-badge {
       flex: 1 1 140px; display: flex; align-items: center; justify-content: center; gap: 8px;
-      min-height: 48px; padding: 10px 14px; border-radius: 14px;
+      min-height: 48px; padding: 10px 14px; border-radius: var(--radius-button);
       background: var(--bark); color: var(--surface); text-decoration: none;
     }
     .store-badge-text { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; }

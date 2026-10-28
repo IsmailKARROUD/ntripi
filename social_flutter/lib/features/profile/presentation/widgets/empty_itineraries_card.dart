@@ -22,7 +22,7 @@ class EmptyItinerariesCard extends StatelessWidget {
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: nt.mist,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(NtripiRadius.card),
             border: Border.all(color: nt.border),
           ),
           child: Column(
@@ -33,7 +33,7 @@ class EmptyItinerariesCard extends StatelessWidget {
                 height: 38,
                 decoration: BoxDecoration(
                   color: nt.forest,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(NtripiRadius.icon),
                   boxShadow: [
                     BoxShadow(
                       color: nt.forest.withValues(alpha: 0.25),
@@ -69,7 +69,7 @@ class EmptyItinerariesCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
                     color: nt.forest,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(NtripiRadius.button),
                     boxShadow: [
                       BoxShadow(
                         color: nt.forest.withValues(alpha: 0.25),
@@ -107,7 +107,7 @@ class EmptyItinerariesCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: nt.surface,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(NtripiRadius.tile),
               border: Border.all(color: nt.border),
             ),
             child: Row(
@@ -156,7 +156,7 @@ class _SmallIconBox extends StatelessWidget {
       height: 34,
       decoration: BoxDecoration(
         color: nt.sand,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(NtripiRadius.icon),
       ),
       child: Icon(icon, size: 18, color: nt.forest),
     );

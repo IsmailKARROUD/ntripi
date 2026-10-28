@@ -383,7 +383,7 @@ class _ActionChip extends StatelessWidget {
     final color = this.color ?? context.nt.text2;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(NtripiRadius.tile),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         child: loading
@@ -414,13 +414,13 @@ class _AddParallelButton extends StatelessWidget {
       padding: const EdgeInsetsDirectional.only(top: 8, end: 8),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(NtripiRadius.icon),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
             color: nt.editBlueTint,
             border: Border.all(color: nt.editBlue.withValues(alpha: 0.13)),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(NtripiRadius.icon),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,

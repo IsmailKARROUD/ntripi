@@ -527,8 +527,19 @@ block appears a second time anywhere, extract it instead of copying.**
 - **Never call `.toUpperCase()` on a `SectionLabel`** — it uppercases internally.
 - **A sheet leads with a title and uses `showDragHandle: true`** — a 48 px tap
   target and a `Semantics` label a hand-rolled 36×4 box does not have.
-- **Geometry scale**: card radius 18 · card margin 16 · label inset 22 · input
-  radius 14 · icon-pill radius 9.
+- **Every corner is a token of the radius scale, one per job** — `NtripiRadius`
+  (`core/ui/app_radii.dart`): card 18 · field 14 · button 14 · tile 12 · icon 10
+  · toggle 12 · inset 8 · pill 999 · modal 28 · checkbox 4. Never a number in
+  `Radius.circular` / `BorderRadius.circular`; a sheet's or a dialog's corners
+  come from the theme only, never a `shape:` per call; every
+  `OutlineInputBorder` names its radius. The web pages mirror the scale as
+  `var(--radius-*)` in `social_api/app/templates/_radius_tokens.html`, which
+  every layout includes. Held by `test/radius_scale_guard_test.dart` and
+  `social_api/test/test_radius_scale.py` — the second also fails when the two
+  scales disagree. Before the scale, 247 corners were typed as 18 different
+  numbers, and boxes doing the same job drifted apart: the trip page's
+  edit-mode info boxes kept a 4 copied from a field that had moved to 14.
+- **Spacing**: card margin 16 · label inset 22.
 - **Colors come from `context.nt` only.** `app_theme.dart` is the single source of
   truth and there is **not one `Color` literal outside it** (`Colors.transparent`
   excepted) — keep it that way. `nt.danger` is the destructive color, not

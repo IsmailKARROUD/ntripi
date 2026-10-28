@@ -28,7 +28,7 @@ class ParkedLinkNotice extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: nt.mist,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(NtripiRadius.tile),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,

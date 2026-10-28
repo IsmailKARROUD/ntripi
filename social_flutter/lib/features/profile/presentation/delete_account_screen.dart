@@ -277,7 +277,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: nt.dangerTint,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(NtripiRadius.tile),
         border: Border.all(color: nt.danger.withValues(alpha: 0.4)),
       ),
       child: Column(
@@ -413,7 +413,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: nt.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(NtripiRadius.tile),
         border: Border.all(color: nt.border),
       ),
       child: Row(

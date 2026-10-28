@@ -255,7 +255,7 @@ class _CoverImageFieldState extends State<CoverImageField> {
           AspectRatio(
             aspectRatio: widget.targetWidth / widget.targetHeight,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(NtripiRadius.tile),
               child: _hasImage
                   ? _ImagePreview(
                       pickedBytes: _pickedBytes,
@@ -571,7 +571,7 @@ class _CropScreenState extends State<_CropScreen> {
                   color: nt.sand,
                   width: 2,
                 ),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(NtripiRadius.tile),
               ),
               child: AspectRatio(
                 aspectRatio: widget.targetWidth / widget.targetHeight,
@@ -589,7 +589,7 @@ class _CropScreenState extends State<_CropScreen> {
                             onScaleStart: _onScaleStart,
                             onScaleUpdate: _onScaleUpdate,
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(NtripiRadius.tile),
                               child: SizedBox.expand(
                                 child: _initialized
                                     ? Stack(
@@ -747,7 +747,7 @@ class _ImagePlaceholder extends StatelessWidget {
         decoration: BoxDecoration(
           color: nt.overlayChrome.withValues(alpha: 0.5),
           border: Border.all(color: nt.text3, style: BorderStyle.solid),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(NtripiRadius.tile),
         ),
         child: picking
             ? const Center(child: NTripiRingLoader())

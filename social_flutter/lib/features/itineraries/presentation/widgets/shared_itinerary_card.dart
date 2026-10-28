@@ -50,7 +50,7 @@ class _EditorBadge extends StatelessWidget {
       decoration: BoxDecoration(
         // forest tint, not a flat fill — has to stay legible on both themes.
         color: nt.forest.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(NtripiRadius.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
