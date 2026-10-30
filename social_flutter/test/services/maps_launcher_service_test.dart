@@ -1,13 +1,17 @@
 // Unit tests for maps_launcher_service.dart — the pure URI builders behind
-// the "open in maps" actions. Detection and launching go through url_launcher
-// platform channels and are exercised manually; these tests cover the link
-// formats and the Google Maps waypoint-cap truncation.
+// the "open in maps" actions. Detection goes through url_launcher's platform
+// channel and is exercised manually; these tests cover the link formats, the
+// Google Maps waypoint-cap truncation, and the route openRoute hands that
+// channel.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ntripi/features/itineraries/data/maps_launcher_service.dart';
 
+import '../support/url_launches.dart';
+
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   final service = MapsLauncherService();
 
   group('placeUri', () {
@@ -107,12 +111,15 @@ void main() {
     });
   });
 
-  group('routeUri', () {
-    List<LatLng> points(int n) =>
-        List.generate(n, (i) => LatLng(10.0 + i, 20.0 + i));
+  List<LatLng> points(int n) =>
+      List.generate(n, (i) => LatLng(10.0 + i, 20.0 + i));
+
+  group('routeUri from my location', () {
+    Uri routeUri(List<LatLng> points) =>
+        service.routeUri(points, start: RouteStart.myLocation);
 
     test('omits origin so Google navigates from the device location', () {
-      final uri = service.routeUri(points(2));
+      final uri = routeUri(points(2));
 
       expect(uri.host, 'www.google.com');
       expect(uri.path, '/maps/dir/');
@@ -126,7 +133,7 @@ void main() {
 
     test('all stops before the last become pipe-separated waypoints in order',
         () {
-      final uri = service.routeUri(points(5));
+      final uri = routeUri(points(5));
 
       expect(uri.queryParameters['destination'], '14.0,24.0');
       expect(uri.queryParameters['waypoints'],
@@ -135,7 +142,7 @@ void main() {
 
     test('routes over the cap keep the first 9 stops and the destination',
         () {
-      final uri = service.routeUri(points(15));
+      final uri = routeUri(points(15));
 
       // Destination is preserved even though middle stops were dropped.
       expect(uri.queryParameters['destination'], '24.0,34.0');
@@ -146,11 +153,107 @@ void main() {
     });
 
     test('routes at the cap (10 points) are not truncated', () {
-      final uri = service.routeUri(points(10));
+      final uri = routeUri(points(10));
 
       final waypoints = uri.queryParameters['waypoints']!.split('|');
       expect(waypoints.length, MapsLauncherService.maxGoogleWaypoints);
       expect(uri.queryParameters['destination'], '19.0,29.0');
+    });
+  });
+
+  group('routeUri from the first stop', () {
+    Uri routeUri(List<LatLng> points) =>
+        service.routeUri(points, start: RouteStart.firstStop);
+
+    test('the first stop is the origin, so Google shows the trip alone', () {
+      final uri = routeUri(points(5));
+
+      expect(uri.host, 'www.google.com');
+      expect(uri.path, '/maps/dir/');
+      expect(uri.queryParameters['api'], '1');
+      expect(uri.queryParameters['origin'], '10.0,20.0');
+      // The origin is not repeated as a waypoint.
+      expect(uri.queryParameters['waypoints'], '11.0,21.0|12.0,22.0|13.0,23.0');
+      expect(uri.queryParameters['destination'], '14.0,24.0');
+    });
+
+    test('two stops are an origin and a destination, with no waypoints', () {
+      final uri = routeUri(points(2));
+
+      expect(uri.queryParameters['origin'], '10.0,20.0');
+      expect(uri.queryParameters['destination'], '11.0,21.0');
+      expect(uri.queryParameters.containsKey('waypoints'), isFalse);
+    });
+
+    test('routes over the cap keep the origin, 9 waypoints and the destination',
+        () {
+      final uri = routeUri(points(15));
+
+      expect(uri.queryParameters['origin'], '10.0,20.0');
+      final waypoints = uri.queryParameters['waypoints']!.split('|');
+      expect(waypoints.length, MapsLauncherService.maxGoogleWaypoints);
+      expect(waypoints.first, '11.0,21.0');
+      expect(waypoints.last, '19.0,29.0');
+      expect(uri.queryParameters['destination'], '24.0,34.0');
+    });
+
+    test('routes at the cap (11 points) are not truncated', () {
+      final uri = routeUri(points(11));
+
+      expect(uri.queryParameters['origin'], '10.0,20.0');
+      final waypoints = uri.queryParameters['waypoints']!.split('|');
+      expect(waypoints.length, MapsLauncherService.maxGoogleWaypoints);
+      expect(uri.queryParameters['destination'], '20.0,30.0');
+    });
+  });
+
+  test('a route carries one more stop from the first stop than from here', () {
+    // Google's waypoint cap excludes the origin and the destination.
+    expect(MapsLauncherService.maxRouteStops(RouteStart.myLocation), 10);
+    expect(MapsLauncherService.maxRouteStops(RouteStart.firstStop), 11);
+  });
+
+  group('openRoute', () {
+    test('hands the route to the Maps app, or to the browser without it',
+        () async {
+      final launches = recordUrlLaunches();
+      final route = points(3);
+
+      await service.openRoute(route, start: RouteStart.firstStop);
+
+      final launch = launches.single;
+      expect(launch.url, service.routeUri(route, start: RouteStart.firstStop));
+      // An in-app browser view would keep the Google Maps app out of it…
+      expect(launch.inApp, isFalse);
+      // …and app-only would open nothing on a phone without it.
+      expect(launch.appOnly, isFalse);
+    });
+
+    for (final (start, stops, cut) in [
+      (RouteStart.myLocation, 10, false),
+      (RouteStart.myLocation, 11, true),
+      (RouteStart.firstStop, 11, false),
+      (RouteStart.firstStop, 12, true),
+    ]) {
+      test(
+          'from ${start.name}, $stops stops '
+          '${cut ? 'are reported cut short' : 'open whole'}', () async {
+        final launches = recordUrlLaunches();
+
+        final truncated = await service.openRoute(points(stops), start: start);
+
+        expect(truncated, cut);
+        expect(launches, hasLength(1));
+      });
+    }
+
+    test('a route of one stop is refused before anything opens', () async {
+      final launches = recordUrlLaunches();
+
+      await expectLater(
+          service.openRoute(points(1), start: RouteStart.myLocation),
+          throwsAssertionError);
+      expect(launches, isEmpty);
     });
   });
 }

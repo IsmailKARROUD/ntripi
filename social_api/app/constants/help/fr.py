@@ -103,6 +103,7 @@ RELEASES: tuple[Release, ...] = (
             "**Les liens partagés mènent là où vous êtes déjà.** Connecté à Ntripi dans votre navigateur, un voyage ou un profil partagé s’ouvre directement au lieu de son aperçu, et sur un téléphone la page propose **Ouvrir dans Ntripi**. La barre d’adresse de l’application web affiche désormais la page où vous êtes : recharger vous y laisse.",
             "**Organiser les étapes au même endroit.** En mode édition, **Organiser les étapes** (les quatre flèches) au-dessus des étapes transforme le voyage en rangées d’étapes. Faites glisser ou touchez une étape pour en faire l’alternative d’une autre piste, ou pour lui donner sa propre piste entre deux autres ; faites glisser le numéro d’une piste pour déplacer toute la piste. Rien ne change avant que vous touchiez **Enregistrer**, et les boutons séparés pour réorganiser et déplacer sur chaque étape ont disparu.",
             "**Le bouton Envoyer reste à portée de main.** En signalant un bug — et en signalant un contenu, en évaluant un voyage, en ajoutant un transit ou en contestant une décision — les boutons restent désormais en bas, au-dessus du clavier pendant la saisie, au lieu de sortir de l’écran. Le signalement d’un bug demande aussi d’abord ce qui ne va pas ; choisir une catégorie est facultatif.",
+            "**Choisissez d’où part le trajet.** La flèche au-dessus des étapes demande maintenant d’où partir avant d’ouvrir Google Maps : **Depuis ma position**, pour l’itinéraire depuis l’endroit où vous êtes, ou **Depuis la première étape**, pour voir seulement le voyage.",
         ),
     ),
     Release(
@@ -521,8 +522,10 @@ Il demande l’autorisation de localisation la première fois. **Refuser ne bloq
             ),
             Block(
                 anchor="opening-in-maps",
-                heading="Ouvrir une étape dans votre application de cartes",
+                heading="Ouvrir une étape, ou tout le voyage, dans votre application de cartes",
                 body="""Une étape qui a une position propose de s’ouvrir dans l’application de cartes que vous avez installée, pour obtenir l’itinéraire le jour même sans rien retaper.
+
+La flèche au-dessus des étapes ouvre tout le voyage dans Google Maps, la seule application de cartes qui accepte plusieurs étapes à la fois, et demande d’où partir. **Depuis ma position** vous donne l’itinéraire depuis l’endroit où vous êtes, par les étapes du voyage — c’est Google Maps qui trouve où vous êtes, Ntripi ne demande donc jamais votre position. **Depuis la première étape** montre seulement le voyage, de sa première étape à la dernière. Là où le voyage propose des alternatives, le trajet passe par celle affichée à l’écran. Google Maps accepte jusqu’à 10 étapes depuis votre position et 11 depuis la première étape ; un voyage plus long s’ouvre avec ses premières étapes et la dernière, et Ntripi vous le signale.
 
 La carte de Ntripi sert à lire le plan ; votre application de cartes sert à le parcourir.""",
             ),
@@ -539,9 +542,13 @@ La carte de Ntripi sert à lire le plan ; votre application de cartes sert à le
             "latitude",
             "longitude",
             "où",
+            "itinéraire",
+            "trajet",
+            "navigation",
+            "point de départ",
         ),
         related=("add-places-to-an-itinerary", "permissions"),
-        updated="2026-09-01",
+        updated="2026-10-29",
         cta="Placez votre première étape sur la carte.",
     ),
     Article(

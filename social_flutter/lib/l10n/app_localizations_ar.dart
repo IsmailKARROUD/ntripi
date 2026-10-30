@@ -1533,6 +1533,20 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get routeFromMyLocation => 'من موقعي';
+
+  @override
+  String get routeFromMyLocationHint =>
+      'الاتجاهات من مكانك الحالي عبر محطات المسار';
+
+  @override
+  String get routeFromFirstStop => 'من المحطة الأولى';
+
+  @override
+  String get routeFromFirstStopHint =>
+      'المسار وحده، من محطته الأولى إلى الأخيرة';
+
+  @override
   String get openStreetMapContributors => 'مساهمو OpenStreetMap';
 
   @override

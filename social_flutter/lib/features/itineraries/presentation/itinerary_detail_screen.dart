@@ -77,6 +77,7 @@ import 'package:ntripi/features/itineraries/presentation/widgets/leg_thoughts.da
 import 'package:ntripi/features/itineraries/presentation/widgets/long_press_to_edit.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/route_start_sheet.dart';
 import 'package:ntripi/features/reports/domain/report_target.dart';
 import 'package:ntripi/features/reports/presentation/report_content_sheet.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/parallel_stop_group.dart';
@@ -734,12 +735,15 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   Future<void> _openRouteInGoogleMaps(List<LatLng> points) async {
     final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
-    final truncated =
-        await ref.read(mapsLauncherServiceProvider).openRoute(points);
+    final start = await showRouteStartSheet(context);
+    if (start == null || !mounted) return;
+    final truncated = await ref
+        .read(mapsLauncherServiceProvider)
+        .openRoute(points, start: start);
     if (truncated && mounted) {
       messenger.showSnackBar(SnackBar(
-        content: Text(l10n
-            .routeTruncated(MapsLauncherService.maxGoogleWaypoints + 1)),
+        content:
+            Text(l10n.routeTruncated(MapsLauncherService.maxRouteStops(start))),
       ));
     }
   }
@@ -1627,7 +1631,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                   const SizedBox(width: 8),
                                 ],
                                 // Open the full trajet in Google Maps — the
-                                // only map app with multi-stop deep links.
+                                // only map app with multi-stop deep links —
+                                // after asking where it starts.
                                 // Hidden in edit mode alongside the bookmark.
                                 if (!_editMode && routePoints.length >= 2) ...[
                                   _RoutePillButton(

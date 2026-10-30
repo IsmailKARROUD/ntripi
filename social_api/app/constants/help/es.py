@@ -103,6 +103,7 @@ RELEASES: tuple[Release, ...] = (
             "**Los enlaces compartidos llevan adonde ya estás.** Con la sesión iniciada en Ntripi en tu navegador, un viaje o un perfil compartido se abre directamente en lugar de su vista previa, y en un teléfono la página ofrece **Abrir en Ntripi**. La barra de direcciones de la aplicación web muestra ahora la página en la que estás, así que al recargar sigues ahí.",
             "**Organiza las paradas en un solo sitio.** En modo edición, **Organizar paradas** (las cuatro flechas) sobre las paradas convierte el viaje en filas de paradas. Arrastra o toca una parada para convertirla en alternativa de otra columna, o para darle su propia columna entre otras dos; arrastra el número de una columna para moverla entera. Nada cambia hasta que tocas **Guardar**, y los botones aparte para reordenar y mover en cada parada ya no están.",
             "**Enviar, siempre a mano.** Al informar de un fallo —y también al denunciar contenido, valorar un viaje, añadir transporte o apelar— los botones se quedan ahora abajo, encima del teclado mientras escribes, en lugar de salirse de la vista. Al informar de un fallo, además, primero se pregunta qué falló; elegir una categoría es opcional.",
+            "**Elige desde dónde empieza la ruta.** La flecha sobre las paradas ahora pregunta desde dónde empezar antes de abrir Google Maps: **Desde mi ubicación**, para indicaciones desde donde estás, o **Desde la primera parada**, para ver solo el viaje.",
         ),
     ),
     Release(
@@ -519,8 +520,10 @@ Pide permiso de ubicación la primera vez. **Rechazarlo no bloquea nada**: el ma
             ),
             Block(
                 anchor="opening-in-maps",
-                heading="Abrir una parada en tu aplicación de mapas",
+                heading="Abrir una parada, o todo el viaje, en tu aplicación de mapas",
                 body="""Una parada con ubicación ofrece abrirse en la aplicación de mapas que tengas instalada, para obtener indicaciones sobre la marcha sin volver a escribir nada.
+
+La flecha sobre las paradas abre todo el viaje en Google Maps, la única aplicación de mapas que admite varias paradas a la vez, y te pregunta desde dónde empezar. **Desde mi ubicación** te da indicaciones desde donde estás, por las paradas del viaje — Google Maps te localiza por sí mismo, así que Ntripi nunca te pide tu ubicación. **Desde la primera parada** muestra solo el viaje, de su primera parada a la última. Donde el viaje tiene alternativas, la ruta pasa por la que ves en pantalla. Google Maps admite hasta 10 paradas desde tu ubicación y 11 desde la primera parada; un viaje más largo se abre con sus primeras paradas y la última, y Ntripi te lo avisa.
 
 El mapa de Ntripi sirve para leer el plan; tu aplicación de mapas sirve para recorrerlo.""",
             ),
@@ -537,9 +540,13 @@ El mapa de Ntripi sirve para leer el plan; tu aplicación de mapas sirve para re
             "latitud",
             "longitud",
             "dónde",
+            "cómo llegar",
+            "ruta",
+            "navegación",
+            "punto de partida",
         ),
         related=("add-places-to-an-itinerary", "permissions"),
-        updated="2026-09-01",
+        updated="2026-10-29",
         cta="Coloca tu primera parada en el mapa.",
     ),
     Article(

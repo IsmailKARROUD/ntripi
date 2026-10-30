@@ -1509,6 +1509,20 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get routeFromMyLocation => 'From my location';
+
+  @override
+  String get routeFromMyLocationHint =>
+      'Directions from where you are now, through the trip\'s stops';
+
+  @override
+  String get routeFromFirstStop => 'From the first stop';
+
+  @override
+  String get routeFromFirstStopHint =>
+      'Just the trip, from its first stop to its last';
+
+  @override
   String get openStreetMapContributors => 'OpenStreetMap contributors';
 
   @override

@@ -161,6 +161,10 @@ RELEASES: tuple[Release, ...] = (
             "now stay at the bottom, above the keyboard while you type, instead "
             "of scrolling out of sight. The bug reporter also asks what went "
             "wrong first; picking a category is optional.",
+            "**Choose where the trip's route starts.** The directions arrow "
+            "above the stops now asks before opening Google Maps: **From my "
+            "location**, for directions from where you are, or **From the first "
+            "stop**, to see just the trip.",
         ),
     ),
     Release(
@@ -687,10 +691,11 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="building",
         schema=SCHEMA_HOWTO,
-        updated="2026-09-01",
+        updated="2026-10-29",
         keywords=(
             "google maps", "link", "paste", "coordinates", "gps", "pin",
             "location", "map picker", "latitude", "longitude", "where",
+            "directions", "route", "navigate", "starting point",
         ),
         related=("add-places-to-an-itinerary", "permissions"),
         cta="Pin your first stop on the map.",
@@ -742,11 +747,22 @@ ARTICLES: tuple[Article, ...] = (
             ),
             Block(
                 anchor="opening-in-maps",
-                heading="Opening a stop in your maps app",
+                heading="Opening a stop, or the whole trip, in your maps app",
                 body=(
                     "A stop with a location offers to open in whichever maps app "
                     "you have installed, so you can get directions on the day "
                     "without retyping anything.\n\n"
+                    "The directions arrow above the stops opens the whole trip in "
+                    "Google Maps, the one maps app that takes several stops at once, "
+                    "and asks where to start. **From my location** gives you "
+                    "directions from where you are now, through the trip's stops — "
+                    "Google Maps finds you itself, so Ntripi never asks for your "
+                    "location. **From the first stop** shows just the trip, from its "
+                    "first stop to its last. Where the trip has alternatives, the "
+                    "route goes through the one on your screen. Google Maps takes up "
+                    "to 10 stops from your location and 11 from the first stop; a "
+                    "longer trip opens with its first stops and its last, and Ntripi "
+                    "says so.\n\n"
                     "Ntripi's own map is for reading the plan; your maps app is for "
                     "walking it."
                 ),

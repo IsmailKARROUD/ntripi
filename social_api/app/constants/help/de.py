@@ -103,6 +103,7 @@ RELEASES: tuple[Release, ...] = (
             "**Geteilte Links führen dorthin, wo Sie schon sind.** Sind Sie in Ihrem Browser bei Ntripi angemeldet, öffnet sich eine geteilte Reise oder ein geteiltes Profil direkt statt der Vorschau, und auf dem Telefon bietet die Seite **In Ntripi öffnen** an. Die Adressleiste der Web-App zeigt jetzt die Seite, auf der Sie sind — nach dem Neuladen bleiben Sie dort.",
             "**Stopps an einem Ort anordnen.** Im Bearbeitungsmodus macht **Stopps anordnen** (die vier Pfeile) über den Stopps aus der Reise Reihen von Stopps. Ziehen oder tippen Sie einen Stopp, um ihn zur Alternative einer anderen Spalte zu machen oder ihm zwischen zwei anderen eine eigene Spalte zu geben; ziehen Sie die Nummer einer Spalte, um die ganze Spalte zu verschieben. Nichts ändert sich, bevor Sie auf **Speichern** tippen, und die getrennten Knöpfe zum Umordnen und Verschieben an jedem Stopp sind verschwunden.",
             "**Senden bleibt in Reichweite.** Beim Melden eines Fehlers — und beim Melden von Inhalten, Bewerten einer Reise, Hinzufügen von Transport und bei einem Einspruch — bleiben die Knöpfe jetzt unten, beim Tippen über der Tastatur, statt aus dem Blick zu scrollen. Beim Melden eines Fehlers steht außerdem die Beschreibung an erster Stelle; eine Kategorie zu wählen ist optional.",
+            "**Wählen Sie, wo die Route beginnt.** Der Pfeil über den Stopps fragt jetzt, wo es losgehen soll, bevor sich Google Maps öffnet: **Von meinem Standort**, für die Route von dort, wo Sie sind, oder **Ab dem ersten Stopp**, um nur die Reise zu sehen.",
         ),
     ),
     Release(
@@ -519,8 +520,10 @@ Beim ersten Mal wird die Standortberechtigung angefragt. **Ablehnen blockiert ni
             ),
             Block(
                 anchor="opening-in-maps",
-                heading="Einen Stopp in Ihrer Karten-App öffnen",
+                heading="Einen Stopp oder die ganze Reise in Ihrer Karten-App öffnen",
                 body="""Ein Stopp mit Position bietet an, sich in der installierten Karten-App zu öffnen, damit Sie am Tag selbst die Route bekommen, ohne etwas abzutippen.
+
+Der Pfeil über den Stopps öffnet die ganze Reise in Google Maps, der einzigen Karten-App, die mehrere Stopps auf einmal annimmt, und fragt, wo es losgehen soll. **Von meinem Standort** gibt Ihnen die Route von dort, wo Sie gerade sind, durch die Stopps der Reise — Google Maps ermittelt Ihren Standort selbst, Ntripi fragt also nie danach. **Ab dem ersten Stopp** zeigt nur die Reise, vom ersten bis zum letzten Stopp. Wo die Reise Alternativen hat, führt die Route über die, die Sie auf dem Bildschirm sehen. Google Maps nimmt bis zu 10 Stopps ab Ihrem Standort und 11 ab dem ersten Stopp; eine längere Reise öffnet sich mit ihren ersten Stopps und dem letzten, und Ntripi weist darauf hin.
 
 Die Karte von Ntripi dient zum Lesen des Plans; Ihre Karten-App dient dazu, ihn abzulaufen.""",
             ),
@@ -537,9 +540,13 @@ Die Karte von Ntripi dient zum Lesen des Plans; Ihre Karten-App dient dazu, ihn 
             "breitengrad",
             "längengrad",
             "wo",
+            "route",
+            "navigation",
+            "wegbeschreibung",
+            "startpunkt",
         ),
         related=("add-places-to-an-itinerary", "permissions"),
-        updated="2026-09-01",
+        updated="2026-10-29",
         cta="Setzen Sie Ihren ersten Stopp auf die Karte.",
     ),
     Article(

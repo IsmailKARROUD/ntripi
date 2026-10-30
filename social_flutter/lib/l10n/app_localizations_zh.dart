@@ -1443,6 +1443,18 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get routeFromMyLocation => '从我的位置出发';
+
+  @override
+  String get routeFromMyLocationHint => '从你现在的位置出发，途经行程中的停靠点';
+
+  @override
+  String get routeFromFirstStop => '从第一个停靠点出发';
+
+  @override
+  String get routeFromFirstStopHint => '只看行程本身，从第一个停靠点到最后一个';
+
+  @override
   String get openStreetMapContributors => 'OpenStreetMap 贡献者';
 
   @override

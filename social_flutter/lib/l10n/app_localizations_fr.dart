@@ -1534,6 +1534,20 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get routeFromMyLocation => 'Depuis ma position';
+
+  @override
+  String get routeFromMyLocationHint =>
+      'Le trajet depuis l\'endroit où vous êtes, par les étapes de l\'itinéraire';
+
+  @override
+  String get routeFromFirstStop => 'Depuis la première étape';
+
+  @override
+  String get routeFromFirstStopHint =>
+      'Seulement l\'itinéraire, de sa première étape à la dernière';
+
+  @override
   String get openStreetMapContributors => 'Contributeurs OpenStreetMap';
 
   @override

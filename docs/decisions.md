@@ -1825,7 +1825,6 @@ own session and sends exactly as before.
 - One thread per push: unbounded under a burst, and sends out of order.
 - An external queue: a new dependency for something the poll already backs up.
 
-<<<<<<< HEAD
 ### 2026-10-25 — A reload never blanks the content on screen
 
 Completes the separate fix that
@@ -2004,7 +2003,7 @@ with the link, where the owner wanted the link alone.
   screen.
 - A sheet of the app's own with Copy link and Share via…: the owner preferred
   the phone's own popup with one row added.
-=======
+
 ### 2026-10-25 — Image moderation tells the operator when it cannot scan
 
 Extends
@@ -2168,7 +2167,6 @@ scan.
   routing being available on its Enterprise plan only.
 - Hive: US-only.
 - OpenAI's image moderation: US.
->>>>>>> ntripiworktree
 
 ### 2026-10-25 — The app keeps its connection to the API open for two minutes
 
@@ -2459,3 +2457,35 @@ Send over a list of categories would only have moved the confusion.
 - **Send always enabled, explaining an empty message on tap**: with the field
   first, the disabled Send explains itself, and the contract the sheet's tests
   pin (disabled until typed) stands.
+
+### 2026-10-29 — The trip's route in Google Maps asks where it starts
+
+**Context.** The directions arrow above a trip's stops opened the trip in
+Google Maps with no `origin`, so every route started at the device location.
+That is right on the road, where Google then offers Start, turn-by-turn. From
+home it put the drive to the first stop in front of the trip, and there was no
+way to see the trip on its own.
+
+**Decision.** A bottom sheet asks every time: **From my location** sends no
+`origin`, as before; **From the first stop** sends the trip's first point as
+the `origin`. The sheet only returns the choice (`RouteStart`); the trip screen
+opens the route, and `MapsLauncherService.routeUri` builds both links.
+
+**Consequences.**
+- One more tap before Google Maps opens.
+- From the first stop a link carries 11 stops instead of 10 — Google's nine
+  waypoints exclude the origin and the destination — and the truncation notice
+  names the cap of the start chosen (`MapsLauncherService.maxRouteStops`).
+- From the first stop, Google shows a route preview rather than Start; that is
+  what "just the trip" asks for.
+- Regression tests: `test/services/maps_launcher_service_test.dart`,
+  `test/widgets/itinerary_route_start_test.dart`.
+
+**Alternatives rejected.**
+- **Remembering the last choice**: the right start depends on the moment —
+  planning at home or on the road — and a remembered one needs a second
+  control to change it.
+- **A popup menu on the arrow**: lighter, but with no room to say what each
+  start shows.
+- **Always from the first stop**: it would take turn-by-turn away from the
+  person standing at the start of the trip.

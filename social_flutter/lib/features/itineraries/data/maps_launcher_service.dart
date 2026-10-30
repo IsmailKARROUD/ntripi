@@ -25,11 +25,25 @@ enum ExternalMapApp {
   otherApps,
 }
 
+/// Where a Google Maps route link starts.
+enum RouteStart {
+  // No origin: Google starts at the device location — the only case where the
+  // app offers Start (turn-by-turn) instead of a static preview.
+  myLocation,
+  // The trip's first stop is the origin: Google previews the trip alone.
+  firstStop,
+}
+
 class MapsLauncherService {
   // Google Maps URL API hard cap on intermediate waypoints (origin +
-  // destination excluded). Origin is the implicit device location, so a
-  // route link carries at most 10 stops (9 waypoints + destination).
+  // destination excluded) — see maxRouteStops for what a link can carry.
   static const maxGoogleWaypoints = 9;
+
+  /// Stops a route link can carry: the waypoints and the destination, plus the
+  /// first stop when it is the origin — 10 from the device location, 11 from
+  /// the first stop.
+  static int maxRouteStops(RouteStart start) =>
+      maxGoogleWaypoints + (start == RouteStart.firstStop ? 2 : 1);
 
   /// Map apps to offer in the picker, in display order.
   Future<List<ExternalMapApp>> installedApps() async {
@@ -82,10 +96,13 @@ class MapsLauncherService {
 
   /// Opens the route in Google Maps (the only app with multi-stop deep
   /// links). Returns true when the route was truncated to the waypoint cap.
-  Future<bool> openRoute(List<LatLng> orderedPoints) async {
+  Future<bool> openRoute(
+    List<LatLng> orderedPoints, {
+    required RouteStart start,
+  }) async {
     assert(orderedPoints.length >= 2, 'a route needs at least two points');
-    await _launch(routeUri(orderedPoints));
-    return orderedPoints.length > maxGoogleWaypoints + 1;
+    await _launch(routeUri(orderedPoints, start: start));
+    return orderedPoints.length > maxRouteStops(start);
   }
 
   Future<void> _launch(Uri uri) =>
@@ -156,22 +173,26 @@ class MapsLauncherService {
   }
 
   @visibleForTesting
-  Uri routeUri(List<LatLng> orderedPoints) {
-    // Over the cap: keep the first 9 stops and the destination — the start
-    // of the trip is what the user navigates first.
-    final points = orderedPoints.length > maxGoogleWaypoints + 1
+  Uri routeUri(List<LatLng> orderedPoints, {required RouteStart start}) {
+    // Over the cap: keep the first stops and the destination — the start of
+    // the trip is what the user navigates first.
+    final cap = maxRouteStops(start);
+    final points = orderedPoints.length > cap
         ? [
-            ...orderedPoints.sublist(0, maxGoogleWaypoints),
+            ...orderedPoints.sublist(0, cap - 1),
             orderedPoints.last,
           ]
         : orderedPoints;
     String fmt(LatLng p) => '${p.latitude},${p.longitude}';
-    final waypoints = points.sublist(0, points.length - 1);
-    // No origin — Google defaults it to the device location, the only case
-    // where the app offers Start (turn-by-turn) instead of a static preview.
+    final fromFirstStop = start == RouteStart.firstStop;
+    final waypoints =
+        points.sublist(fromFirstStop ? 1 : 0, points.length - 1);
+    // No origin for myLocation — Google defaults it to the device location,
+    // the only case where the app offers Start instead of a static preview.
     // No travelmode param — Google keeps the user's last-used mode.
     return Uri.https('www.google.com', '/maps/dir/', {
       'api': '1',
+      if (fromFirstStop) 'origin': fmt(points.first),
       'destination': fmt(points.last),
       if (waypoints.isNotEmpty) 'waypoints': waypoints.map(fmt).join('|'),
     });
