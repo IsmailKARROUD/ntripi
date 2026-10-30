@@ -166,6 +166,40 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
         loaderSize: 40,
         // Capped at 70 % of the screen — above the keyboard, not including it.
         child: KeyboardSafeSheetBody(
+      actions: SheetActionBar(
+        error: _error,
+        child: Row(
+          children: [
+            if (widget.current != null) ...[
+              OfflineGate(
+                builder: (online) => IconButton(
+                  icon: Icon(Icons.delete_outline, color: nt.danger),
+                  tooltip: l10n.removeMyRatingTooltip,
+                  onPressed: (_saving || !online) ? null : _deleteRating,
+                ),
+              ),
+              const SizedBox(width: 4),
+            ],
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _saving ? null : () => Navigator.of(context).pop(),
+                child: Text(l10n.cancel),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OfflineGate(
+                builder: (online) => FilledButton(
+                  onPressed: (canSave && online) ? _save : null,
+                  child: _saving
+                      ? const NTripiRingLoader(size: 18)
+                      : Text(l10n.saveButton),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -290,53 +324,6 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
                     ],
                   ),
           ),
-
-          // ── Failure message ───────────────────────────────────────────────
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-              child: SheetErrorRow(_error!),
-            ),
-
-          const SizedBox(height: 20),
-
-          // ── Action buttons ─────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-            child: Row(
-              children: [
-                if (widget.current != null) ...[
-                  OfflineGate(
-                    builder: (online) => IconButton(
-                      icon: Icon(Icons.delete_outline, color: nt.danger),
-                      tooltip: l10n.removeMyRatingTooltip,
-                      onPressed: (_saving || !online) ? null : _deleteRating,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                ],
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed:
-                        _saving ? null : () => Navigator.of(context).pop(),
-                    child: Text(l10n.cancel),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OfflineGate(
-                    builder: (online) => FilledButton(
-                      onPressed: (canSave && online) ? _save : null,
-                      child: _saving
-                          ? const NTripiRingLoader(size: 18)
-                          : Text(l10n.saveButton),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
         ],
       ),
         ),

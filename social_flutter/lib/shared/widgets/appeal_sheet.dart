@@ -12,6 +12,7 @@ import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/features/profile/domain/violation.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:ntripi/shared/widgets/keyboard_avoidance.dart';
 
 /// Opens the appeal composer for [targetType]/[targetId].
@@ -33,11 +34,7 @@ Future<bool> showAppealSheet(
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,
-    // Scrolls, so a short window or large text can no longer overflow it.
-    builder: (_) => KeyboardSafeSheetBody(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-      child: AppealSheet(targetType: targetType, targetId: targetId),
-    ),
+    builder: (_) => AppealSheet(targetType: targetType, targetId: targetId),
   );
 
   if (violations == null) return false;
@@ -120,54 +117,57 @@ class _AppealSheetState extends ConsumerState<AppealSheet> {
     final l10n = AppLocalizations.of(context)!;
     final nt = context.nt;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l10n.appealFormTitle,
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-            color: nt.bark,
-          ),
+    // Scrolls, so a short window or large text can no longer overflow it.
+    return KeyboardSafeSheetBody(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+      actions: SheetActionBar(
+        inset: 20,
+        child: FilledButton(
+          key: const Key('appealSubmitButton'),
+          onPressed: _busy ? null : _submit,
+          child: _busy
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(l10n.appealSubmit),
         ),
-        const SizedBox(height: 6),
-        Text(
-          l10n.appealFormMessage,
-          style: TextStyle(fontSize: 13, color: nt.text2),
-        ),
-        const SizedBox(height: 14),
-        // The whole box, counter and error rise above the keyboard together.
-        RevealTogether(
-          child: TextField(
-            key: const Key('appealReasonField'),
-            controller: _controller,
-            maxLines: 5,
-            maxLength: 2000,
-            enabled: !_busy,
-            decoration: InputDecoration(
-              labelText: l10n.appealReasonLabel,
-              errorText: _error,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.appealFormTitle,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: nt.bark,
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            key: const Key('appealSubmitButton'),
-            onPressed: _busy ? null : _submit,
-            child: _busy
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(l10n.appealSubmit),
+          const SizedBox(height: 6),
+          Text(
+            l10n.appealFormMessage,
+            style: TextStyle(fontSize: 13, color: nt.text2),
           ),
-        ),
-      ],
+          const SizedBox(height: 14),
+          // The whole box, counter and error rise above the keyboard together.
+          RevealTogether(
+            child: TextField(
+              key: const Key('appealReasonField'),
+              controller: _controller,
+              maxLines: 5,
+              maxLength: 2000,
+              enabled: !_busy,
+              decoration: InputDecoration(
+                labelText: l10n.appealReasonLabel,
+                errorText: _error,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

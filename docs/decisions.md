@@ -2407,3 +2407,55 @@ one box is a change to both.
   side only fails nothing.
 - **Pill buttons on the web**: the share pages' buttons and store badges
   already matched the app's 14, and one look across the app and the web won.
+
+### 2026-10-29 — A sheet's buttons stay on screen; the bug reporter asks for the message first
+
+**Context.** Shaking the phone opened the bug reporter with **Send report** out
+of sight, and people could not tell how to send. The button was the last item
+of the sheet's scrolling list, and the `feedback` package opens that sheet at
+`feedbackSheetHeight` (0.45 of the screen) — about 380 px on a phone, against a
+form of about 520 — so Send started below the fold on every phone. The
+package's own `StringFeedback` pins its button below the list; our custom sheet
+had moved it inside. The audit found the same mechanism in every
+`KeyboardSafeSheetBody` sheet — report content, rate a trip, transport leg,
+appeal: the button row was the body's last child, so it sat under the keyboard
+while a field was in use, and below the fold once the body outgrew the 70 %
+cap (a short phone, or the rate sheet once its dimensions show).
+
+**Decision.** A sheet's buttons never scroll with its content. `SheetActionBar`
+(`shared/widgets/editorial_widgets.dart`) is the one pinned bar: a top hairline,
+the sheet's error above the buttons (`error:`), and the bottom safe area — the
+home indicator replaces its bottom gap rather than adding to it.
+`KeyboardSafeSheetBody(actions:)` pins it below the scroll view, inside the cap
+and above the keyboard; the bug reporter pins it under its own list. The bug
+reporter now asks for the message first and offers the optional category after
+it: Send stays disabled until something is typed, and a pinned but greyed-out
+Send over a list of categories would only have moved the confusion.
+
+**Consequences.**
+- The four modal sheets keep their buttons, wording and behaviour; only where
+  the row sits changed. Report content, rate and the bug reporter show their
+  error in the bar; the appeal keeps its error on the field, and now builds its
+  own `KeyboardSafeSheetBody` so its state reaches the pinned button.
+- The cap now bounds body and bar together, so no sheet grew taller.
+- `test/keyboard_avoidance_guard_test.dart` fails on a `KeyboardSafeSheetBody`
+  call without `actions:` (an allowlist takes a sheet with no buttons, with its
+  reason). `keyboard_avoidance_test.dart` holds the primitive: the bar above a
+  keyboard on a short phone with the focused field above it, and on screen at
+  rest under a body taller than the cap. The bug reporter's tests open the real
+  `BetterFeedback` on a phone-size view; the report-content and appeal tests
+  type with the keyboard up. Each of these failed on the old layout.
+
+**Alternatives rejected.**
+- **A Send in the reporter's drawing bar** (✕ / Navigate / Draw / colours): the
+  bar is the package's, with no hook for a button, so it meant vendoring about
+  2,500 lines and re-applying the patch on every upgrade — for a button that
+  would sit disabled until the field in the sheet below was filled.
+- **A second, compact Send beside the sheet's title**: two buttons for one
+  action, once the bottom row can no longer leave the screen.
+- **A taller `feedbackSheetHeight`**: a number tuned to today's form and phone;
+  it shrinks the screenshot being drawn on, and the keyboard still covers the
+  end of the form.
+- **Send always enabled, explaining an empty message on tap**: with the field
+  first, the disabled Send explains itself, and the contract the sheet's tests
+  pin (disabled until typed) stands.

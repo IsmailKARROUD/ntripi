@@ -102,6 +102,7 @@ RELEASES: tuple[Release, ...] = (
             "**Nur den Link kopieren.** Das Teilen-Menü hat einen neuen Eintrag **Link kopieren**, der nur den Link kopiert — ohne Namen, Stationen und Dauer der Reise. Im Web bietet ihn auch der Teilen-Knopf an.",
             "**Geteilte Links führen dorthin, wo Sie schon sind.** Sind Sie in Ihrem Browser bei Ntripi angemeldet, öffnet sich eine geteilte Reise oder ein geteiltes Profil direkt statt der Vorschau, und auf dem Telefon bietet die Seite **In Ntripi öffnen** an. Die Adressleiste der Web-App zeigt jetzt die Seite, auf der Sie sind — nach dem Neuladen bleiben Sie dort.",
             "**Stopps an einem Ort anordnen.** Im Bearbeitungsmodus macht **Stopps anordnen** (die vier Pfeile) über den Stopps aus der Reise Reihen von Stopps. Ziehen oder tippen Sie einen Stopp, um ihn zur Alternative einer anderen Spalte zu machen oder ihm zwischen zwei anderen eine eigene Spalte zu geben; ziehen Sie die Nummer einer Spalte, um die ganze Spalte zu verschieben. Nichts ändert sich, bevor Sie auf **Speichern** tippen, und die getrennten Knöpfe zum Umordnen und Verschieben an jedem Stopp sind verschwunden.",
+            "**Senden bleibt in Reichweite.** Beim Melden eines Fehlers — und beim Melden von Inhalten, Bewerten einer Reise, Hinzufügen von Transport und bei einem Einspruch — bleiben die Knöpfe jetzt unten, beim Tippen über der Tastatur, statt aus dem Blick zu scrollen. Beim Melden eines Fehlers steht außerdem die Beschreibung an erster Stelle; eine Kategorie zu wählen ist optional.",
         ),
     ),
     Release(
@@ -1908,11 +1909,11 @@ Sie können bei geöffnetem Melde-Werkzeug navigieren, wenn Sie einen anderen Bi
             ),
             Block(
                 anchor="describe",
-                heading="Eine Kategorie wählen und beschreiben",
+                heading="Beschreiben, was schiefging",
                 kind=KIND_STEP,
-                body="""Wählen Sie eine von: Absturz, Darstellung, Daten, langsam oder Sonstiges. Beschreiben Sie dann, was Sie getan haben, was Sie erwartet haben und was passiert ist.
+                body="""Beschreiben Sie, was Sie getan haben, was Sie erwartet haben und was passiert ist. Eine Kategorie — Absturz, Darstellung, Daten, langsam oder Sonstiges — ist optional.
 
-Es wird nichts gesendet, bevor Sie auf Senden tippen.""",
+**Bericht senden** bleibt unten sichtbar, beim Tippen über der Tastatur. Es wird nichts gesendet, bevor Sie darauf tippen.""",
             ),
             Block(
                 anchor="what-is-sent",
@@ -1942,7 +1943,7 @@ Haben Sie die Geste auf dem Telefon abgeschaltet, funktioniert derselbe Menüpun
             "störung",
         ),
         related=("troubleshooting", "contact"),
-        updated="2026-09-01",
+        updated="2026-10-29",
     ),
     Article(
         slug="contact",

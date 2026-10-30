@@ -74,6 +74,16 @@ against a user.
   `sensors_plus`) and `feedback` (screenshot + draw layer). The compose UI is ours
   via `feedbackBuilder` — `bug_report_sheet.dart`, mirroring
   `report_content_sheet.dart`.
+- **Cancel / Send report are pinned in a `SheetActionBar` below the sheet's list,
+  and the message comes before the optional category** (since 2026-10-29). The
+  package opens its sheet at `feedbackSheetHeight` — 0.45 of the screen, set in
+  `bug_report_theme.dart` — which is shorter than the form, so a Send at the end
+  of the list started out of sight on every phone. The package's own
+  `StringFeedback` pins its button below the list the same way. Send stays
+  disabled until a message is typed, so the field comes first: the collapsed
+  sheet shows it beside Send. A failed send's error rides in the bar, above
+  Send. Regression tests: `test/features/bug_report/bug_report_sheet_test.dart`
+  ("on a phone").
 - **`BetterFeedback` must wrap `MaterialApp`, not sit inside
   `MaterialApp.builder`.** Its bottom sheet builds a bare `Navigator`; inside
   `MaterialApp` that Navigator inherits the app's `HeroController` and Flutter
@@ -196,7 +206,10 @@ from id.atlassian.com. The Jira Cloud REST API carries no per-call charge.
 
 ## Flutter surface
 
-- **`bug_report_sheet.dart`** — the compose sheet, via `feedbackBuilder`.
+- **`bug_report_sheet.dart`** — the compose sheet, via `feedbackBuilder`: title,
+  the message field, the attachment notice, then the optional categories; Cancel
+  / Send report pinned below in a `SheetActionBar`
+  (`shared/widgets/editorial_widgets.dart`).
 - **`ShakeToReport`** — inside `MaterialApp.builder`.
 - **`ReportBugScreen`** — route `/settings/help/report-bug`, which on web is the
   only entry point (it explains the shake gesture on mobile).
@@ -221,4 +234,6 @@ from id.atlassian.com. The Jira Cloud REST API carries no per-call charge.
 - [text-moderation.md](text-moderation.md) — why `message` is unmoderated
 - [help-centre.md](help-centre.md) — the Support row that reaches this on web
 - [notifications.md](notifications.md) — `PushGateway` sits beside `ShakeToReport`
+- [constraints.md](../constraints.md) — a sheet's buttons never scroll with its
+  content (`SheetActionBar`)
 - [reference/data-model.md](../reference/data-model.md#bug_reports)

@@ -6,7 +6,9 @@
 // see it. The user saw the loader appear, disappear, and nothing else.
 //
 // The failure is now reported inline, and the chosen reason and typed notes
-// survive it so Submit retries — which is what these tests pin down.
+// survive it so Submit retries — which is what these tests pin down. Submit
+// itself stays on screen while a note is typed: it is pinned below the body,
+// where as its last child it sat under the keyboard.
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -91,6 +93,25 @@ void main() {
     // The sheet is 70% of screen height; a short default view clips the
     // buttons out of the hit-test area.
     TestWidgetsFlutterBinding.ensureInitialized();
+  });
+
+  testWidgets(
+      'Given a short phone, When a note is typed with the keyboard up, '
+      'Then Submit stays on screen above the keyboard', (tester) async {
+    tester.view.physicalSize = const Size(375, 667);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(_harness(_OkRepo()));
+    await _openAndPickViolence(tester);
+
+    await tester.showKeyboard(find.byType(TextField));
+    tester.view.viewInsets = const FakeViewPadding(bottom: 260);
+    await tester.pumpAndSettle();
+
+    final submit = find.widgetWithText(FilledButton, 'Submit report');
+    expect(submit.hitTestable(), findsOneWidget);
+    expect(tester.getRect(submit).bottom, lessThanOrEqualTo(667 - 260));
   });
 
   group('ReportContentSheet failure handling', () {

@@ -5,8 +5,13 @@
 //
 // Deliberately not the package's stock StringFeedback sheet — that is a grey
 // box with one text field, and it would be the only surface in the app that
-// does not look like Ntripi. The layout mirrors report_content_sheet.dart, the
-// house style for "pick one reason, add detail, submit".
+// does not look like Ntripi. Its rows mirror report_content_sheet.dart, in the
+// other order: here the message is required and the category optional, so the
+// message comes first.
+//
+// The package opens this sheet at feedbackSheetHeight — shorter than the form —
+// so the buttons are pinned below the list (SheetActionBar), as StringFeedback
+// pins its own. Inside the list, Send started out of sight on every phone.
 //
 // This renders inside BetterFeedback, which is mounted in MaterialApp.builder,
 // so context.nt and AppLocalizations.of(context) both resolve normally.
@@ -92,141 +97,148 @@ class _BugReportSheetState extends State<BugReportSheet> {
     final l10n = AppLocalizations.of(context)!;
     final canSubmit = !_saving && _messageController.text.trim().isNotEmpty;
 
-    return Stack(
+    return Column(
       children: [
-        ListView(
-          controller: widget.scrollController,
-          padding: EdgeInsets.fromLTRB(
-            16,
-            // Clears the package's drag handle, which is stacked over us.
-            widget.scrollController != null ? 24 : 16,
-            16,
-            // No keyboard inset: the package already lifts its sheet above it.
-            16,
-          ),
-          children: [
-            Text(
-              l10n.bugReportTitle,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: nt.bark,
-                letterSpacing: -0.3,
-              ),
-            ),
-            const SizedBox(height: 10),
-
-            // ── Category (optional single choice) ──────────────────────────
-            Container(
-              decoration: BoxDecoration(
-                color: nt.surface,
-                borderRadius: BorderRadius.circular(NtripiRadius.card),
-                border: Border.all(color: nt.border),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Column(
+        Expanded(
+          child: Stack(
+            children: [
+              ListView(
+                controller: widget.scrollController,
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  // Clears the package's drag handle, which is stacked over us.
+                  widget.scrollController != null ? 24 : 16,
+                  16,
+                  // No keyboard inset: the package already lifts its sheet
+                  // above it.
+                  16,
+                ),
                 children: [
-                  for (var i = 0; i < kBugCategories.length; i++) ...[
-                    if (i > 0)
-                      Divider(
-                        height: 1,
-                        indent: 16,
-                        endIndent: 16,
-                        color: nt.border,
-                      ),
-                    _CategoryRow(
-                      label: _categoryLabel(kBugCategories[i], l10n),
-                      selected: _category == kBugCategories[i],
-                      onTap: _saving
-                          ? null
-                          : () =>
-                              setState(() => _category = kBugCategories[i]),
+                  Text(
+                    l10n.bugReportTitle,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: nt.bark,
+                      letterSpacing: -0.3,
                     ),
-                  ],
+                  ),
+                  const SizedBox(height: 10),
+
+                  // ── What happened ────────────────────────────────────────
+                  // The whole box and its counter, not just the caret line.
+                  RevealTogether(
+                    child: TextField(
+                      controller: _messageController,
+                      enabled: !_saving,
+                      maxLength: 2000,
+                      maxLines: 4,
+                      minLines: 2,
+                      // Rebuilds so Send enables the moment there is something
+                      // to send.
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        hintText: l10n.bugReportHint,
+                        filled: true,
+                        fillColor: nt.surface,
+                        border: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(NtripiRadius.field),
+                          borderSide: BorderSide(color: nt.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(NtripiRadius.field),
+                          borderSide: BorderSide(color: nt.border),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // What we attach is stated up front — the user cannot redact
+                  // the screenshot, so they must at least know it is going.
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.info_outline_rounded,
+                          size: 16, color: nt.text3),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          l10n.bugReportAttachmentNotice,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            height: 1.4,
+                            color: nt.text2,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // ── Category (optional single choice) ────────────────────
+                  const SizedBox(height: 14),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: nt.surface,
+                      borderRadius: BorderRadius.circular(NtripiRadius.card),
+                      border: Border.all(color: nt.border),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      children: [
+                        for (var i = 0; i < kBugCategories.length; i++) ...[
+                          if (i > 0)
+                            Divider(
+                              height: 1,
+                              indent: 16,
+                              endIndent: 16,
+                              color: nt.border,
+                            ),
+                          _CategoryRow(
+                            label: _categoryLabel(kBugCategories[i], l10n),
+                            selected: _category == kBugCategories[i],
+                            onTap: _saving
+                                ? null
+                                : () => setState(
+                                    () => _category = kBugCategories[i]),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                 ],
               ),
-            ),
-
-            // ── What happened ──────────────────────────────────────────────
-            const SizedBox(height: 14),
-            // The whole box and its counter, not just the caret line.
-            RevealTogether(
-              child: TextField(
-              controller: _messageController,
-              enabled: !_saving,
-              maxLength: 2000,
-              maxLines: 4,
-              minLines: 2,
-              // Rebuilds so Send enables the moment there is something to send.
-              onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(
-                hintText: l10n.bugReportHint,
-                filled: true,
-                fillColor: nt.surface,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(NtripiRadius.field),
-                  borderSide: BorderSide(color: nt.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(NtripiRadius.field),
-                  borderSide: BorderSide(color: nt.border),
+              if (widget.scrollController != null)
+                const FeedbackSheetDragHandle(),
+            ],
+          ),
+        ),
+        SheetActionBar(
+          error: _error,
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed:
+                      _saving ? null : () => BetterFeedback.of(context).hide(),
+                  child: Text(l10n.cancel),
                 ),
               ),
-            ),
-            ),
-
-            // What we attach is stated up front — the user cannot redact the
-            // screenshot, so they must at least know it is going.
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.info_outline_rounded, size: 16, color: nt.text3),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    l10n.bugReportAttachmentNotice,
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      height: 1.4,
-                      color: nt.text2,
-                    ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OfflineGate(
+                  builder: (online) => FilledButton(
+                    onPressed: (canSubmit && online) ? _submit : null,
+                    child: _saving
+                        ? const NTripiRingLoader(size: 18)
+                        : Text(l10n.bugReportSubmit),
                   ),
                 ),
-              ],
-            ),
-
-            if (_error != null) ...[
-              const SizedBox(height: 10),
-              SheetErrorRow(_error!),
+              ),
             ],
-
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _saving
-                        ? null
-                        : () => BetterFeedback.of(context).hide(),
-                    child: Text(l10n.cancel),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OfflineGate(
-                    builder: (online) => FilledButton(
-                      onPressed: (canSubmit && online) ? _submit : null,
-                      child: _saving
-                          ? const NTripiRingLoader(size: 18)
-                          : Text(l10n.bugReportSubmit),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
-        if (widget.scrollController != null) const FeedbackSheetDragHandle(),
       ],
     );
   }

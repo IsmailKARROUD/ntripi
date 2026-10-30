@@ -102,6 +102,7 @@ RELEASES: tuple[Release, ...] = (
             "**Copia solo el enlace.** El menú de compartir tiene una nueva opción, **Copiar enlace**, que copia el enlace sin el nombre del viaje, sus paradas ni su duración. En la web, el botón de compartir también la ofrece.",
             "**Los enlaces compartidos llevan adonde ya estás.** Con la sesión iniciada en Ntripi en tu navegador, un viaje o un perfil compartido se abre directamente en lugar de su vista previa, y en un teléfono la página ofrece **Abrir en Ntripi**. La barra de direcciones de la aplicación web muestra ahora la página en la que estás, así que al recargar sigues ahí.",
             "**Organiza las paradas en un solo sitio.** En modo edición, **Organizar paradas** (las cuatro flechas) sobre las paradas convierte el viaje en filas de paradas. Arrastra o toca una parada para convertirla en alternativa de otra columna, o para darle su propia columna entre otras dos; arrastra el número de una columna para moverla entera. Nada cambia hasta que tocas **Guardar**, y los botones aparte para reordenar y mover en cada parada ya no están.",
+            "**Enviar, siempre a mano.** Al informar de un fallo —y también al denunciar contenido, valorar un viaje, añadir transporte o apelar— los botones se quedan ahora abajo, encima del teclado mientras escribes, en lugar de salirse de la vista. Al informar de un fallo, además, primero se pregunta qué falló; elegir una categoría es opcional.",
         ),
     ),
     Release(
@@ -1915,11 +1916,11 @@ Puedes navegar mientras el informador está abierto si necesitas capturar otra p
             ),
             Block(
                 anchor="describe",
-                heading="Elegir una categoría y describirlo",
+                heading="Describir qué falló",
                 kind=KIND_STEP,
-                body="""Elige entre: cierre inesperado, visual, datos, lentitud u otro. Después cuenta qué hiciste, qué esperabas y qué pasó.
+                body="""Cuenta qué hiciste, qué esperabas y qué pasó. Elegir una categoría (cierre inesperado, visual, datos, lentitud u otro) es opcional.
 
-No se envía nada hasta que tocas enviar.""",
+**Enviar informe** sigue a la vista abajo, encima del teclado mientras escribes. No se envía nada hasta que lo tocas.""",
             ),
             Block(
                 anchor="what-is-sent",
@@ -1949,7 +1950,7 @@ Si desactivaste el gesto en el móvil, esa misma opción del menú sigue funcion
             "problema",
         ),
         related=("troubleshooting", "contact"),
-        updated="2026-09-01",
+        updated="2026-10-29",
     ),
     Article(
         slug="contact",

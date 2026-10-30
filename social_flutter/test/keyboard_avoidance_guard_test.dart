@@ -9,6 +9,11 @@
 // root-navigator screen with no avoidance at all), and keyboard padding written
 // inline inside a scroll view, where a height cap silently cancels it. Either
 // may still be right somewhere — but only with a stated reason, here.
+//
+// A third habit hid the buttons: every KeyboardSafeSheetBody sheet ended its
+// scrolling body with its button row, so Submit sat under the keyboard while a
+// field was in use, and below the fold once the body outgrew the cap. Buttons
+// go in `actions:`, pinned below the scroll view.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -44,10 +49,49 @@ Map<String, String> _sources() => {
             .replaceAll(RegExp(r'//[^\n]*'), ''),
     };
 
+/// Sheets with a field and no buttons to pin, each with its reason.
+const _mayOmitActions = <String>{};
+
 Set<String> _matching(Map<String, String> sources, RegExp pattern) => {
       for (final entry in sources.entries)
         if (pattern.hasMatch(entry.value)) entry.key,
     };
+
+/// The argument list of every `KeyboardSafeSheetBody(` call in [source], with
+/// string literals blanked so a bracket in a label cannot unbalance the scan.
+Iterable<String> _sheetBodyCalls(String source) sync* {
+  final code = source.replaceAll(
+      RegExp(r"'(?:[^'\\\n]|\\.)*'" r'|"(?:[^"\\\n]|\\.)*"'), "''");
+  for (final call in RegExp(r'\bKeyboardSafeSheetBody\(').allMatches(code)) {
+    var depth = 0;
+    for (var i = call.end - 1; i < code.length; i++) {
+      if ('([{'.contains(code[i])) depth++;
+      if (')]}'.contains(code[i]) && --depth == 0) {
+        yield code.substring(call.end, i);
+        break;
+      }
+    }
+  }
+}
+
+/// The named arguments of [args] at its own level, not inside a nested call.
+Set<String> _argumentNames(String args) {
+  final names = <String>{};
+  var depth = 0;
+  var start = 0;
+  for (var i = 0; i <= args.length; i++) {
+    final c = i < args.length ? args[i] : ',';
+    if ('([{'.contains(c)) depth++;
+    if (')]}'.contains(c)) depth--;
+    if (c == ',' && depth == 0) {
+      final name =
+          RegExp(r'^\s*(\w+)\s*:').firstMatch(args.substring(start, i));
+      if (name != null) names.add(name.group(1)!);
+      start = i + 1;
+    }
+  }
+  return names;
+}
 
 void main() {
   final sources = _sources();
@@ -73,6 +117,24 @@ void main() {
             'and inside a tab the inset reads 0. Or add the file to '
             '_mayReadInset with its reason.');
     expect(_mayReadInset.difference(live), isEmpty,
+        reason: 'A stale entry would let the next real one through unseen.');
+  });
+
+  test('a KeyboardSafeSheetBody pins its buttons in actions:', () {
+    final live = {
+      for (final entry in sources.entries)
+        // The definition's own constructor is not a call.
+        if (entry.key != 'lib/shared/widgets/keyboard_avoidance.dart' &&
+            _sheetBodyCalls(entry.value)
+                .any((args) => !_argumentNames(args).contains('actions')))
+          entry.key,
+    };
+    expect(live.difference(_mayOmitActions), isEmpty,
+        reason: 'A button inside the scroll view sits under the keyboard while '
+            'a field is in use, and below the fold once the body outgrows the '
+            'cap. Pass the buttons as `actions: SheetActionBar(...)`, or add '
+            'the file to _mayOmitActions with the reason it has none.');
+    expect(_mayOmitActions.difference(live), isEmpty,
         reason: 'A stale entry would let the next real one through unseen.');
   });
 }

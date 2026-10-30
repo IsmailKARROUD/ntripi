@@ -99,8 +99,9 @@ void main() {
     ProfileRepository repo, {
     String targetType = 'rating',
     String targetId = 'rating-1',
+    Size size = const Size(1000, 1400),
   }) async {
-    tester.view.physicalSize = const Size(1000, 1400);
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -162,6 +163,22 @@ void main() {
 
     expect(repo.targetType, 'user');
     expect(repo.targetId, 'user-7');
+  });
+
+  testWidgets(
+      'Given a short window, When the reason is typed with the keyboard up, '
+      'Then Submit stays on screen above the keyboard', (tester) async {
+    await pumpSheet(tester, _RecordingRepo(), size: const Size(320, 568));
+
+    await tester.showKeyboard(find.byKey(reasonField));
+    tester.view.viewInsets = const FakeViewPadding(bottom: 260);
+    addTearDown(tester.view.resetViewInsets);
+    await tester.pumpAndSettle();
+
+    // Pinned below the body: as its last child it sat under the keyboard.
+    expect(find.byKey(submitButton).hitTestable(), findsOneWidget);
+    expect(tester.getRect(find.byKey(submitButton)).bottom,
+        lessThanOrEqualTo(568 - 260));
   });
 
   testWidgets('Given an empty reason, When submitted, Then nothing is posted',

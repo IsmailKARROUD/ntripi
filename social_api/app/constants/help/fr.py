@@ -102,6 +102,7 @@ RELEASES: tuple[Release, ...] = (
             "**Copier le lien seul.** La feuille de partage a une nouvelle ligne **Copier le lien**, qui copie le lien sans le nom du voyage, ses étapes ni sa durée. Sur le web, le bouton de partage la propose aussi.",
             "**Les liens partagés mènent là où vous êtes déjà.** Connecté à Ntripi dans votre navigateur, un voyage ou un profil partagé s’ouvre directement au lieu de son aperçu, et sur un téléphone la page propose **Ouvrir dans Ntripi**. La barre d’adresse de l’application web affiche désormais la page où vous êtes : recharger vous y laisse.",
             "**Organiser les étapes au même endroit.** En mode édition, **Organiser les étapes** (les quatre flèches) au-dessus des étapes transforme le voyage en rangées d’étapes. Faites glisser ou touchez une étape pour en faire l’alternative d’une autre piste, ou pour lui donner sa propre piste entre deux autres ; faites glisser le numéro d’une piste pour déplacer toute la piste. Rien ne change avant que vous touchiez **Enregistrer**, et les boutons séparés pour réorganiser et déplacer sur chaque étape ont disparu.",
+            "**Le bouton Envoyer reste à portée de main.** En signalant un bug — et en signalant un contenu, en évaluant un voyage, en ajoutant un transit ou en contestant une décision — les boutons restent désormais en bas, au-dessus du clavier pendant la saisie, au lieu de sortir de l’écran. Le signalement d’un bug demande aussi d’abord ce qui ne va pas ; choisir une catégorie est facultatif.",
         ),
     ),
     Release(
@@ -1919,11 +1920,11 @@ Vous pouvez naviguer pendant que le rapporteur est ouvert si vous devez capturer
             ),
             Block(
                 anchor="describe",
-                heading="Choisir une catégorie et décrire",
+                heading="Décrire ce qui ne va pas",
                 kind=KIND_STEP,
-                body="""Choisissez parmi : plantage, visuel, données, lenteur, ou autre. Dites ensuite ce que vous avez fait, ce que vous attendiez, et ce qui s’est produit.
+                body="""Dites ce que vous avez fait, ce que vous attendiez, et ce qui s’est produit. Choisir une catégorie — plantage, visuel, données, lenteur, ou autre — est facultatif.
 
-Rien n’est envoyé tant que vous n’appuyez pas sur envoyer.""",
+**Envoyer le rapport** reste visible en bas, au-dessus du clavier pendant la saisie. Rien n’est envoyé tant que vous n’appuyez pas dessus.""",
             ),
             Block(
                 anchor="what-is-sent",
@@ -1953,7 +1954,7 @@ Si vous avez désactivé le geste sur un téléphone, la même entrée de menu f
             "anomalie",
         ),
         related=("troubleshooting", "contact"),
-        updated="2026-09-01",
+        updated="2026-10-29",
     ),
     Article(
         slug="contact",

@@ -128,6 +128,31 @@ class _ReportContentSheetState extends State<_ReportContentSheet> {
         loaderSize: 40,
         // Capped at 70 % of the screen — above the keyboard, not including it.
         child: KeyboardSafeSheetBody(
+          actions: SheetActionBar(
+            error: _error,
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed:
+                        _saving ? null : () => Navigator.of(context).pop(),
+                    child: Text(l10n.cancel),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OfflineGate(
+                    builder: (online) => FilledButton(
+                      onPressed: (canSubmit && online) ? _submit : null,
+                      child: _saving
+                          ? const NTripiRingLoader(size: 18)
+                          : Text(l10n.reportSubmit),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,42 +213,6 @@ class _ReportContentSheetState extends State<_ReportContentSheet> {
                     ),
                   ),
                 ),
-                ),
-              ),
-
-              // ── Failure message ──────────────────────────────────────────
-              if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-                  child: SheetErrorRow(_error!),
-                ),
-
-              const SizedBox(height: 8),
-
-              // ── Action buttons ───────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed:
-                            _saving ? null : () => Navigator.of(context).pop(),
-                        child: Text(l10n.cancel),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OfflineGate(
-                        builder: (online) => FilledButton(
-                          onPressed: (canSubmit && online) ? _submit : null,
-                          child: _saving
-                              ? const NTripiRingLoader(size: 18)
-                              : Text(l10n.reportSubmit),
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
               ),
             ],

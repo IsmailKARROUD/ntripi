@@ -312,6 +312,40 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
         }
       },
       child: KeyboardSafeSheetBody(
+        actions: SheetActionBar(
+          child: Row(
+            children: [
+              if (isEdit)
+                TextButton(
+                  onPressed: _deleteLeg,
+                  style: TextButton.styleFrom(foregroundColor: nt.danger),
+                  child: Text(l10n.deleteButton),
+                ),
+              const Spacer(),
+              TextButton(
+                // Route through the discard guard so Cancel and drag-down
+                // dismiss behave identically.
+                onPressed: () async {
+                  if (await _confirmDiscard() && context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+                },
+                style: TextButton.styleFrom(foregroundColor: nt.forest),
+                child: Text(l10n.cancel),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: _submit,
+                child: Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 8, end: 8),
+                  child: Text(isEdit
+                      ? l10n.updateTransitButton
+                      : l10n.addTransitTitle),
+                ),
+              ),
+            ],
+          ),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -511,46 +545,6 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
                 ),
               ],
             ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // ── Buttons ───────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-              child: Row(
-                children: [
-                  if (isEdit)
-                    TextButton(
-                      onPressed: _deleteLeg,
-                      style: TextButton.styleFrom(
-                          foregroundColor: nt.danger),
-                      child: Text(l10n.deleteButton),
-                    ),
-                  const Spacer(),
-                  TextButton(
-                    // Route through the discard guard so Cancel and drag-down
-                    // dismiss behave identically.
-                    onPressed: () async {
-                      if (await _confirmDiscard() && context.mounted) {
-                        Navigator.of(context).pop();
-                      }
-                    },
-                    style: TextButton.styleFrom(foregroundColor: nt.forest),
-                    child: Text(l10n.cancel),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: _submit,
-                    child: Padding(
-                      padding: const EdgeInsetsDirectional.only(start: 8, end: 8),
-                      child: Text(isEdit
-                          ? l10n.updateTransitButton
-                          : l10n.addTransitTitle),
-                    ),
-                  ),
-                ],
-              ),
             ),
           ],
         ),

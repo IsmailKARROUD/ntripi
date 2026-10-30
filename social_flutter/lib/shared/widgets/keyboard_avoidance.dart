@@ -12,12 +12,15 @@
 //  3. A sheet lifts its body with the inset OUTSIDE its scroll view
 //     ([KeyboardSafeSheetBody]). Padding inside the scroll view only works while
 //     the sheet can still grow; once a height cap stops it, the viewport runs on
-//     behind the keyboard and a covered field counts as visible.
+//     behind the keyboard and a covered field counts as visible. Its buttons sit
+//     OUTSIDE the scroll view too ([KeyboardSafeSheetBody.actions]), or the
+//     keyboard and a long body scroll them out of sight.
 //  4. A field and the text that belongs to it are revealed as one unit
 //     ([RevealTogether]) — never with `scrollPadding` numbers.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 
 /// Reveals [child] as one unit whenever something inside it asks to be shown:
 /// a focused field, its caret, or the keyboard rising over it.
@@ -113,19 +116,28 @@ class AboveKeyboard extends StatelessWidget {
 /// the content — not the sheet — at [maxHeightFactor] of the window, so the cap
 /// never eats into the space above the keyboard, and always scrolls.
 ///
+/// The sheet's buttons go in [actions], pinned below the scroll view: inside
+/// it they sat under the keyboard while a field was in use, and below the fold
+/// once the body outgrew the cap.
+///
 /// Show the sheet with `isScrollControlled: true` (so it can grow by the
 /// keyboard) and `useSafeArea: true` (so growing stops below the status bar).
 class KeyboardSafeSheetBody extends StatelessWidget {
   const KeyboardSafeSheetBody({
     super.key,
     required this.child,
+    this.actions,
     this.maxHeightFactor = 0.7,
     this.padding = const EdgeInsets.only(bottom: 16),
   });
 
   final Widget child;
 
-  /// Fraction of the window height the content may take before it scrolls.
+  /// The sheet's buttons — always on screen, whatever the body scrolls to.
+  final SheetActionBar? actions;
+
+  /// Fraction of the window height the content — buttons included — may take
+  /// before the body scrolls.
   final double maxHeightFactor;
 
   /// Padding inside the scroll view, around [child].
@@ -133,6 +145,24 @@ class KeyboardSafeSheetBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cap = BoxConstraints(
+      maxHeight: MediaQuery.sizeOf(context).height * maxHeightFactor,
+    );
+    final body = SingleChildScrollView(padding: padding, child: child);
+    final actions = this.actions;
+    if (actions != null) {
+      return AboveKeyboard(
+        // No SafeArea here: the bar clears the home indicator itself.
+        child: ConstrainedBox(
+          constraints: cap,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [Flexible(child: body), actions],
+          ),
+        ),
+      );
+    }
     return AboveKeyboard(
       // MediaQuery padding.bottom is 0 while the keyboard is up, so this only
       // clears the home indicator once the keyboard is down.
@@ -140,12 +170,7 @@ class KeyboardSafeSheetBody extends StatelessWidget {
         top: false,
         left: false,
         right: false,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * maxHeightFactor,
-          ),
-          child: SingleChildScrollView(padding: padding, child: child),
-        ),
+        child: ConstrainedBox(constraints: cap, child: body),
       ),
     );
   }

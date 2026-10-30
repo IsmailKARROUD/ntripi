@@ -522,8 +522,18 @@ block appears a second time anywhere, extract it instead of copying.**
 - **Chrome comes from `shared/widgets/editorial_widgets.dart`, never re-inlined**:
   `EditorialTopBar`, `EditorialDivider`, `SectionLabel`, `SectionCard`,
   `FieldDivider`, `EditorialRow`, `RefreshableCenter`, `AvatarInitials`,
-  `OwnerAttributionRow`. Six private clones had already drifted apart before they
-  were extracted.
+  `OwnerAttributionRow`, `SheetErrorRow`, `SheetActionBar`. Six private clones
+  had already drifted apart before they were extracted.
+- **A sheet's buttons never scroll with its content.** They sit in a
+  `SheetActionBar` pinned below the scroll view — `KeyboardSafeSheetBody(actions:)`
+  on a modal sheet, under its own list in the bug reporter — which carries a top
+  hairline, the bottom safe area and the sheet's error (`error:`), above the
+  buttons. As the body's last child they sat under the keyboard while a field
+  was in use and below the fold once the body outgrew its cap, and the bug
+  reporter — whose sheet the `feedback` package opens shorter than its form —
+  opened with Send out of sight on every phone (2026-10-29).
+  `test/keyboard_avoidance_guard_test.dart` fails on a `KeyboardSafeSheetBody`
+  without `actions:`.
 - **Never call `.toUpperCase()` on a `SectionLabel`** — it uppercases internally.
 - **A sheet leads with a title and uses `showDragHandle: true`** — a 48 px tap
   target and a `Semantics` label a hand-rolled 36×4 box does not have.
@@ -547,7 +557,9 @@ block appears a second time anywhere, extract it instead of copying.**
   is NOT `nt.border`** — the theme sets `dividerTheme.color` but never
   `dividerColor`, so that getter falls through to M3's `outlineVariant` grey.
 - **A sheet that fails must say so inline.** `ScaffoldMessenger` snackbars render
-  behind the modal barrier and are never seen.
+  behind the modal barrier and are never seen. A sheet with buttons hands its
+  `SheetErrorRow` message to its `SheetActionBar`, so it shows above them
+  wherever the body is scrolled.
 
 ### Keyboard
 
@@ -568,7 +580,9 @@ One contract, in `shared/widgets/keyboard_avoidance.dart`, held by
   outside the scroll view, the cap on the content, shown with
   `isScrollControlled` + `useSafeArea`. Inset padding *inside* a scroll view is
   cancelled once a height cap stops the sheet growing, and the field stays under
-  the keyboard counted as visible. A dialog with a field must be able to shrink:
+  the keyboard counted as visible. Its buttons go in `actions:` — a
+  `SheetActionBar` pinned below the scroll view, inside the cap, above the
+  keyboard. A dialog with a field must be able to shrink:
   `scrollable: true`, or a `Flexible` list that absorbs the space.
 - **A field and the text that belongs to it are revealed as one unit** with
   `RevealTogether` (already inside `ModerationHint`) — never a `scrollPadding`

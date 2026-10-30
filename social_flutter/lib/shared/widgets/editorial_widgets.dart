@@ -482,7 +482,8 @@ class RefreshableCenter extends StatelessWidget {
 // ── SheetErrorRow ─────────────────────────────────────────────────────────────
 // A failure message for a modal sheet or dialog that stays open. A snackbar
 // draws behind the modal barrier and is never seen, so the sheet says it itself.
-// Callers own the padding — each sheet slots it above its actions.
+// A sheet with buttons hands it to its SheetActionBar (`error:`), which shows it
+// above them; one without places it itself.
 
 class SheetErrorRow extends StatelessWidget {
   final String message;
@@ -504,6 +505,65 @@ class SheetErrorRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── SheetActionBar ────────────────────────────────────────────────────────────
+// A sheet's buttons, pinned below its scroll view so neither a long body nor
+// the keyboard can scroll them out of sight. The sheet's failure message rides
+// in it, above the buttons, so it shows where the user just tapped.
+//
+// Modal sheets get it through KeyboardSafeSheetBody(actions:); the bug reporter
+// pins it under its own list, inside the feedback package's sheet.
+
+class SheetActionBar extends StatelessWidget {
+  /// The button row.
+  final Widget child;
+
+  /// Shown with [SheetErrorRow] above [child] when non-null.
+  final String? error;
+
+  /// Side padding — matches the sheet body's, so the buttons line up with it.
+  final double inset;
+
+  const SheetActionBar({
+    super.key,
+    required this.child,
+    this.error,
+    this.inset = 16,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    return DecoratedBox(
+      // The body scrolls under this edge.
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: nt.border)),
+      ),
+      child: SafeArea(
+        top: false,
+        left: false,
+        right: false,
+        // The home indicator replaces the bottom gap rather than adding to it;
+        // padding.bottom is 0 while the keyboard is up.
+        minimum: const EdgeInsets.only(bottom: 16),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(inset, 12, inset, 0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (error != null) ...[
+                SheetErrorRow(error!),
+                const SizedBox(height: 10),
+              ],
+              child,
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

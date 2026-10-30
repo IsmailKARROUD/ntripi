@@ -156,6 +156,11 @@ RELEASES: tuple[Release, ...] = (
             "others; drag a track's number to move the whole track. Nothing "
             "changes until you tap **Save**, and the separate reorder and "
             "move buttons on each stop are gone.",
+            "**Send is always in reach.** In the bug reporter — and when you "
+            "report something, rate a trip, add transit or appeal — the buttons "
+            "now stay at the bottom, above the keyboard while you type, instead "
+            "of scrolling out of sight. The bug reporter also asks what went "
+            "wrong first; picking a category is optional.",
         ),
     ),
     Release(
@@ -2579,7 +2584,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="troubleshooting",
         schema=SCHEMA_HOWTO,
-        updated="2026-09-01",
+        updated="2026-10-29",
         keywords=(
             "bug", "bugs", "report", "broken", "crash", "feedback", "shake",
             "screenshot", "problem", "glitch",
@@ -2617,12 +2622,14 @@ ARTICLES: tuple[Article, ...] = (
             ),
             Block(
                 anchor="describe",
-                heading="Pick a category and describe it",
+                heading="Describe what went wrong",
                 kind=KIND_STEP,
                 body=(
-                    "Choose one of: crash, visual, data, slow, or other. Then say "
-                    "what you did, what you expected, and what happened.\n\n"
-                    "Nothing is sent until you tap send."
+                    "Say what you did, what you expected, and what happened. "
+                    "Picking a category — crash, visual, data, slow, or other — is "
+                    "optional.\n\n"
+                    "**Send report** stays in view at the bottom, above the keyboard "
+                    "while you type. Nothing is sent until you tap it."
                 ),
             ),
             Block(

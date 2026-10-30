@@ -6,9 +6,11 @@
 // KeyboardSafeSheetBody lifts a sheet's body with the inset OUTSIDE its scroll
 // view: the old pattern (inset padding inside it) was cancelled by the sheets'
 // 0.7 height cap, which left the last field under the keyboard, counted as
-// visible.
+// visible. Its buttons sit outside the scroll view too, pinned in `actions:` —
+// as the body's last child they sat under the keyboard and below the fold.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:ntripi/shared/widgets/keyboard_avoidance.dart';
 
 const _keyboard = 300.0;
@@ -180,6 +182,68 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(seen, 0, reason: 'a nested reader must not lift a second time');
+    });
+
+    SheetActionBar primaryAction() => SheetActionBar(
+          child: FilledButton(
+            key: const Key('primary'),
+            onPressed: () {},
+            child: const Text('Send'),
+          ),
+        );
+
+    testWidgets('its actions stay above the keyboard, with the focused field '
+        'above them', (tester) async {
+      _phone(tester, size: const Size(375, 667));
+      await tester.pumpWidget(host());
+
+      showModalBottomSheet<void>(
+        context: ctx,
+        isScrollControlled: true,
+        useSafeArea: true,
+        showDragHandle: true,
+        builder: (_) => KeyboardSafeSheetBody(
+          actions: primaryAction(),
+          child: Column(children: const [
+            SizedBox(height: 600), // taller than the 70 % cap on its own
+            RevealTogether(
+              child: TextField(key: Key('last'), minLines: 2, maxLines: 2),
+            ),
+          ]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.showKeyboard(find.byKey(const Key('last')));
+      await _raiseKeyboard(tester, height: 260);
+
+      final primary = tester.getRect(find.byKey(const Key('primary')));
+      expect(primary.bottom, lessThanOrEqualTo(667 - 260));
+      expect(tester.getRect(find.byKey(const Key('last'))).bottom,
+          lessThanOrEqualTo(primary.top),
+          reason: 'the field is revealed above the bar, not behind it');
+    });
+
+    testWidgets('its actions are on screen at rest when the body outgrows the '
+        'cap', (tester) async {
+      _phone(tester, size: const Size(375, 667));
+      await tester.pumpWidget(host());
+
+      showModalBottomSheet<void>(
+        context: ctx,
+        isScrollControlled: true,
+        useSafeArea: true,
+        showDragHandle: true,
+        builder: (_) => KeyboardSafeSheetBody(
+          actions: primaryAction(),
+          child: const SizedBox(height: 900),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('primary')).hitTestable(), findsOneWidget);
+      expect(tester.getRect(find.byKey(const Key('primary'))).bottom,
+          lessThanOrEqualTo(667));
     });
   });
 }

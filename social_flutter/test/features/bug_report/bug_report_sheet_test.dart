@@ -12,6 +12,10 @@
 // 2. The sheet's failure behaviour, mirroring report_content_sheet_test: the
 //    error is shown inline (a snackbar would render behind the full-screen
 //    feedback UI) and the typed message survives it so Send retries.
+//
+// 3. Send is in view the moment the reporter opens, and stays above the
+//    keyboard. The package opens its sheet shorter than this form, so a Send
+//    at the end of the list started out of sight on every phone.
 
 import 'package:dio/dio.dart';
 import 'package:feedback/feedback.dart';
@@ -23,6 +27,7 @@ import 'package:ntripi/features/bug_report/presentation/bug_report_localizations
 import 'package:ntripi/features/bug_report/presentation/bug_report_sheet.dart';
 import 'package:ntripi/features/bug_report/presentation/bug_report_theme.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 
 /// Mirrors the mount in lib/main.dart: ProviderScope above everything, then
 /// BetterFeedback, then MaterialApp. `home` is what a real screen sees.
@@ -81,7 +86,7 @@ Widget _sheetHarness({required OnSubmit onSubmit}) {
 void main() {
   // The sheet is a fraction of the screen height and its content is a lazy
   // ListView. On the default 800×600 test surface it would be ~270 px tall and
-  // the submit row would never be built.
+  // the categories, last in the list, would never be built.
   setUp(() {
     final view = TestWidgetsFlutterBinding.instance.platformDispatcher.views.first;
     view.physicalSize = const Size(1000, 2400);
@@ -175,6 +180,14 @@ void main() {
       // root-messenger snackbar would render behind it and never be seen.
       expect(find.text('Internal Server Error'), findsOneWidget);
       expect(find.byType(SnackBar), findsNothing);
+      // In the pinned bar, above Send — wherever the list is scrolled to.
+      expect(
+        find.descendant(
+          of: find.byType(SheetActionBar),
+          matching: find.text('Internal Server Error'),
+        ),
+        findsOneWidget,
+      );
       // The user's words survive so Send retries rather than starting over.
       expect(find.text('The map is blank'), findsOneWidget);
     });
@@ -197,6 +210,55 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(seen?['category'], 'visual');
+    });
+  });
+
+  group('on a phone', () {
+    // The sheet opens at 45 % of 844 — 380 px, shorter than the form.
+    void phone(WidgetTester tester) {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+    }
+
+    Future<void> openReporter(WidgetTester tester) async {
+      await tester.pumpWidget(_appHarness(
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => BetterFeedback.of(context).show((_) async {}),
+            child: const Text('open'),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+    }
+
+    final send = find.widgetWithText(FilledButton, 'Send report');
+
+    testWidgets('the reporter opens with the message field and Send in view',
+        (tester) async {
+      phone(tester);
+      await openReporter(tester);
+
+      expect(find.byType(TextField).hitTestable(), findsOneWidget);
+      expect(send.hitTestable(), findsOneWidget);
+    });
+
+    testWidgets('Send stays above the keyboard while the message is typed',
+        (tester) async {
+      phone(tester);
+      await openReporter(tester);
+
+      await tester.showKeyboard(find.byType(TextField));
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      addTearDown(tester.view.resetViewInsets);
+      await tester.pumpAndSettle();
+
+      final sendRect = tester.getRect(send);
+      expect(sendRect.bottom, lessThanOrEqualTo(844 - 300));
+      expect(tester.getRect(find.byType(TextField)).bottom,
+          lessThanOrEqualTo(sendRect.top));
     });
   });
 }
