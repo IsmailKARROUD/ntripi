@@ -271,6 +271,23 @@ registered from the same router under the `/users` prefix.
   claim, a 422 on the text or the image — leaves the form open with every field
   and the picked image intact; on create that now includes a refused cover,
   which used to create the trip without it.
+- **The route in Google Maps** (since 2026-10-29) — the directions arrow in the
+  stops header (`_RoutePillButton`; read mode only, shown once the route has
+  two points) opens the trip in Google Maps, the one maps app with multi-stop
+  links. The route takes one point per track, the alternative on screen
+  (`_routePoints`). It asks every time where to start (`showRouteStartSheet`,
+  `widgets/route_start_sheet.dart`, which returns a `RouteStart` and launches
+  nothing): `myLocation` sends no `origin`, so Google starts at the device
+  location — the one case where it offers Start, turn-by-turn — and the link
+  carries at most 10 stops; `firstStop` sends the first point as `origin`, which
+  Google shows as a route preview of the trip alone, at most 11 stops. Google's
+  nine waypoints exclude origin and destination, which is the difference
+  (`MapsLauncherService.maxRouteStops`). Over the cap the link keeps the first
+  stops and the last, and a SnackBar names the cap (`routeTruncated`). The app
+  never reads the location — Google Maps does. No backend. Until 2026-10-29
+  every route started at the device location. Regression tests:
+  `test/services/maps_launcher_service_test.dart`,
+  `test/widgets/itinerary_route_start_test.dart`.
 - **Model** — `Itinerary` (`features/itineraries/domain/itinerary.dart`), manual
   `fromJson`/`toJson`. `_parseTracks()` is where stop roles are derived.
 
@@ -327,3 +344,8 @@ registered from the same router under the `/users` prefix.
   `len(self.stops)` branch can only fire when `tracks` is empty — in which case
   `stops` is empty too, and both return 0. Whether the fallback guards a case
   that no longer exists or one that is not obvious is not recorded.
+- **A route link may lose stops in a mobile browser.** Google documents three
+  waypoints, not nine, when a Maps URL opens in a mobile browser — a phone
+  without the Google Maps app, where the https link falls back to the website.
+  The link always sends up to nine; what Google does with the rest there has
+  not been checked on a device.

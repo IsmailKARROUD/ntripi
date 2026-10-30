@@ -682,6 +682,10 @@
       }
     }
   },
+  "routeFromMyLocation": "From my location",
+  "routeFromMyLocationHint": "Directions from where you are now, through the trip's stops",
+  "routeFromFirstStop": "From the first stop",
+  "routeFromFirstStopHint": "Just the trip, from its first stop to its last",
   "openStreetMapContributors": "OpenStreetMap contributors",
   "poweredByOSM": "Powered by OpenStreetMap",
   "noStopsYetTapPlus": "No stops yet. Tap + to add one.",

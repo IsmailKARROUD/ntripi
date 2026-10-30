@@ -1530,6 +1530,20 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get routeFromMyLocation => 'Von meinem Standort';
+
+  @override
+  String get routeFromMyLocationHint =>
+      'Route von deinem Standort aus, durch die Stopps der Reiseroute';
+
+  @override
+  String get routeFromFirstStop => 'Ab dem ersten Stopp';
+
+  @override
+  String get routeFromFirstStopHint =>
+      'Nur die Reiseroute, vom ersten bis zum letzten Stopp';
+
+  @override
   String get openStreetMapContributors => 'OpenStreetMap-Mitwirkende';
 
   @override

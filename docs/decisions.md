@@ -2407,3 +2407,35 @@ one box is a change to both.
   side only fails nothing.
 - **Pill buttons on the web**: the share pages' buttons and store badges
   already matched the app's 14, and one look across the app and the web won.
+
+### 2026-10-29 — The trip's route in Google Maps asks where it starts
+
+**Context.** The directions arrow above a trip's stops opened the trip in
+Google Maps with no `origin`, so every route started at the device location.
+That is right on the road, where Google then offers Start, turn-by-turn. From
+home it put the drive to the first stop in front of the trip, and there was no
+way to see the trip on its own.
+
+**Decision.** A bottom sheet asks every time: **From my location** sends no
+`origin`, as before; **From the first stop** sends the trip's first point as
+the `origin`. The sheet only returns the choice (`RouteStart`); the trip screen
+opens the route, and `MapsLauncherService.routeUri` builds both links.
+
+**Consequences.**
+- One more tap before Google Maps opens.
+- From the first stop a link carries 11 stops instead of 10 — Google's nine
+  waypoints exclude the origin and the destination — and the truncation notice
+  names the cap of the start chosen (`MapsLauncherService.maxRouteStops`).
+- From the first stop, Google shows a route preview rather than Start; that is
+  what "just the trip" asks for.
+- Regression tests: `test/services/maps_launcher_service_test.dart`,
+  `test/widgets/itinerary_route_start_test.dart`.
+
+**Alternatives rejected.**
+- **Remembering the last choice**: the right start depends on the moment —
+  planning at home or on the road — and a remembered one needs a second
+  control to change it.
+- **A popup menu on the arrow**: lighter, but with no room to say what each
+  start shows.
+- **Always from the first stop**: it would take turn-by-turn away from the
+  person standing at the start of the trip.

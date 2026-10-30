@@ -17,6 +17,8 @@ Map<String, dynamic> stopJson(
   String placeName = 'Harbour',
   bool isFree = true,
   String? notes,
+  double? lat,
+  double? lng,
   String createdAt = '2026-10-21T09:00:00.000000Z',
 }) =>
     {
@@ -26,8 +28,8 @@ Map<String, dynamic> stopJson(
       'rank': 'a0',
       'place_name': placeName,
       'place_address': null,
-      'lat': null,
-      'lng': null,
+      'lat': lat,
+      'lng': lng,
       'map_url': null,
       'place_type': null,
       'duration_min': null,

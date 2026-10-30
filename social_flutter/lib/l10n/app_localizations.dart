@@ -2764,6 +2764,30 @@ abstract class AppLocalizations {
   /// **'Google Maps can only show the first {count} stops'**
   String routeTruncated(int count);
 
+  /// No description provided for @routeFromMyLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'From my location'**
+  String get routeFromMyLocation;
+
+  /// No description provided for @routeFromMyLocationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Directions from where you are now, through the trip\'s stops'**
+  String get routeFromMyLocationHint;
+
+  /// No description provided for @routeFromFirstStop.
+  ///
+  /// In en, this message translates to:
+  /// **'From the first stop'**
+  String get routeFromFirstStop;
+
+  /// No description provided for @routeFromFirstStopHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Just the trip, from its first stop to its last'**
+  String get routeFromFirstStopHint;
+
   /// No description provided for @openStreetMapContributors.
   ///
   /// In en, this message translates to:
