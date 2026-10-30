@@ -8,16 +8,21 @@
 // The failure is now reported inline, and the chosen reason and typed notes
 // survive it so Submit retries — which is what these tests pin down. Submit
 // itself stays on screen while a note is typed: it is pinned below the body,
-// where as its last child it sat under the keyboard.
+// where as its last child it sat under the keyboard. The failure message rides
+// in that pinned bar, above the buttons.
+
+import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ntripi/core/connectivity/connectivity_service.dart';
 import 'package:ntripi/features/reports/data/report_repository.dart';
 import 'package:ntripi/features/reports/domain/report_target.dart';
 import 'package:ntripi/features/reports/presentation/report_content_sheet.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 
 /// Fails every report the way the backend did — a 500 carrying FastAPI's
 /// generic detail body.
@@ -49,17 +54,39 @@ class _FailingRepo extends ReportRepository {
 class _OkRepo extends ReportRepository {
   _OkRepo() : super(Dio());
 
+  int calls = 0;
+
   @override
   Future<void> report({
     required ReportTarget target,
     required String reason,
     String? notes,
-  }) async {}
+  }) async {
+    calls++;
+  }
 }
 
-Widget _harness(ReportRepository repo) {
+/// Holds the report until the test answers it.
+class _HeldRepo extends ReportRepository {
+  _HeldRepo() : super(Dio());
+
+  final answer = Completer<void>();
+
+  @override
+  Future<void> report({
+    required ReportTarget target,
+    required String reason,
+    String? notes,
+  }) =>
+      answer.future;
+}
+
+Widget _harness(ReportRepository repo, {bool online = true}) {
   return ProviderScope(
-    overrides: [reportRepositoryProvider.overrideWithValue(repo)],
+    overrides: [
+      reportRepositoryProvider.overrideWithValue(repo),
+      isOnlineProvider.overrideWith((ref) => Stream.value(online)),
+    ],
     child: MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -114,6 +141,67 @@ void main() {
     expect(tester.getRect(submit).bottom, lessThanOrEqualTo(667 - 260));
   });
 
+  group('ReportContentSheet buttons', () {
+    setUp(() {
+      final view =
+          TestWidgetsFlutterBinding.instance.platformDispatcher.views.first;
+      view.physicalSize = const Size(1080, 1920);
+      view.devicePixelRatio = 1.0;
+    });
+
+    tearDown(() {
+      TestWidgetsFlutterBinding.instance.platformDispatcher.views.first.reset();
+    });
+
+    final submit = find.descendant(
+        of: find.byType(SheetActionBar), matching: find.byType(FilledButton));
+    final cancel = find.widgetWithText(OutlinedButton, 'Cancel');
+
+    testWidgets(
+        'Given a reason picked, When Cancel is tapped, Then the sheet closes '
+        'without reporting', (tester) async {
+      final repo = _OkRepo();
+      await tester.pumpWidget(_harness(repo));
+      await _openAndPickViolence(tester);
+
+      await tester.tap(cancel);
+      await tester.pumpAndSettle();
+
+      expect(repo.calls, 0);
+      expect(find.byType(SheetActionBar), findsNothing);
+    });
+
+    testWidgets(
+        'Given the device is offline, When a reason is picked, Then Submit '
+        'stays disabled', (tester) async {
+      await tester.pumpWidget(_harness(_OkRepo(), online: false));
+      await _openAndPickViolence(tester);
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<FilledButton>(submit).onPressed, isNull);
+    });
+
+    testWidgets(
+        'Given a report in flight, When it is answered, Then both buttons '
+        'waited and the sheet closes', (tester) async {
+      final repo = _HeldRepo();
+      await tester.pumpWidget(_harness(repo));
+      await _openAndPickViolence(tester);
+
+      await tester.tap(submit);
+      // Bounded pump: the loader animates for as long as the report is held.
+      await tester.pump();
+
+      expect(tester.widget<FilledButton>(submit).onPressed, isNull);
+      expect(tester.widget<OutlinedButton>(cancel).onPressed, isNull);
+
+      repo.answer.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SheetActionBar), findsNothing);
+    });
+  });
+
   group('ReportContentSheet failure handling', () {
     testWidgets(
         'Given the report POST fails with a 500, When the user submits, '
@@ -135,6 +223,14 @@ void main() {
       // The message is visible in the sheet, not stranded in a snackbar behind it.
       expect(find.text('Internal Server Error'), findsOneWidget);
       expect(find.byIcon(Icons.error_outline), findsOneWidget);
+      // In the pinned bar, above Submit — wherever the body is scrolled to.
+      expect(
+        find.descendant(
+          of: find.byType(SheetActionBar),
+          matching: find.text('Internal Server Error'),
+        ),
+        findsOneWidget,
+      );
       // Sheet is still up, with the user's input intact so Submit can retry.
       expect(find.text('Submit report'), findsOneWidget);
       expect(find.text('threatened me'), findsOneWidget);

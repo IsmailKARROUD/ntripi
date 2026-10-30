@@ -11,6 +11,11 @@
 //
 // An appeal answers with the Account status list as it now stands; filed from
 // that screen, the list on it is the answer, never a second download.
+//
+// Appeal is pinned below the body (SheetActionBar); unlike the other sheets,
+// the error stays on the field it is about, and the bar carries none.
+
+import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +27,7 @@ import 'package:ntripi/features/profile/presentation/account_status_screen.dart'
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/appeal_sheet.dart';
+import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 
 /// One hidden itinerary, before and after its appeal.
 Violation _hidden({bool appealed = false}) => Violation(
@@ -88,6 +94,21 @@ class _AlreadyPendingRepo extends ProfileRepository {
       ),
     );
   }
+}
+
+/// Holds the appeal until the test answers it.
+class _HeldRepo extends ProfileRepository {
+  _HeldRepo() : super(Dio());
+
+  final answer = Completer<List<Violation>>();
+
+  @override
+  Future<List<Violation>> submitAppeal({
+    required String targetType,
+    required String targetId,
+    required String reason,
+  }) =>
+      answer.future;
 }
 
 void main() {
@@ -237,8 +258,44 @@ void main() {
     expect(find.byKey(reasonField), findsOneWidget);
     final field = tester.widget<TextField>(find.byKey(reasonField));
     expect(field.decoration?.errorText, isNotNull);
+    // On the field only — the pinned bar does not say it a second time.
+    expect(
+      find.descendant(
+        of: find.byType(SheetActionBar),
+        matching: find.byType(SheetErrorRow),
+      ),
+      findsNothing,
+    );
     // The typed reason survives so Submit can retry.
     expect(field.controller?.text, 'a reason');
+  });
+
+  testWidgets(
+      'Given an appeal in flight, When it is answered, Then the button and '
+      'the reason waited and the sheet closes', (tester) async {
+    final repo = _HeldRepo();
+    await pumpSheet(tester, repo);
+    await tester.enterText(find.byKey(reasonField), 'a reason');
+
+    await tester.tap(find.byKey(submitButton));
+    // Bounded pump: the spinner animates for as long as the appeal is held.
+    await tester.pump();
+
+    expect(tester.widget<FilledButton>(find.byKey(submitButton)).onPressed,
+        isNull);
+    expect(
+      find.descendant(
+        of: find.byKey(submitButton),
+        matching: find.byType(CircularProgressIndicator),
+      ),
+      findsOneWidget,
+    );
+    expect(tester.widget<TextField>(find.byKey(reasonField)).enabled, isFalse);
+
+    repo.answer.complete([_hidden(appealed: true)]);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(reasonField), findsNothing);
   });
 
   testWidgets(

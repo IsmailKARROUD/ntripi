@@ -36,6 +36,13 @@ const _mayReadInset = {
   'lib/shared/widgets/field_help.dart',
 };
 
+/// [source] without its comments. String literals are matched first and kept,
+/// so the `//` of a URL in a string does not swallow the rest of its line.
+String _withoutComments(String source) => source.replaceAllMapped(
+      RegExp(r"""'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|/\*[\s\S]*?\*/|//[^\n]*"""),
+      (m) => m[0]!.startsWith('/') ? '' : m[0]!,
+    );
+
 /// Every Dart file under lib/, comments removed — a mention in prose (or the
 /// commented-out segment_form_screen.dart) is not a use.
 Map<String, String> _sources() => {
@@ -43,11 +50,11 @@ Map<String, String> _sources() => {
           .listSync(recursive: true)
           .whereType<File>()
           .where((f) => f.path.endsWith('.dart')))
-        file.path: file
-            .readAsStringSync()
-            .replaceAll(RegExp(r'/\*[\s\S]*?\*/'), '')
-            .replaceAll(RegExp(r'//[^\n]*'), ''),
+        file.path: _withoutComments(file.readAsStringSync()),
     };
+
+/// Where KeyboardSafeSheetBody is declared — its constructor is not a call.
+const _sheetBodyDefinition = 'lib/shared/widgets/keyboard_avoidance.dart';
 
 /// Sheets with a field and no buttons to pin, each with its reason.
 const _mayOmitActions = <String>{};
@@ -59,18 +66,21 @@ Set<String> _matching(Map<String, String> sources, RegExp pattern) => {
 
 /// The argument list of every `KeyboardSafeSheetBody(` call in [source], with
 /// string literals blanked so a bracket in a label cannot unbalance the scan.
-Iterable<String> _sheetBodyCalls(String source) sync* {
+Iterable<String> _sheetBodyCalls(String source, [String file = 'source']) sync* {
   final code = source.replaceAll(
       RegExp(r"'(?:[^'\\\n]|\\.)*'" r'|"(?:[^"\\\n]|\\.)*"'), "''");
   for (final call in RegExp(r'\bKeyboardSafeSheetBody\(').allMatches(code)) {
     var depth = 0;
-    for (var i = call.end - 1; i < code.length; i++) {
+    int? end;
+    for (var i = call.end - 1; i < code.length && end == null; i++) {
       if ('([{'.contains(code[i])) depth++;
-      if (')]}'.contains(code[i]) && --depth == 0) {
-        yield code.substring(call.end, i);
-        break;
-      }
+      if (')]}'.contains(code[i]) && --depth == 0) end = i;
     }
+    // Skipping a call the scan cannot read would let it through unchecked.
+    if (end == null) {
+      throw StateError('$file: a KeyboardSafeSheetBody( call never closes');
+    }
+    yield code.substring(call.end, end);
   }
 }
 
@@ -121,12 +131,19 @@ void main() {
   });
 
   test('a KeyboardSafeSheetBody pins its buttons in actions:', () {
-    final live = {
+    final calls = {
       for (final entry in sources.entries)
-        // The definition's own constructor is not a call.
-        if (entry.key != 'lib/shared/widgets/keyboard_avoidance.dart' &&
-            _sheetBodyCalls(entry.value)
-                .any((args) => !_argumentNames(args).contains('actions')))
+        if (entry.key != _sheetBodyDefinition)
+          entry.key: _sheetBodyCalls(entry.value, entry.key).toList(),
+    }..removeWhere((_, found) => found.isEmpty);
+    expect(calls, isNotEmpty,
+        reason: 'The scan found no KeyboardSafeSheetBody call at all, so it '
+            'checked nothing — it is the scan that broke, not the sheets.');
+
+    final live = {
+      for (final entry in calls.entries)
+        if (entry.value
+            .any((args) => !_argumentNames(args).contains('actions')))
           entry.key,
     };
     expect(live.difference(_mayOmitActions), isEmpty,
@@ -136,5 +153,27 @@ void main() {
             'the file to _mayOmitActions with the reason it has none.');
     expect(_mayOmitActions.difference(live), isEmpty,
         reason: 'A stale entry would let the next real one through unseen.');
+  });
+
+  test('the scan reads each call by its own arguments', () {
+    const source = '''
+      // KeyboardSafeSheetBody(child: commentedOut),
+      KeyboardSafeSheetBody(
+        child: Text('a ( stray bracket, and https://a.link'), // a ( comment
+        actions: SheetActionBar(child: send),
+      );
+      KeyboardSafeSheetBody(
+        child: Column(children: [Inner(actions: notTheSheets)]),
+      );
+    ''';
+    expect(_sheetBodyCalls(_withoutComments(source)).map(_argumentNames), [
+      {'child', 'actions'},
+      {'child'},
+    ]);
+  });
+
+  test('the scan refuses a call it cannot read instead of skipping it', () {
+    expect(() => _sheetBodyCalls('KeyboardSafeSheetBody(child: x').toList(),
+        throwsStateError);
   });
 }

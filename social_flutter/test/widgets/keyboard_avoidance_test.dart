@@ -245,5 +245,73 @@ void main() {
       expect(tester.getRect(find.byKey(const Key('primary'))).bottom,
           lessThanOrEqualTo(667));
     });
+
+    testWidgets('a short body keeps its actions right under it, not down at '
+        'the cap', (tester) async {
+      _phone(tester, size: const Size(375, 667));
+      await tester.pumpWidget(host());
+
+      showModalBottomSheet<void>(
+        context: ctx,
+        isScrollControlled: true,
+        useSafeArea: true,
+        builder: (_) => KeyboardSafeSheetBody(
+          actions: primaryAction(),
+          child: const SizedBox(key: Key('body'), height: 100),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Only the body's own bottom padding (16) between them.
+      expect(tester.getRect(find.byType(SheetActionBar)).top,
+          tester.getRect(find.byKey(const Key('body'))).bottom + 16);
+    });
+
+    testWidgets('its actions clear the home indicator once, not twice',
+        (tester) async {
+      _phone(tester, size: const Size(375, 667));
+      tester.view.padding = const FakeViewPadding(bottom: 34);
+      tester.view.viewPadding = const FakeViewPadding(bottom: 34);
+      await tester.pumpWidget(host());
+
+      showModalBottomSheet<void>(
+        context: ctx,
+        isScrollControlled: true,
+        useSafeArea: true,
+        builder: (_) => KeyboardSafeSheetBody(
+          actions: primaryAction(),
+          child: const SizedBox(height: 100),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.getRect(find.byKey(const Key('primary'))).bottom, 667 - 34);
+    });
+
+    testWidgets('with the keyboard up its actions keep 16 px above it — the '
+        'home indicator is under the keyboard', (tester) async {
+      _phone(tester, size: const Size(375, 667));
+      // What a phone reports with the keyboard up: the indicator stays in
+      // viewPadding but leaves padding.
+      tester.view.viewPadding = const FakeViewPadding(bottom: 34);
+      await tester.pumpWidget(host());
+
+      showModalBottomSheet<void>(
+        context: ctx,
+        isScrollControlled: true,
+        useSafeArea: true,
+        builder: (_) => KeyboardSafeSheetBody(
+          actions: primaryAction(),
+          child: const TextField(key: Key('field')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.showKeyboard(find.byKey(const Key('field')));
+      await _raiseKeyboard(tester, height: 260);
+
+      expect(tester.getRect(find.byKey(const Key('primary'))).bottom,
+          667 - 260 - 16);
+    });
   });
 }

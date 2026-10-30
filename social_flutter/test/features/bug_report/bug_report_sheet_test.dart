@@ -14,20 +14,25 @@
 //    feedback UI) and the typed message survives it so Send retries.
 //
 // 3. Send is in view the moment the reporter opens, and stays above the
-//    keyboard. The package opens its sheet shorter than this form, so a Send
-//    at the end of the list started out of sight on every phone.
+//    keyboard — and wherever the sheet is dragged. The package opens its sheet
+//    shorter than this form, so a Send at the end of the list started out of
+//    sight on every phone. The message, which Send waits for, comes first.
+
+import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:feedback/feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ntripi/core/connectivity/connectivity_service.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/features/bug_report/presentation/bug_report_localizations.dart';
 import 'package:ntripi/features/bug_report/presentation/bug_report_sheet.dart';
 import 'package:ntripi/features/bug_report/presentation/bug_report_theme.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/editorial_widgets.dart';
+import 'package:ntripi/shared/widgets/loaders.dart';
 
 /// Mirrors the mount in lib/main.dart: ProviderScope above everything, then
 /// BetterFeedback, then MaterialApp. `home` is what a real screen sees.
@@ -70,8 +75,9 @@ Widget _feedbackApp({required Widget home, required Locale locale}) {
 /// fires after the package captures a real screenshot off the render tree,
 /// which flutter_test has no pipeline for. The sheet's own behaviour is what
 /// these tests are about, so they drive its OnSubmit directly.
-Widget _sheetHarness({required OnSubmit onSubmit}) {
+Widget _sheetHarness({required OnSubmit onSubmit, bool online = true}) {
   return ProviderScope(
+    overrides: [isOnlineProvider.overrideWith((ref) => Stream.value(online))],
     child: MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -79,6 +85,20 @@ Widget _sheetHarness({required OnSubmit onSubmit}) {
       home: Scaffold(
         body: BugReportSheet(onSubmit: onSubmit, scrollController: null),
       ),
+    ),
+  );
+}
+
+/// The backend's generic 500, as the intake answers it.
+DioException _serverError() {
+  final request = RequestOptions(path: '/bug-reports');
+  return DioException(
+    requestOptions: request,
+    type: DioExceptionType.badResponse,
+    response: Response(
+      requestOptions: request,
+      statusCode: 500,
+      data: const {'detail': 'Internal Server Error'},
     ),
   );
 }
@@ -157,16 +177,7 @@ void main() {
       var calls = 0;
       await tester.pumpWidget(_sheetHarness(onSubmit: (_, {extras}) async {
         calls++;
-        final request = RequestOptions(path: '/bug-reports');
-        throw DioException(
-          requestOptions: request,
-          type: DioExceptionType.badResponse,
-          response: Response(
-            requestOptions: request,
-            statusCode: 500,
-            data: const {'detail': 'Internal Server Error'},
-          ),
-        );
+        throw _serverError();
       }));
       await tester.pumpAndSettle();
 
@@ -210,6 +221,65 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(seen?['category'], 'visual');
+    });
+
+    testWidgets('asks for the message before the optional category',
+        (tester) async {
+      await tester.pumpWidget(_sheetHarness(onSubmit: (_, {extras}) async {}));
+      await tester.pumpAndSettle();
+
+      expect(tester.getRect(find.byType(TextField)).bottom,
+          lessThan(tester.getRect(find.text('The app froze or closed')).top));
+    });
+
+    testWidgets('offline, Send stays disabled with a message typed',
+        (tester) async {
+      await tester.pumpWidget(
+          _sheetHarness(online: false, onSubmit: (_, {extras}) async {}));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'The map is blank');
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<FilledButton>(find.widgetWithText(FilledButton, 'Send report'))
+            .onPressed,
+        isNull,
+      );
+    });
+
+    testWidgets('while sending, the buttons and the message wait; a failure '
+        'hands them back', (tester) async {
+      final answer = Completer<void>();
+      await tester.pumpWidget(
+          _sheetHarness(onSubmit: (_, {extras}) => answer.future));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'The map is blank');
+      await tester.pumpAndSettle();
+
+      final send = find.descendant(
+          of: find.byType(SheetActionBar), matching: find.byType(FilledButton));
+      final cancel = find.widgetWithText(OutlinedButton, 'Cancel');
+      bool fieldEnabled() =>
+          tester.widget<TextField>(find.byType(TextField)).enabled ?? true;
+
+      await tester.tap(send);
+      // Bounded pump: the loader animates for as long as the send is held.
+      await tester.pump();
+
+      expect(tester.widget<FilledButton>(send).onPressed, isNull);
+      expect(find.descendant(of: send, matching: find.byType(NTripiRingLoader)),
+          findsOneWidget);
+      expect(tester.widget<OutlinedButton>(cancel).onPressed, isNull);
+      expect(fieldEnabled(), isFalse);
+
+      answer.completeError(_serverError());
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<FilledButton>(send).onPressed, isNotNull);
+      expect(tester.widget<OutlinedButton>(cancel).onPressed, isNotNull);
+      expect(fieldEnabled(), isTrue);
     });
   });
 
@@ -259,6 +329,33 @@ void main() {
       expect(sendRect.bottom, lessThanOrEqualTo(844 - 300));
       expect(tester.getRect(find.byType(TextField)).bottom,
           lessThanOrEqualTo(sendRect.top));
+    });
+
+    testWidgets('dragging the sheet up keeps Send at its foot', (tester) async {
+      phone(tester);
+      await openReporter(tester);
+      final atRest = tester.getRect(send);
+      // The premise: at rest the last category is out of reach.
+      expect(find.text('Something else').hitTestable(), findsNothing);
+
+      await tester.drag(find.byType(ListView), const Offset(0, -300));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Something else').hitTestable(), findsOneWidget);
+      expect(send.hitTestable(), findsOneWidget);
+      expect(tester.getRect(send).bottom, atRest.bottom);
+    });
+
+    testWidgets('Cancel closes the reporter', (tester) async {
+      phone(tester);
+      await openReporter(tester);
+
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(BetterFeedback.of(tester.element(find.text('open'))).isVisible,
+          isFalse);
+      expect(find.byType(BugReportSheet), findsNothing);
     });
   });
 }
