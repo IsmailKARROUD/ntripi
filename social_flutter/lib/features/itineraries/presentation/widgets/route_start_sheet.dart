@@ -49,28 +49,35 @@ class _RouteStartSheet extends StatelessWidget {
                 ),
               ),
             ),
-            SectionCard(
-              clipBehavior: Clip.antiAlias,
-              children: [
-                EditorialRow(
-                  icon: Icons.my_location_rounded,
-                  iconBg: nt.mist,
-                  iconColor: nt.forest,
-                  label: l10n.routeFromMyLocation,
-                  subtitle: l10n.routeFromMyLocationHint,
-                  onTap: () =>
-                      Navigator.of(context).pop(RouteStart.myLocation),
+            // Scrollable: at the largest text sizes the two answers outgrow a
+            // small phone, and the second one was cut off beyond the screen.
+            Flexible(
+              child: SingleChildScrollView(
+                child: SectionCard(
+                  clipBehavior: Clip.antiAlias,
+                  children: [
+                    EditorialRow(
+                      icon: Icons.my_location_rounded,
+                      iconBg: nt.mist,
+                      iconColor: nt.forest,
+                      label: l10n.routeFromMyLocation,
+                      subtitle: l10n.routeFromMyLocationHint,
+                      onTap: () =>
+                          Navigator.of(context).pop(RouteStart.myLocation),
+                    ),
+                    EditorialRow(
+                      icon: Icons.trip_origin_rounded,
+                      iconBg: nt.mist,
+                      iconColor: nt.forest,
+                      label: l10n.routeFromFirstStop,
+                      subtitle: l10n.routeFromFirstStopHint,
+                      isLast: true,
+                      onTap: () =>
+                          Navigator.of(context).pop(RouteStart.firstStop),
+                    ),
+                  ],
                 ),
-                EditorialRow(
-                  icon: Icons.trip_origin_rounded,
-                  iconBg: nt.mist,
-                  iconColor: nt.forest,
-                  label: l10n.routeFromFirstStop,
-                  subtitle: l10n.routeFromFirstStopHint,
-                  isLast: true,
-                  onTap: () => Navigator.of(context).pop(RouteStart.firstStop),
-                ),
-              ],
+              ),
             ),
           ],
         ),

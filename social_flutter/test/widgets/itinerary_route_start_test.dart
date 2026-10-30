@@ -20,6 +20,7 @@ import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/models/user.dart';
 
 import '../support/trip_json.dart';
+import '../support/url_launches.dart';
 
 /// Harbour, then Museum or Market, then Beach — every stop on the map.
 Itinerary _trip() => Itinerary.fromJson(tripJson(
@@ -38,12 +39,50 @@ Itinerary _trip() => Itinerary.fromJson(tripJson(
       ],
     ));
 
+/// Harbour, then a stop with no place on the map, then optionally Beach.
+Itinerary _tripWithUnmappedStop({bool beach = true}) =>
+    Itinerary.fromJson(tripJson(
+      canEdit: false,
+      tracks: [
+        trackJson('t1', [
+          stopJson('s1', trackId: 't1', placeName: 'Harbour', lat: 10, lng: 20),
+        ], rank: 'a'),
+        trackJson('t2', [
+          stopJson('s2', trackId: 't2', placeName: 'Somewhere'),
+        ], rank: 'b'),
+        if (beach)
+          trackJson('t3', [
+            stopJson('s3', trackId: 't3', placeName: 'Beach', lat: 13, lng: 23),
+          ], rank: 'c'),
+      ],
+    ));
+
+/// [count] stops one after another, stop i at (10 + i, 20 + i).
+Itinerary _tripOfStops(int count) => Itinerary.fromJson(tripJson(
+      canEdit: false,
+      tracks: [
+        for (var i = 0; i < count; i++)
+          trackJson('t$i', [
+            stopJson('s$i',
+                trackId: 't$i',
+                placeName: 'Stop $i',
+                lat: 10.0 + i,
+                lng: 20.0 + i),
+          ], rank: String.fromCharCode(0x61 + i)),
+      ],
+    ));
+
+/// Stop i of [_tripOfStops], as Google Maps gets it.
+String _coords(int i) => '${10.0 + i},${20.0 + i}';
+
 class _FakeRepo extends ItineraryRepository {
-  _FakeRepo() : super(Dio());
+  _FakeRepo(this.trip) : super(Dio());
+
+  final Itinerary trip;
 
   @override
   Future<Itinerary> getItinerary(String id, {bool forceRefresh = false}) async =>
-      _trip();
+      trip;
 }
 
 class _Viewer extends MyProfileNotifier {
@@ -74,9 +113,13 @@ class _RecordingLauncher extends MapsLauncherService {
   }
 }
 
-/// A viewer's trip page, read mode.
+/// A viewer's trip page, read mode. Without [launcher] the real one opens the
+/// route — through url_launcher, which a test records.
 Future<AppLocalizations> _pump(
-    WidgetTester tester, _RecordingLauncher launcher) async {
+  WidgetTester tester, {
+  Itinerary? trip,
+  MapsLauncherService? launcher,
+}) async {
   // Tall enough that the stops header is on screen without scrolling.
   tester.view.physicalSize = const Size(1080, 4000);
   tester.view.devicePixelRatio = 1.0;
@@ -84,9 +127,10 @@ Future<AppLocalizations> _pump(
 
   await tester.pumpWidget(ProviderScope(
     overrides: [
-      itineraryRepositoryProvider.overrideWithValue(_FakeRepo()),
+      itineraryRepositoryProvider.overrideWithValue(_FakeRepo(trip ?? _trip())),
       myProfileProvider.overrideWith(_Viewer.new),
-      mapsLauncherServiceProvider.overrideWithValue(launcher),
+      if (launcher != null)
+        mapsLauncherServiceProvider.overrideWithValue(launcher),
     ],
     child: const MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -104,13 +148,23 @@ Future<void> _tapRouteArrow(WidgetTester tester, AppLocalizations l10n) async {
   await tester.pumpAndSettle();
 }
 
+/// Opens the question and answers it with [start].
+Future<void> _openRoute(
+    WidgetTester tester, AppLocalizations l10n, RouteStart start) async {
+  await _tapRouteArrow(tester, l10n);
+  await tester.tap(find.text(start == RouteStart.firstStop
+      ? l10n.routeFromFirstStop
+      : l10n.routeFromMyLocation));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   setUp(() => FlutterSecureStorage.setMockInitialValues({}));
 
   testWidgets('the route arrow asks where to start and opens nothing yet',
       (tester) async {
     final launcher = _RecordingLauncher();
-    final l10n = await _pump(tester, launcher);
+    final l10n = await _pump(tester, launcher: launcher);
 
     await _tapRouteArrow(tester, l10n);
 
@@ -124,37 +178,36 @@ void main() {
   testWidgets('from the first stop opens the trip alone, one stop per track',
       (tester) async {
     final launcher = _RecordingLauncher();
-    final l10n = await _pump(tester, launcher);
+    final l10n = await _pump(tester, launcher: launcher);
 
-    await _tapRouteArrow(tester, l10n);
-    await tester.tap(find.text(l10n.routeFromFirstStop));
-    await tester.pumpAndSettle();
+    await _openRoute(tester, l10n, RouteStart.firstStop);
 
     final (points, start) = launcher.opened.single;
     expect(start, RouteStart.firstStop);
     // Museum, not Market: the route takes the alternative on screen.
     expect(points, const [LatLng(10, 20), LatLng(11, 21), LatLng(13, 23)]);
     expect(find.text(l10n.routeFromFirstStop), findsNothing);
+    // Nothing was cut, so nothing is said.
+    expect(find.byType(SnackBar), findsNothing);
   });
 
   testWidgets('from my location opens the route from the device location',
       (tester) async {
     final launcher = _RecordingLauncher();
-    final l10n = await _pump(tester, launcher);
+    final l10n = await _pump(tester, launcher: launcher);
 
-    await _tapRouteArrow(tester, l10n);
-    await tester.tap(find.text(l10n.routeFromMyLocation));
-    await tester.pumpAndSettle();
+    await _openRoute(tester, l10n, RouteStart.myLocation);
 
     final (points, start) = launcher.opened.single;
     expect(start, RouteStart.myLocation);
     expect(points, const [LatLng(10, 20), LatLng(11, 21), LatLng(13, 23)]);
     expect(find.text(l10n.routeFromMyLocation), findsNothing);
+    expect(find.byType(SnackBar), findsNothing);
   });
 
   testWidgets('dismissing the question opens nothing', (tester) async {
     final launcher = _RecordingLauncher();
-    final l10n = await _pump(tester, launcher);
+    final l10n = await _pump(tester, launcher: launcher);
 
     await _tapRouteArrow(tester, l10n);
     // The barrier above the sheet.
@@ -172,15 +225,84 @@ void main() {
     testWidgets('a route cut short from ${start.name} names its $cap stops',
         (tester) async {
       final launcher = _RecordingLauncher()..truncates = true;
-      final l10n = await _pump(tester, launcher);
+      final l10n = await _pump(tester, launcher: launcher);
 
-      await _tapRouteArrow(tester, l10n);
-      await tester.tap(find.text(start == RouteStart.firstStop
-          ? l10n.routeFromFirstStop
-          : l10n.routeFromMyLocation));
-      await tester.pumpAndSettle();
+      await _openRoute(tester, l10n, start);
 
       expect(find.text(l10n.routeTruncated(cap)), findsOneWidget);
     });
   }
+
+  testWidgets('with the other alternative on screen, the route goes through it',
+      (tester) async {
+    final launcher = _RecordingLauncher();
+    final l10n = await _pump(tester, launcher: launcher);
+
+    // Swipe the middle track from Museum to Market.
+    await tester.fling(find.text('Museum'), const Offset(-600, 0), 2000);
+    await tester.pumpAndSettle();
+    await _openRoute(tester, l10n, RouteStart.firstStop);
+
+    final (points, _) = launcher.opened.single;
+    expect(points, const [LatLng(10, 20), LatLng(12, 22), LatLng(13, 23)]);
+  });
+
+  testWidgets('a stop with no place on the map is left out of the route',
+      (tester) async {
+    final launcher = _RecordingLauncher();
+    final l10n =
+        await _pump(tester, trip: _tripWithUnmappedStop(), launcher: launcher);
+
+    await _openRoute(tester, l10n, RouteStart.firstStop);
+
+    final (points, _) = launcher.opened.single;
+    expect(points, const [LatLng(10, 20), LatLng(13, 23)]);
+  });
+
+  testWidgets('with fewer than two stops on the map there is no route arrow',
+      (tester) async {
+    final l10n = await _pump(tester,
+        trip: _tripWithUnmappedStop(beach: false),
+        launcher: _RecordingLauncher());
+
+    // Harbour alone is no route: Google Maps needs somewhere to go.
+    expect(find.text('Somewhere'), findsOneWidget);
+    expect(find.byTooltip(l10n.openRouteInMaps), findsNothing);
+  });
+
+  group('with the real launcher', () {
+    testWidgets(
+        'an 11-stop trip from the first stop reaches Google Maps whole, with '
+        'nothing to say', (tester) async {
+      final launches = recordUrlLaunches();
+      final l10n = await _pump(tester, trip: _tripOfStops(11));
+
+      await _openRoute(tester, l10n, RouteStart.firstStop);
+
+      final route = launches.single.url.queryParameters;
+      expect(route['origin'], _coords(0));
+      expect(route['waypoints'],
+          [for (var i = 1; i <= 9; i++) _coords(i)].join('|'));
+      expect(route['destination'], _coords(10));
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets(
+        'the same trip from my location keeps its first 10 stops and says so',
+        (tester) async {
+      final launches = recordUrlLaunches();
+      final l10n = await _pump(tester, trip: _tripOfStops(11));
+
+      await _openRoute(tester, l10n, RouteStart.myLocation);
+
+      final route = launches.single.url.queryParameters;
+      // No origin: Google starts at the device.
+      expect(route.containsKey('origin'), isFalse);
+      // Stop 9 is the one dropped; the last stop stays the destination.
+      expect(route['waypoints'],
+          [for (var i = 0; i <= 8; i++) _coords(i)].join('|'));
+      expect(route['destination'], _coords(10));
+      expect(find.text(l10n.routeTruncated(10)), findsOneWidget);
+    });
+  });
 }

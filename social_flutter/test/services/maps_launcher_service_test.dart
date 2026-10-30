@@ -1,13 +1,17 @@
 // Unit tests for maps_launcher_service.dart — the pure URI builders behind
-// the "open in maps" actions. Detection and launching go through url_launcher
-// platform channels and are exercised manually; these tests cover the link
-// formats and the Google Maps waypoint-cap truncation.
+// the "open in maps" actions. Detection goes through url_launcher's platform
+// channel and is exercised manually; these tests cover the link formats, the
+// Google Maps waypoint-cap truncation, and the route openRoute hands that
+// channel.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ntripi/features/itineraries/data/maps_launcher_service.dart';
 
+import '../support/url_launches.dart';
+
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   final service = MapsLauncherService();
 
   group('placeUri', () {
@@ -207,5 +211,49 @@ void main() {
     // Google's waypoint cap excludes the origin and the destination.
     expect(MapsLauncherService.maxRouteStops(RouteStart.myLocation), 10);
     expect(MapsLauncherService.maxRouteStops(RouteStart.firstStop), 11);
+  });
+
+  group('openRoute', () {
+    test('hands the route to the Maps app, or to the browser without it',
+        () async {
+      final launches = recordUrlLaunches();
+      final route = points(3);
+
+      await service.openRoute(route, start: RouteStart.firstStop);
+
+      final launch = launches.single;
+      expect(launch.url, service.routeUri(route, start: RouteStart.firstStop));
+      // An in-app browser view would keep the Google Maps app out of it…
+      expect(launch.inApp, isFalse);
+      // …and app-only would open nothing on a phone without it.
+      expect(launch.appOnly, isFalse);
+    });
+
+    for (final (start, stops, cut) in [
+      (RouteStart.myLocation, 10, false),
+      (RouteStart.myLocation, 11, true),
+      (RouteStart.firstStop, 11, false),
+      (RouteStart.firstStop, 12, true),
+    ]) {
+      test(
+          'from ${start.name}, $stops stops '
+          '${cut ? 'are reported cut short' : 'open whole'}', () async {
+        final launches = recordUrlLaunches();
+
+        final truncated = await service.openRoute(points(stops), start: start);
+
+        expect(truncated, cut);
+        expect(launches, hasLength(1));
+      });
+    }
+
+    test('a route of one stop is refused before anything opens', () async {
+      final launches = recordUrlLaunches();
+
+      await expectLater(
+          service.openRoute(points(1), start: RouteStart.myLocation),
+          throwsAssertionError);
+      expect(launches, isEmpty);
+    });
   });
 }
