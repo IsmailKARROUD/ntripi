@@ -535,7 +535,12 @@ class TestSourceLangIsTheLastKey:
 
         detail = _detail(client, token, trip_id)
         assert list(detail)[-2:] == ["can_edit", "source_lang"]
-        assert list(stop_a)[-2:] == ["annotations", "source_lang"]
+        # The place keys came later still, appended after source_lang.
+        keys = list(stop_a)
+        assert keys[keys.index("annotations"):] == [
+            "annotations", "source_lang", "place_source", "google_place_id",
+            "google_place_query", "google_place_missing",
+        ]
         assert list(stop_note)[-2:] == ["updated_at", "source_lang"]
         assert list(trip_note)[-2:] == ["updated_at", "source_lang"]
         assert list(segment["legs"][0])[-2:] == ["created_at", "source_lang"]

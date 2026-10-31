@@ -26,6 +26,8 @@ const _mayWriteLoadingOrError = {
   // A new query must not keep showing the previous query's results: its
   // loader answers a new question, it is not a reload of content on screen.
   'PlaceSearchNotifier',
+  // The same for Google's suggestions, the stop form's fallback search.
+  'GooglePlaceSearchNotifier',
 };
 
 final _writesLoadingOrError = RegExp(

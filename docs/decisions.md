@@ -2489,3 +2489,199 @@ opens the route, and `MapsLauncherService.routeUri` builds both links.
   start shows.
 - **Always from the first stop**: it would take turn-by-turn away from the
   person standing at the start of the trip.
+
+### 2026-10-31 — A stop's place: OpenStreetMap first, Google Places as the fallback, only a place ID kept
+
+**Context.** OpenStreetMap's gazetteer misses many places, so people pasted
+Google Maps links: they left Ntripi, found the place in Google Maps, copied the
+link and came back. Google Places Autocomplete would find the place in the
+form, but it is billed (10,000 requests a month free, then about $2.83 per
+1,000), and Google's terms let an app store a place ID and nothing else from
+Places — no name, address or coordinates beyond 30 days — and never show Places
+content on a non-Google map.
+
+**Decision.** The second segment of the stop form's location becomes "Google
+Maps": one search box that asks OpenStreetMap first and Google after — a
+**Search on Google Maps** row under OSM's results, and a switch of its own when
+a submitted OSM search is empty — plus the paste-a-link field. Once on Google,
+suggestions follow the typing (500 ms, 3+ characters). Google is reached only
+through our server (`POST /places/google/autocomplete`): the key stays there,
+each user has 60 requests an hour, and the answer is neither logged nor cached.
+No Place Details call is ever made: a suggestion already carries its place ID,
+and a session ended by a paid Details call still bills every request plus the
+call, while one ended by the free IDs-only call is billed like no session. A
+pick stores `google_place_id` and the text the user typed; the user types the
+stop's name. Past 10,000 requests a month the app pays, watched by a Google
+Cloud budget alert — the user chose that over a hard stop, and declined an
+operator email.
+
+**Consequences.**
+- A Google place has no coordinates, so it never appears on an OSM map; it
+  appears on Google's embeds (see the next two entries).
+- The search text is stored user text: moderated with the stop, and visible to
+  readers' devices as the fallback query of Open in Google Maps.
+- `place_source` records where each location came from, and the stop page
+  credits it — so a reader, or Google, can tell OSM data from Google's.
+- Regression tests: `test_places_proxy.py`, `TestPlaceSource`,
+  `stop_form_google_segment_test.dart`, `google_places_domain_test.dart`.
+
+**Alternatives rejected.**
+- **One search box above the two segments**: Google would no longer be a
+  segment of its own, which the user did not want.
+- **The app calling Google directly**: the key in every binary, rotated only by
+  a release, and no per-user cap.
+- **A monthly hard stop at the free tier, or an operator email when billing
+  starts**: declined by the user.
+- **Re-finding a lost place automatically** (Text Search IDs-only is free): it
+  takes the first match, and a closed "Chez Marcel" matches another one
+  elsewhere with nobody told. See the refresh entry below.
+
+### 2026-10-31 — The stop form never fetches a pasted link; only a place ID is ever read from one
+
+**Context.** Pasting a link made the phone fetch Google's page (desktop-Chrome
+User-Agent, five redirects) to unfurl a name and coordinates, and the form
+saved both: the coordinates as the stop's `lat`/`lng`, the name into an empty
+name field. That is scraping, and the coordinates are Google's content.
+
+**Decision.** The form never fetches a link and shows no preview; the user
+types the name. Nothing is read out of a link but a `ChIJ…` place ID, which the
+server takes from the link's own text into `google_place_id`
+(`services/stop_location.extract_place_id`). `services/stop_location.normalize`
+drops coordinates sent beside a link from every client — installed builds still
+send them — and `ck_stops_link_no_coords` holds the table to it. A one-time
+data step cleared the coordinates of every existing link stop (short links
+carry no place ID, so nothing was backfilled). The stop page keeps its unfurled
+preview: the user chose to keep it there.
+
+**Consequences.**
+- A short link (`maps.app.goo.gl`) names no place, so it cannot appear on the
+  trip's route map; the form says so when one is pasted and suggests searching.
+- Old link stops lost their profile-map points and their place on the trip map
+  — the coordinates cannot be restored by the downgrade.
+- `test/stop_form_link_fetch_guard_test.dart` fails if the form reaches the
+  fetcher.
+
+**Alternatives rejected.**
+- **Removing the stop page's fetch too**: offered; the user kept it.
+- **Keeping coordinates parsed from the link's text** (no fetch involved):
+  they are still Google's content, stored and drawn on OSM maps.
+- **Resolving short links on the server** at save time: still fetching.
+
+### 2026-10-31 — Every Google map is one page on our server
+
+**Context.** The Maps Embed key was a build constant typed into the Dockerfile
+and six scripts — committed and rotatable only by a release (backlog). Phones
+built the embed from an HTML string with no web address behind it, so Google
+saw no referrer, and a referrer-restricted key could not have worked there.
+
+**Decision.** `GET /embed/place|point|search|directions` render a tiny page that
+frames Google's free Maps Embed API with the backend's `GOOGLE_MAPS_EMBED_API_KEY`.
+Phones load the page in a WebView, the web app frames it, and `GoogleEmbed` is
+the app's only builder of those addresses. Every parameter is validated and the
+query never echoed; the language parameter is `language`, because `?lang=`
+writes the site cookie. `/embed/*` is the one path family our own pages may
+frame (`frame-ancestors` from `EMBED_FRAME_ANCESTORS`), and the key left every
+build file.
+
+**Consequences.**
+- One small extra request before each map, cached a day by URL.
+- The key can be rotated with a Railway variable; the old one stays alive until
+  old builds age out (backlog).
+- `/places/config` tells the app whether maps are on; unset key → no map.
+
+**Alternatives rejected.**
+- **The web app framing Google directly**: the key would have stayed in the web
+  build.
+- **`X-Frame-Options: SAMEORIGIN` alone**: it cannot admit a local web build on
+  another port; browsers obey `frame-ancestors` over it anyway.
+
+### 2026-10-31 — The trip page's map becomes Google's route
+
+**Context.** The Map view was an OSM `flutter_map`: a marker per stop with
+coordinates and one straight line through every stop, alternatives included. A
+Google place can never be on it. Ntripi has no days, so "a day's route" is the
+trip's route.
+
+**Decision.** The Map view shows the Maps Embed API's directions through one
+point per track — the alternative on screen, as the route link — up to 22
+points, travel mode left to Google; a stop nothing locates is left out and
+counted. The route link carries place IDs. This supersedes, for the trip page,
+the frontend rule "OSM via `flutter_map` only": maps Ntripi draws itself stay
+OSM, and a Google map appears only through `/embed/*` (never the SDK).
+
+**Consequences.**
+- Alternatives off screen have no marker; swiping one redraws the route.
+- With no embed key the List/Map toggle is hidden.
+
+**Alternatives rejected.**
+- **Keeping the OSM map and putting the route embed in the route sheet**:
+  Google places would never appear on the trip's map.
+
+### 2026-10-31 — Place search on submit; the trip's stops steer both searches
+
+**Context.** The OSM search ran as the user typed (400 ms pause, no minimum
+length), which Nominatim's usage policy forbids — and Nominatim does not match
+half-typed words, so "OSM empty → ask Google" would have billed a request for
+almost every keystroke.
+
+**Decision.** Every OSM search box — both form segments and the map picker —
+searches when submitted. Both searches are biased toward the trip: the
+alternative in the same track, else the nearest earlier track's stop, else the
+first stop with coordinates (`domain/search_bias.dart`). Only a trip with no
+coordinates falls back to the device's position, rounded to 0.1°; the server
+rounds Google's bias again. The Privacy Policy discloses it.
+
+**Consequences.**
+- No suggestions while typing on the OSM side.
+- Nominatim's one request per second is still for the whole app (backlog: a
+  geocoder for real traffic).
+
+**Alternatives rejected.**
+- **Photon (komoot) for search-as-you-type**: a new third party on a free
+  public server with no guarantees.
+- **No bias on a trip's first search**: the user chose the device's area,
+  disclosed.
+
+### 2026-10-31 — Google place IDs refreshed yearly; a lost one goes to an editor
+
+**Context.** Google recommends refreshing place IDs older than 12 months; the
+IDs-only Place Details call is free. An ID can come back `NOT_FOUND` when the
+place closed, moved or merged.
+
+**Decision.** The sweep confirms IDs checked more than a year ago, 100 per run,
+after its own commit and with writes conditional on the ID it read; it never
+moves `itineraries.updated_at`. A changed ID is stored. A dead one is marked
+(`google_place_missing_at`): readers search its stored text in Google Maps, and
+an editor sees "Google can't find this place anymore" with the search
+pre-filled. It is never re-found automatically.
+
+**Consequences.**
+- An outage or a quota answer stops the batch; the next run continues.
+
+**Alternatives rejected.**
+- **Re-finding with the free Text Search**: the first match can be another
+  place of the same name.
+
+### 2026-10-31 — Terms 3.2 and Privacy 2.5 name Google Maps Platform
+
+**Context.** Google's Places policies require an app's terms and privacy
+policy to incorporate Google's. Ntripi's Terms credited only OpenStreetMap,
+and the Privacy Policy named neither the Embed API (already loaded from Google)
+nor any place search — and said "we do not store your raw search queries".
+
+**Decision.** ToS §12 names the Google Maps/Google Earth Additional Terms of
+Service and the Google Privacy Policy by URL, and its service list gains maps
+and place search — and push notifications and translation, which were missing
+and had been waiting for the next version bump. Privacy §2, §4, §5, §9 and §10
+say what Google and Nominatim receive, the rounded device position, the search
+text kept with a Google place, Google's cookies in its frames and how long the
+ID and the words are kept — in all six languages. `TOS_VERSION` 3.2 sends every
+user through the re-acceptance gate once.
+
+**Consequences.**
+- Every installed build already has the gate, so the bump works without a
+  release.
+
+**Alternatives rejected.**
+- **Adding the clause without a version bump**: nobody interrupted, but no
+  record of which users accepted it.

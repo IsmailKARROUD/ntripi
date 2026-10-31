@@ -49,7 +49,6 @@ class MapPickerScreen extends ConsumerStatefulWidget {
 class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
   final _mapController = MapController();
   final _searchController = TextEditingController();
-  Timer? _debounce;
   // Last query actually sent to Nominatim — gates the "no results" card so it
   // can't flash while a newer keystroke's debounce is still pending.
   String _submittedQuery = '';
@@ -100,7 +99,6 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
 
   @override
   void dispose() {
-    _debounce?.cancel();
     _resolveDebounce?.cancel();
     _searchController.dispose();
     // Reset so a reopened picker doesn't show stale results — deferred to a
@@ -124,20 +122,23 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
 
   void _onSearchChanged(String value) {
     // setState refreshes the clear-button visibility and reopens the list.
+    // No request: Nominatim forbids searching as you type, so a search runs
+    // only when submitted (_submitSearch).
     setState(() => _listVisible = true);
-    _debounce?.cancel();
-    // 400ms debounce respects Nominatim's 1 req/s rate-limit policy.
-    _debounce = Timer(const Duration(milliseconds: 400), () {
-      _submittedQuery = value.trim();
-      if (_submittedQuery.isEmpty && _showSearchArea) {
-        setState(() => _showSearchArea = false);
-      }
-      _runAreaSearch();
+    if (value.trim().isEmpty) _clearSearch();
+  }
+
+  /// The keyboard's Search key or the search button.
+  void _submitSearch() {
+    setState(() {
+      _listVisible = true;
+      _submittedQuery = _searchController.text.trim();
+      if (_submittedQuery.isEmpty) _showSearchArea = false;
     });
+    _runAreaSearch();
   }
 
   void _clearSearch() {
-    _debounce?.cancel();
     _searchController.clear();
     _submittedQuery = '';
     _searchNotifier.clear();
@@ -201,7 +202,6 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
 
   /// "Search this area" pill — re-runs the active query in the new viewport.
   void _searchThisArea() {
-    _debounce?.cancel();
     setState(() {
       _showSearchArea = false;
       _listVisible = true;
@@ -375,9 +375,20 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
             prefixIcon: Icon(Icons.search_rounded, color: nt.forest),
             suffixIcon:
                 _searchController.text.isNotEmpty
-                    ? IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 18),
-                      onPressed: _clearSearch,
+                    ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 18),
+                          onPressed: _clearSearch,
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.arrow_forward_rounded,
+                              size: 20, color: nt.forest),
+                          tooltip: l10n.placeSearchButton,
+                          onPressed: _submitSearch,
+                        ),
+                      ],
                     )
                     : null,
             border: OutlineInputBorder(
@@ -393,7 +404,9 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
               borderSide: BorderSide(color: nt.forest, width: 1.5),
             ),
           ),
+          textInputAction: TextInputAction.search,
           onChanged: _onSearchChanged,
+          onSubmitted: (_) => _submitSearch(),
           onTap: () {
             // Reopen a collapsed list when the user returns to the field.
             if (!_listVisible) setState(() => _listVisible = true);

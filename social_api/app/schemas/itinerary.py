@@ -32,6 +32,10 @@ _PLACE_TYPE_PATTERN = (
     "^(eatDrink|sleep|pray|learnSee|buy|playWatch|nature|transport|healBathe|entertainment|sight)$"
 )
 _VISIBILITY = Literal['public', 'followers', 'restricted', 'only_me']
+# Where a stop's location came from (stops.place_source).
+_PLACE_SOURCE_PATTERN = "^(osm|google|link|typed)$"
+# Google place IDs are URL-safe base64-ish; Google sets no maximum length.
+_GOOGLE_PLACE_ID_PATTERN = "^[A-Za-z0-9_-]+$"
 
 # Caps on the free-text columns (all `Text` in PostgreSQL, so previously
 # unbounded). These bound what a single write can submit to the moderation
@@ -78,6 +82,33 @@ def validate_google_maps_url(url: Optional[str]) -> Optional[str]:
     if host in ("google.com", "www.google.com", "goo.gl") and path.startswith("/maps"):
         return url.strip()
     raise ValueError("map_url must be a Google Maps link")
+
+
+def validate_stop_location(stop):
+    """The location a client says it picked must be one the rules allow.
+
+    Checks only what was sent: services/stop_location.normalize clears the
+    rest against the stored row, and keeps a body without `place_source` (an
+    installed build) inside the same rules.
+    """
+    source = stop.place_source
+    google_sent = stop.google_place_id is not None or stop.google_place_query is not None
+    if google_sent and source != "google":
+        raise ValueError("google_place_id / google_place_query need place_source 'google'")
+    coords_sent = stop.lat is not None or stop.lng is not None
+    if source == "google":
+        if not stop.google_place_id or not (stop.google_place_query or "").strip():
+            raise ValueError("a Google place needs google_place_id and google_place_query")
+        if coords_sent or stop.map_url is not None:
+            raise ValueError("a Google place carries no coordinates and no map_url")
+    elif source == "link":
+        if not stop.map_url:
+            raise ValueError("place_source 'link' needs map_url")
+        if coords_sent:
+            raise ValueError("a Google Maps link is never stored with coordinates")
+    elif source in ("osm", "typed") and stop.map_url is not None:
+        raise ValueError(f"place_source '{source}' carries no map_url")
+    return stop
 
 
 # ---------------------------------------------------------------------------
@@ -182,7 +213,17 @@ class StopCreate(BaseModel):
     is_free: bool = False
     notes: Optional[str] = Field(None, max_length=_MAX_STOP_NOTES)
 
+    place_source: Optional[str] = Field(None, pattern=_PLACE_SOURCE_PATTERN)
+    google_place_id: Optional[str] = Field(
+        None, max_length=1024, pattern=_GOOGLE_PLACE_ID_PATTERN)
+    # The user's own search text, never Google's suggestion.
+    google_place_query: Optional[str] = Field(None, max_length=200)
+
     _validate_map_url = field_validator("map_url")(validate_google_maps_url)
+
+    @model_validator(mode='after')
+    def _validate_location(self) -> 'StopCreate':
+        return validate_stop_location(self)
 
 
 class StopUpdate(BaseModel):
@@ -209,6 +250,17 @@ class StopUpdate(BaseModel):
     # stop into it. Mirrors the StopCreate API for "create new track" inserts.
     after_track_id: Optional[uuid.UUID] = None
     before_track_id: Optional[uuid.UUID] = None
+
+    # Sent only when the location itself changed — an untouched Google stop
+    # must not re-send an ID the refresh sweep may have replaced meanwhile.
+    place_source: Optional[str] = Field(None, pattern=_PLACE_SOURCE_PATTERN)
+    google_place_id: Optional[str] = Field(
+        None, max_length=1024, pattern=_GOOGLE_PLACE_ID_PATTERN)
+    google_place_query: Optional[str] = Field(None, max_length=200)
+
+    @model_validator(mode='after')
+    def _validate_location(self) -> 'StopUpdate':
+        return validate_stop_location(self)
 
     @model_validator(mode='after')
     def _validate_move_target(self) -> 'StopUpdate':
@@ -313,8 +365,21 @@ class StopResponse(BaseModel):
     # Appended last (JSON key order is part of the contract). Detected
     # language of `notes` — never of the place name — or null.
     source_lang: Optional[str] = None
+    # Appended after source_lang, same rule. Where the location came from, and
+    # for a Google place its ID and the user's own search text.
+    place_source: Optional[str] = None
+    google_place_id: Optional[str] = None
+    google_place_query: Optional[str] = None
+    # Whether Google lost the place, read from the row's google_place_missing_at
+    # — the timestamp itself is never sent.
+    google_place_missing: bool = Field(False, validation_alias="google_place_missing_at")
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("google_place_missing", mode="before")
+    @classmethod
+    def _missing_from_timestamp(cls, value):
+        return value is not None and value is not False
 
 
 # ---------------------------------------------------------------------------

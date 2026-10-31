@@ -46,6 +46,8 @@ String? localizedApiError(String code, AppLocalizations l10n) {
       'email_taken' => l10n.apiErrorEmailTaken,
       'report_own_content' => l10n.apiErrorReportOwnContent,
       'report_rate_limited' => l10n.apiErrorReportRateLimited,
+      'place_search_rate_limited' => l10n.apiErrorPlaceSearchRateLimited,
+      'place_search_unavailable' => l10n.apiErrorPlaceSearchUnavailable,
       'image_moderation_rejected' => l10n.apiErrorImageModerationRejected,
       'appeal_already_pending' => l10n.apiErrorAppealPending,
       'appeal_cooldown' => l10n.apiErrorAppealCooldown,

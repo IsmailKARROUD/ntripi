@@ -250,8 +250,17 @@ external scheduler) **or SLA auto-hide and post-outage re-checks never run.**
   languages, before it receives any.** An undisclosed processor is a GDPR breach
   and a store-label mismatch, so a new one ships behind its config flag until
   the policy that names it is deployed — translation's engines are pinned by
-  `test_privacy_names_every_translation_engine`, and every `MODERATION_PROVIDER`
-  value by `test_privacy_names_every_image_moderation_provider`.
+  `test_privacy_names_every_translation_engine`, every `MODERATION_PROVIDER`
+  value by `test_privacy_names_every_image_moderation_provider`, and Google
+  Maps Platform by `test_privacy_names_google_maps_platform`.
+- **Google's maps and place search bind users to Google's terms**: ToS §12
+  names the Google Maps/Google Earth Additional Terms of Service and the Google
+  Privacy Policy by URL, in every language
+  (`test_tos_binds_users_to_googles_maps_terms`) — Google's Places policies
+  require it.
+- **`/embed/*` is the only path our own pages may frame** (`is_embed_path`,
+  `EMBED_FRAME_ANCESTORS`); every other response keeps `X-Frame-Options: DENY`
+  and `frame-ancestors 'none'`.
 - **Account deletion is a hard delete** with a documented set of `SET NULL`
   evidence columns, and it erases the account's stored images too — except while
   the account is under an open legal escalation, and except taken-down or
@@ -495,7 +504,10 @@ block appears a second time anywhere, extract it instead of copying.**
 |---|---|
 | **Riverpod only** — no other state management library | one model |
 | **No build_runner / json_serializable / freezed.** Manual `fromJson`/`toJson` | keeps the build simple |
-| **OSM via `flutter_map` only — never the Google Maps SDK** | licensing and portability |
+| **Maps we draw are `flutter_map` + OSM; a Google map appears only through the `/embed/*` page (`GoogleEmbed`, `GoogleMapEmbed`); never the Google Maps SDK.** The trip page's Map view and every stop-page map are Google embeds since 2026-10-31; the form preview, the map picker and the profile maps stay OSM | licensing and portability — the free Maps Embed API is an iframe, not the SDK, and Google places may only be shown on a Google map |
+| **Never place Google content on an OSM map, and never store any but place IDs.** A Google place keeps `google_place_id` and the user's own search text; a pasted link is stored as typed and never with coordinates (`services/stop_location.normalize`, `ck_stops_link_no_coords`, `ck_stops_place_id_no_coords`) | Google's Places terms allow storing place IDs only, and forbid Places content on a non-Google map; coordinates read out of a Google link are Google's too |
+| **The stop form never fetches a pasted link** — it reads links with `data/google_maps_links.dart` only; `test/stop_form_link_fetch_guard_test.dart` | fetching Google's page as the user pastes is scraping; the stop page keeps its preview by the user's choice |
+| **OSM search on submit only** — never as the user types, in every search box | Nominatim's usage policy forbids search-as-you-type and caps the whole app at one request a second |
 | **Never `ListView` inside `Column`** — use `CustomScrollView` + slivers | unbounded height |
 | **Three async states always**: loading, error, data (and empty) | |
 | **Never touch `ref` in `State.dispose()`** | `ref` resolves through `BuildContext`, already deactivated by then. Capture the notifier in a field, seeded in `didChangeDependencies` and refreshed by a `ref.watch(…notifier)` in `build` |
@@ -609,7 +621,7 @@ excused.
 
 | Deviation | Detail |
 |---|---|
-| **A Google Maps Embed API key is hardcoded** | `Dockerfile:15` — `--dart-define=GOOGLE_MAPS_EMBED_API_KEY=AIzaSy…`, against "never hardcode secrets or environment values". An Embed key necessarily ships to the client and this one is referrer-restricted, so exposure is not the issue; it is a committed, un-rotatable build constant. `API_BASE_URL` and `SHARE_BASE_URL` are hardcoded there too |
+| **Two build values are hardcoded in the Dockerfile** | `API_BASE_URL` and `SHARE_BASE_URL` (`Dockerfile:13-14`), against "never hardcode environment values" — what stops one image serving a staging environment. The Maps Embed key that sat beside them moved to the backend's `GOOGLE_MAPS_EMBED_API_KEY` on 2026-10-31 |
 | **`_VISIBILITY` is a `Literal`, not a `pattern=`** | `schemas/itinerary.py:31`, against the constrained-string rule. It is also the reason `itineraries.visibility` has no DB CHECK |
 | **Eleven `AuthError` sites share `code="auth_error"`** | including four that surface on one screen needing different UI |
 | **`CLAUDE.md`'s middleware table omits `LanguageCookieMiddleware`** | the real runtime stack has seven layers, not six |

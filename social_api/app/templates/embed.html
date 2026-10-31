@@ -1,0 +1,17 @@
+<!doctype html>
+{#- One Google map, for the app's WebView and the web app's iframe. Everything
+    in `src` was validated and URL-encoded by routers/embed.py. -#}
+<html lang="{{ language }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Google Maps</title>
+{% include "_radius_tokens.html" %}
+<style>html,body{margin:0;height:100%;background:transparent}iframe{display:block;border:0;width:100%;height:100%}</style>
+</head>
+<body>
+<iframe src="{{ src }}" title="Google Maps" loading="eager" allowfullscreen
+        referrerpolicy="strict-origin-when-cross-origin"></iframe>
+</body>
+</html>

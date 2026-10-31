@@ -2953,7 +2953,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchAPlaceHelpMessage.
   ///
   /// In en, this message translates to:
-  /// **'Type a place, restaurant, or landmark name. Pick a result to autofill the place name, address, and coordinates below.'**
+  /// **'Type a place, restaurant or landmark name, then press Search. Pick a result to fill in the address and coordinates below — and the name, if you haven\'t typed one.'**
   String get searchAPlaceHelpMessage;
 
   /// No description provided for @searchPlaceHintText.
@@ -3034,11 +3034,11 @@ abstract class AppLocalizations {
   /// **'Coordinates'**
   String get locationModeCoordinates;
 
-  /// No description provided for @locationModeMapLink.
+  /// No description provided for @locationModeGoogleMaps.
   ///
   /// In en, this message translates to:
-  /// **'Google Maps link'**
-  String get locationModeMapLink;
+  /// **'Google Maps'**
+  String get locationModeGoogleMaps;
 
   /// No description provided for @linkPreviewOpensInMaps.
   ///
@@ -3063,6 +3063,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Map preview available in the mobile app'**
   String get linkPreviewMapMobileOnly;
+
+  /// No description provided for @googleMapsSearchHelpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Google Maps'**
+  String get googleMapsSearchHelpTitle;
+
+  /// No description provided for @googleMapsSearchHelpMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Ntripi searches OpenStreetMap first. If the place isn\'t there, search Google Maps. For a Google place, Ntripi keeps only Google\'s ID for it and your search words, so type the stop\'s name yourself.'**
+  String get googleMapsSearchHelpMessage;
+
+  /// No description provided for @placeSearchButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get placeSearchButton;
+
+  /// No description provided for @placeSearchNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No places found on OpenStreetMap.'**
+  String get placeSearchNoResults;
+
+  /// No description provided for @searchOnGoogleMaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Search on Google Maps'**
+  String get searchOnGoogleMaps;
+
+  /// No description provided for @googleMapsPlaceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Maps place'**
+  String get googleMapsPlaceLabel;
+
+  /// No description provided for @googlePlaceSearchedAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Searched: “{query}”'**
+  String googlePlaceSearchedAs(String query);
+
+  /// No description provided for @googlePlaceChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get googlePlaceChange;
+
+  /// No description provided for @googlePlaceMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Google can\'t find this place anymore. Search for it again.'**
+  String get googlePlaceMissing;
+
+  /// No description provided for @googlePlaceSearchAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Search again'**
+  String get googlePlaceSearchAgain;
+
+  /// No description provided for @mapLinkShortLinkHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A short link can\'t appear on the trip\'s map. Search for the place above to put it there.'**
+  String get mapLinkShortLinkHint;
+
+  /// No description provided for @placeCreditOpenStreetMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Place data © OpenStreetMap contributors'**
+  String get placeCreditOpenStreetMap;
+
+  /// No description provided for @tripMapStopsNotShown.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 stop isn\'t on the map} other{{count} stops aren\'t on the map}}'**
+  String tripMapStopsNotShown(int count);
+
+  /// No description provided for @tripMapEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No stops on the map yet'**
+  String get tripMapEmpty;
 
   /// No description provided for @coordinatesHelp.
   ///
@@ -4629,6 +4713,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Too many reports. Please try again later.'**
   String get apiErrorReportRateLimited;
+
+  /// No description provided for @apiErrorPlaceSearchRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve used this hour\'s Google searches. Try again later, or paste a Google Maps link.'**
+  String get apiErrorPlaceSearchRateLimited;
+
+  /// No description provided for @apiErrorPlaceSearchUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Google search isn\'t available right now. You can paste a Google Maps link instead.'**
+  String get apiErrorPlaceSearchUnavailable;
 
   /// No description provided for @imageBlockedNsfw.
   ///

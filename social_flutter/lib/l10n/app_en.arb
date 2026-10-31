@@ -741,7 +741,7 @@
   "viewOnlyMessage": "Tap the Edit button to make changes.",
   "searchForPlaceLabel": "Search for a place",
   "searchAPlaceHelpTitle": "Search a place",
-  "searchAPlaceHelpMessage": "Type a place, restaurant, or landmark name. Pick a result to autofill the place name, address, and coordinates below.",
+  "searchAPlaceHelpMessage": "Type a place, restaurant or landmark name, then press Search. Pick a result to fill in the address and coordinates below — and the name, if you haven't typed one.",
   "searchPlaceHintText": "e.g. Eiffel Tower, Paris",
   "stopDetailsSectionLabel": "Stop details",
   "placeNameLabel": "Place name",
@@ -755,11 +755,39 @@
   "mapLinkPaste": "Paste",
   "mapLinkClear": "Clear",
   "locationModeCoordinates": "Coordinates",
-  "locationModeMapLink": "Google Maps link",
+  "locationModeGoogleMaps": "Google Maps",
   "linkPreviewOpensInMaps": "Opens in Google Maps",
   "linkPreviewLoading": "Loading preview…",
   "linkPreviewTitleCopied": "Title copied",
   "linkPreviewMapMobileOnly": "Map preview available in the mobile app",
+  "googleMapsSearchHelpTitle": "Search Google Maps",
+  "googleMapsSearchHelpMessage": "Ntripi searches OpenStreetMap first. If the place isn't there, search Google Maps. For a Google place, Ntripi keeps only Google's ID for it and your search words, so type the stop's name yourself.",
+  "placeSearchButton": "Search",
+  "placeSearchNoResults": "No places found on OpenStreetMap.",
+  "searchOnGoogleMaps": "Search on Google Maps",
+  "googleMapsPlaceLabel": "Google Maps place",
+  "googlePlaceSearchedAs": "Searched: “{query}”",
+  "@googlePlaceSearchedAs": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "googlePlaceChange": "Change",
+  "googlePlaceMissing": "Google can't find this place anymore. Search for it again.",
+  "googlePlaceSearchAgain": "Search again",
+  "mapLinkShortLinkHint": "A short link can't appear on the trip's map. Search for the place above to put it there.",
+  "placeCreditOpenStreetMap": "Place data © OpenStreetMap contributors",
+  "tripMapStopsNotShown": "{count, plural, =1{1 stop isn't on the map} other{{count} stops aren't on the map}}",
+  "@tripMapStopsNotShown": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tripMapEmpty": "No stops on the map yet",
   "coordinatesHelp": "The map location for this stop. Tap \"Pick on map\" to set or adjust it.",
   "pickOnMap": "Pick on map",
   "placeTypeLabel": "Place type",
@@ -1186,6 +1214,8 @@
   "reportThanks": "Thanks. We'll review this report.",
   "apiErrorReportOwnContent": "You can't report your own content.",
   "apiErrorReportRateLimited": "Too many reports. Please try again later.",
+  "apiErrorPlaceSearchRateLimited": "You've used this hour's Google searches. Try again later, or paste a Google Maps link.",
+  "apiErrorPlaceSearchUnavailable": "Google search isn't available right now. You can paste a Google Maps link instead.",
   "imageBlockedNsfw": "This image appears to contain content that isn't allowed.",
   "apiErrorImageModerationRejected": "This image can't be uploaded because it may contain prohibited content.",
   "suspendedTitle": "Your account is suspended",

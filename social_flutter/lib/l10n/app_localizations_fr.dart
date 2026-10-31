@@ -1662,7 +1662,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get searchAPlaceHelpMessage =>
-      'Saisissez le nom d\'un lieu, d\'un restaurant ou d\'un monument. Sélectionnez un résultat pour remplir automatiquement le nom, l\'adresse et les coordonnées.';
+      'Saisissez le nom d\'un lieu, d\'un restaurant ou d\'un monument, puis appuyez sur Rechercher. Sélectionnez un résultat pour remplir l\'adresse et les coordonnées ci-dessous — et le nom, si vous ne l\'avez pas saisi.';
 
   @override
   String get searchPlaceHintText => 'ex. Tour Eiffel, Paris';
@@ -1705,7 +1705,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get locationModeCoordinates => 'Coordonnées';
 
   @override
-  String get locationModeMapLink => 'Lien Google Maps';
+  String get locationModeGoogleMaps => 'Google Maps';
 
   @override
   String get linkPreviewOpensInMaps => 'Ouvre dans Google Maps';
@@ -1719,6 +1719,62 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get linkPreviewMapMobileOnly =>
       'Aperçu de la carte disponible dans l\'application mobile';
+
+  @override
+  String get googleMapsSearchHelpTitle => 'Rechercher dans Google Maps';
+
+  @override
+  String get googleMapsSearchHelpMessage =>
+      'Ntripi cherche d\'abord dans OpenStreetMap. Si le lieu n\'y figure pas, cherchez dans Google Maps. Pour un lieu Google, Ntripi ne garde que l\'identifiant Google du lieu et vos mots de recherche : saisissez donc vous-même le nom de l\'étape.';
+
+  @override
+  String get placeSearchButton => 'Rechercher';
+
+  @override
+  String get placeSearchNoResults => 'Aucun lieu trouvé sur OpenStreetMap.';
+
+  @override
+  String get searchOnGoogleMaps => 'Rechercher dans Google Maps';
+
+  @override
+  String get googleMapsPlaceLabel => 'Lieu Google Maps';
+
+  @override
+  String googlePlaceSearchedAs(String query) {
+    return 'Recherché : « $query »';
+  }
+
+  @override
+  String get googlePlaceChange => 'Modifier';
+
+  @override
+  String get googlePlaceMissing =>
+      'Google ne trouve plus ce lieu. Recherchez-le à nouveau.';
+
+  @override
+  String get googlePlaceSearchAgain => 'Rechercher à nouveau';
+
+  @override
+  String get mapLinkShortLinkHint =>
+      'Un lien court ne peut pas apparaître sur la carte de l\'itinéraire. Recherchez le lieu ci-dessus pour l\'y placer.';
+
+  @override
+  String get placeCreditOpenStreetMap =>
+      'Données du lieu © contributeurs d\'OpenStreetMap';
+
+  @override
+  String tripMapStopsNotShown(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count étapes ne sont pas sur la carte',
+      one: '1 étape n\'est pas sur la carte',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tripMapEmpty => 'Aucune étape sur la carte pour l\'instant';
 
   @override
   String get coordinatesHelp =>
@@ -2643,6 +2699,14 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get apiErrorReportRateLimited =>
       'Trop de signalements. Veuillez réessayer plus tard.';
+
+  @override
+  String get apiErrorPlaceSearchRateLimited =>
+      'Vous avez utilisé vos recherches Google de cette heure. Réessayez plus tard ou collez un lien Google Maps.';
+
+  @override
+  String get apiErrorPlaceSearchUnavailable =>
+      'La recherche Google n\'est pas disponible pour le moment. Vous pouvez coller un lien Google Maps à la place.';
 
   @override
   String get imageBlockedNsfw =>

@@ -64,7 +64,8 @@ paid moderation call before `require_etag` could return its 412.
 
 **Every stored user string except the moderator-facing ones:**
 
-itinerary title/description · stop name/address/notes · both annotation tables ·
+itinerary title/description · stop name/address/notes · a Google place's search
+text (`google_place_query`, since 2026-10-31) · both annotation tables ·
 transport-leg line/direction/notes · rating notes · profile display_name/bio ·
 the `username` + `display_name` chosen at registration.
 
@@ -226,6 +227,7 @@ read the queue: `GET /admin/text-flags` and
 - [authentication.md](authentication.md) · [google-sign-in.md](google-sign-in.md) — the signup scans
 - [accounts-and-profiles.md](accounts-and-profiles.md) — display_name and bio
 - [translations.md](translations.md) — translations are scored with `score_many` before they are cached
+- [places-and-maps.md](places-and-maps.md) — a Google place's search text is scanned with the stop
 
 ## OPEN QUESTIONS
 

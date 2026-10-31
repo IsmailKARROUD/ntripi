@@ -15,6 +15,9 @@ Three jobs, in one pass so a single scheduler trigger is all the deployment need
 
   3. Housekeeping. Expired cache entries and old reviewed decisions are purged.
 
+  4. Place IDs. Google place IDs a year old are refreshed with the free
+     IDs-only call, after the commit and outside any transaction.
+
 Every step is idempotent — running twice produces no additional effect — and a
 PostgreSQL advisory lock makes concurrent runs impossible, so the HTTP endpoint,
 the in-process timer, and a second container can all fire without stepping on
@@ -29,19 +32,21 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import Connection, delete, select, text
+from sqlalchemy import Connection, delete, select, text, update
 from sqlalchemy.orm import Session
 
 from app.models.content_report import ContentReport
 from app.models.device_token import DeviceToken
 from app.models.itinerary import Itinerary
 from app.models.itinerary_rating import ItineraryRating
+from app.models.stop import Stop
 from app.models.text_moderation_cache import TextModerationCache
 from app.models.text_moderation_decision import TextModerationDecision
 from app.models.user import User
 from app.services import (
-    admin_service, bug_report_service, edit_lock_service, moderation_actions,
-    notification_service, text_moderation_service, translation_service,
+    admin_service, bug_report_service, edit_lock_service, google_places,
+    moderation_actions, notification_service, text_moderation_service,
+    translation_service,
 )
 from app.services.moderation_email_service import build_reason, send_auto_action_email
 
@@ -81,6 +86,10 @@ def run_moderation_sweep(db: Session, settings) -> dict:
         "device_tokens_purged": 0,
         "edit_locks_purged": 0,
         "translations_purged": 0,
+        "place_search_usage_purged": 0,
+        "place_ids_checked": 0,
+        "place_ids_changed": 0,
+        "place_ids_missing": 0,
     }
     try:
         notifications: list[dict] = []
@@ -95,6 +104,14 @@ def run_moderation_sweep(db: Session, settings) -> dict:
                 send_auto_action_email(settings=settings, **note)
             except Exception:
                 logger.exception("sweep author notification failed")
+
+        # Its own commits, and it calls Google: after everything above has
+        # landed, so a Google outage can never cost the moderation work.
+        try:
+            _refresh_place_ids(db, settings, counters)
+        except Exception:
+            db.rollback()
+            logger.exception("place ID refresh failed")
     except Exception:
         db.rollback()
         raise
@@ -182,6 +199,7 @@ def _itinerary_fields(row: Itinerary) -> dict:
         fields[f"stop:{stop.id}:place_name"] = stop.place_name
         fields[f"stop:{stop.id}:place_address"] = stop.place_address
         fields[f"stop:{stop.id}:notes"] = stop.notes
+        fields[f"stop:{stop.id}:google_place_query"] = stop.google_place_query
         for note in sorted(stop.annotations, key=lambda a: str(a.id)):
             fields[f"annotation:{note.id}"] = note.content
     for note in sorted(row.annotations, key=lambda a: str(a.id)):
@@ -365,6 +383,60 @@ def _purge(db: Session, settings, counters: dict) -> None:
     # The safety net behind every delete path's own purge_orphans, plus
     # translations of moderator-removed trips and stale usage counters.
     counters["translations_purged"] = translation_service.purge_for_sweep(db)
+
+    counters["place_search_usage_purged"] = google_places.purge_usage(db, now)
+
+
+# ---------------------------------------------------------------------------
+# 4. Place ID refresh
+# ---------------------------------------------------------------------------
+
+def _refresh_place_ids(db: Session, settings, counters: dict) -> None:
+    """Confirm the oldest stored Google place IDs with the free IDs-only call.
+
+    Reads a batch and commits before calling Google — no transaction stays open
+    across the HTTP calls. Each write is conditional on the ID it read, so an
+    editor's new pick made meanwhile wins. Stops have no updated_at and the
+    itinerary's is never touched: a refresh must not 412 an open editor.
+    """
+    if not settings.google_place_search_enabled:
+        return
+    now = datetime.now(timezone.utc)
+    stale = now - timedelta(days=settings.GOOGLE_PLACE_REFRESH_DAYS)
+    rows = db.execute(
+        select(Stop.id, Stop.google_place_id)
+        .where(
+            Stop.google_place_id.isnot(None),
+            Stop.google_place_missing_at.is_(None),
+            (Stop.google_place_checked_at.is_(None))
+            | (Stop.google_place_checked_at < stale),
+        )
+        .order_by(Stop.google_place_checked_at.asc().nulls_first(), Stop.id)
+        .limit(settings.GOOGLE_PLACE_REFRESH_BATCH)
+    ).all()
+    db.commit()
+
+    for stop_id, place_id in rows:
+        outcome = google_places.refresh(settings, place_id)
+        if outcome.kind == "transient":
+            # Quota, outage or a key problem: the rest of the batch would fail
+            # the same way. The next run picks it up.
+            break
+        values: dict = {"google_place_checked_at": datetime.now(timezone.utc)}
+        if outcome.kind == "changed":
+            values["google_place_id"] = outcome.place_id
+            counters["place_ids_changed"] += 1
+        elif outcome.kind == "missing":
+            values["google_place_missing_at"] = values["google_place_checked_at"]
+            counters["place_ids_missing"] += 1
+        db.execute(
+            update(Stop)
+            .where(Stop.id == stop_id, Stop.google_place_id == place_id)
+            .values(**values)
+            .execution_options(synchronize_session=False)
+        )
+        db.commit()
+        counters["place_ids_checked"] += 1
 
 
 # ---------------------------------------------------------------------------

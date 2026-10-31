@@ -165,6 +165,18 @@ RELEASES: tuple[Release, ...] = (
             "above the stops now asks before opening Google Maps: **From my "
             "location**, for directions from where you are, or **From the first "
             "stop**, to see just the trip.",
+            "**Find a place Google Maps knows, without leaving Ntripi.** In a "
+            "stop's location, the **Google Maps** tab searches OpenStreetMap "
+            "first and Google Maps after; from a Google place Ntripi keeps only "
+            "its ID, and you name the stop yourself. A search starts when you "
+            "press **Search**. Pasting a link still works, and Ntripi no longer "
+            "opens it.",
+            "**The trip's map is its route.** The **Map** view now shows the "
+            "route through the stops on your screen, on Google's map — Google "
+            "places included.",
+            "**Updated Terms and Privacy Policy.** They now cover Google Maps, "
+            "which draws some of Ntripi's maps and its place search. You'll be "
+            "asked to accept them once.",
         ),
     ),
     Release(
@@ -297,7 +309,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="getting-started",
         schema=SCHEMA_HOWTO,
-        updated="2026-10-27",
+        updated="2026-10-31",
         keywords=(
             "trip planner", "travel itinerary", "itineraries", "day by day",
             "plan a holiday", "vacation planner", "route", "schedule",
@@ -341,8 +353,9 @@ ARTICLES: tuple[Article, ...] = (
                 body=(
                     "Tap **+** inside the trip to add a stop. A stop holds:\n\n"
                     "- **Name and address** — what the place is called.\n"
-                    "- **Location** — pick a point on the map, or paste a Google "
-                    "Maps link and let Ntripi read the coordinates out of it.\n"
+                    "- **Location** — search for the place (OpenStreetMap first, "
+                    "then Google Maps), pick a point on the map, or paste a Google "
+                    "Maps link.\n"
                     "- **Place type** — food and drink, sleep, sights, nature, "
                     "shopping and so on. This is what draws the right icon on the "
                     "map and in the list.\n"
@@ -684,40 +697,61 @@ ARTICLES: tuple[Article, ...] = (
     ),
     Article(
         slug="add-locations-from-google-maps",
-        title="How to add a place from a Google Maps link",
+        title="How to add a place from Google Maps",
         summary=(
-            "Paste a Maps link and Ntripi reads the coordinates out of it, or drop "
-            "the pin yourself on the map."
+            "Search OpenStreetMap, then Google Maps if it has nothing, or paste a "
+            "Maps link. From Google, Ntripi keeps only the place's ID."
         ),
         category="building",
         schema=SCHEMA_HOWTO,
-        updated="2026-10-29",
+        updated="2026-10-31",
         keywords=(
-            "google maps", "link", "paste", "coordinates", "gps", "pin",
-            "location", "map picker", "latitude", "longitude", "where",
-            "directions", "route", "navigate", "starting point",
+            "google maps", "search", "find a place", "autocomplete", "place id",
+            "link", "paste", "short link", "coordinates", "gps", "pin",
+            "location", "map picker", "latitude", "longitude", "directions",
+            "route", "navigate", "starting point", "not found",
         ),
         related=("add-places-to-an-itinerary", "permissions"),
         cta="Pin your first stop on the map.",
         intro=(
-            "A stop can get its location two ways: pick the point on Ntripi's own "
-            "map, or paste a Google Maps link and let Ntripi read the coordinates "
-            "out of it. The second is usually faster, because you have probably "
-            "already found the place there."
+            "A stop gets its location three ways: search for it — OpenStreetMap "
+            "first, then Google Maps when OpenStreetMap does not know the place — "
+            "paste a Google Maps link, or drop the pin on Ntripi's own map. "
+            "Searching is usually fastest, and you never leave the app to copy a "
+            "link."
         ),
         blocks=(
             Block(
-                anchor="paste-a-link",
-                heading="Paste a Google Maps link",
+                anchor="search-google-maps",
+                heading="Search OpenStreetMap, then Google Maps",
                 kind=KIND_STEP,
                 body=(
-                    "In the stop's location field, switch to the link option and "
-                    "paste the URL. Ntripi extracts the coordinates and keeps the "
-                    "link, so the stop shows a small map preview and you can open "
-                    "the place in Maps later.\n\n"
-                    "Both the long desktop URL and the short share link work. Only "
-                    "Google Maps addresses are accepted — a link to anywhere else "
-                    "is refused rather than stored and quietly ignored."
+                    "In the stop's location, open the **Google Maps** tab, type the "
+                    "place and press **Search**. Ntripi looks in OpenStreetMap "
+                    "first. When OpenStreetMap finds nothing, Ntripi asks Google "
+                    "Maps by itself; you can also tap **Search on Google Maps** "
+                    "under OpenStreetMap's results. Google's suggestions then "
+                    "follow your typing.\n\n"
+                    "Pick a suggestion and the place appears on Google's map. "
+                    "**Type the stop's name yourself**: from Google, Ntripi keeps "
+                    "only its identifier for the place and the words you searched "
+                    "— never Google's name or address."
+                ),
+            ),
+            Block(
+                anchor="paste-a-link",
+                heading="Or paste a Google Maps link",
+                kind=KIND_STEP,
+                body=(
+                    "Paste the URL in the link field under the search. Ntripi "
+                    "keeps the link as you pasted it and does not open it, so type "
+                    "the stop's name yourself.\n\n"
+                    "A long link copied from your browser can appear on the trip's "
+                    "map. A short share link (maps.app.goo.gl) cannot — it does "
+                    "not say which place it is — so Ntripi suggests searching for "
+                    "the place instead. Only Google Maps addresses are accepted: a "
+                    "link to anywhere else is refused rather than stored and "
+                    "quietly ignored."
                 ),
             ),
             Block(
@@ -751,7 +785,8 @@ ARTICLES: tuple[Article, ...] = (
                 body=(
                     "A stop with a location offers to open in whichever maps app "
                     "you have installed, so you can get directions on the day "
-                    "without retyping anything.\n\n"
+                    "without retyping anything. A place found on Google Maps, or "
+                    "saved as a link, opens in Google Maps.\n\n"
                     "The directions arrow above the stops opens the whole trip in "
                     "Google Maps, the one maps app that takes several stops at once, "
                     "and asks where to start. **From my location** gives you "
@@ -763,8 +798,20 @@ ARTICLES: tuple[Article, ...] = (
                     "to 10 stops from your location and 11 from the first stop; a "
                     "longer trip opens with its first stops and its last, and Ntripi "
                     "says so.\n\n"
-                    "Ntripi's own map is for reading the plan; your maps app is for "
-                    "walking it."
+                    "The **Map** view of a trip shows the same route on Google's "
+                    "map, through the stops on your screen. A stop it cannot place "
+                    "— a short link — is left out, and the map says how many."
+                ),
+            ),
+            Block(
+                anchor="place-not-found",
+                heading="When Google can't find a place any more",
+                body=(
+                    "Google sometimes retires a place — it closed, moved or was "
+                    "merged with another. Ntripi checks each Google place about "
+                    "once a year. When one is gone, whoever edits the trip sees it "
+                    "on the stop, with **Search again** and the old search words "
+                    "ready; readers can still search Google Maps for those words."
                 ),
             ),
         ),
@@ -1969,7 +2016,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="account",
         schema=SCHEMA_FAQ,
-        updated="2026-09-01",
+        updated="2026-10-31",
         keywords=(
             "permission", "permissions", "privacy", "location", "gps", "camera",
             "photos", "notifications", "microphone", "contacts", "tracking",
@@ -1992,8 +2039,11 @@ ARTICLES: tuple[Article, ...] = (
                 body=(
                     "To centre the map on where you are when you add a stop, so you "
                     "are not scrolling across a continent to find the town you are "
-                    "standing in.\n\n"
-                    "It is asked the first time you use the map's locate button, "
+                    "standing in — and, while a trip has no stop with a location "
+                    "yet, to show place-search results near you first. Then only "
+                    "your approximate position (rounded to about 10 km) goes with "
+                    "the search, and it is never stored.\n\n"
+                    "It is asked the first time you add or edit a stop, "
                     "and **only while you are using the app** — there is no "
                     "background location and no tracking. Refusing does not block "
                     "anything: the map opens elsewhere and you pan to your spot."
@@ -2076,7 +2126,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="account",
         schema=SCHEMA_FAQ,
-        updated="2026-10-07",
+        updated="2026-10-31",
         keywords=(
             "privacy", "data", "gdpr", "delete account", "remove", "export",
             "personal data", "tracking", "ads", "advertising", "who can see",
@@ -2101,6 +2151,9 @@ ARTICLES: tuple[Article, ...] = (
                     "and date of birth (never shown to anyone).\n"
                     "- **What you create** — trips, stops, notes, ratings, and any "
                     "images you upload.\n"
+                    "- **A place found on Google Maps** — only Google's identifier "
+                    "for it and the words you searched, never Google's name or "
+                    "address.\n"
                     "- **Your connections** — who you follow, who follows you, who "
                     "you have blocked.\n"
                     "- **Session data** — enough to keep you signed in, and a "

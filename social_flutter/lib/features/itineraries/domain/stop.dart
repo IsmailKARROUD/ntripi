@@ -131,6 +131,31 @@ enum PlaceType {
       };
 }
 
+/// Where a stop's location came from (`place_source`). Decides the credit line
+/// under the location on the stop page.
+enum PlaceSource {
+  /// An OpenStreetMap search pick or reverse lookup — OSM's open data.
+  osm,
+
+  /// A Google Places pick: only its place ID and the user's own search text
+  /// are stored, never anything Google returned.
+  google,
+
+  /// A pasted Google Maps link.
+  link,
+
+  /// Coordinates typed by hand.
+  typed;
+
+  /// Unknown values (a newer backend) degrade to null — no credit line.
+  static PlaceSource? fromString(String? value) {
+    for (final source in values) {
+      if (source.name == value) return source;
+    }
+    return null;
+  }
+}
+
 class Stop {
   final String id;
   final String itineraryId;
@@ -151,9 +176,23 @@ class Stop {
   final double? lng;
   final PlaceType? placeType;
 
-  /// Optional Google Maps link. When set without lat/lng the stop has no map
-  /// pin and opens directly in Google Maps (see stop_detail_screen).
+  /// Optional Google Maps link. Never stored with lat/lng — coordinates in a
+  /// Google link are Google's — so it opens directly in Google Maps.
   final String? mapUrl;
+
+  /// Where the location came from; null on stops saved before it existed.
+  final PlaceSource? placeSource;
+
+  /// A Google place's ID — the only Google data a stop keeps. Set for a
+  /// Google pick, or for a link whose own text carried one.
+  final String? googlePlaceId;
+
+  /// What the user typed to find the Google place: the fallback query of
+  /// Open in Google Maps if the ID stops working.
+  final String? googlePlaceQuery;
+
+  /// Google no longer knows [googlePlaceId] (closed, moved or merged).
+  final bool googlePlaceMissing;
 
   final int? durationMin;
   final double cost;
@@ -179,6 +218,10 @@ class Stop {
     this.lng,
     this.placeType,
     this.mapUrl,
+    this.placeSource,
+    this.googlePlaceId,
+    this.googlePlaceQuery,
+    this.googlePlaceMissing = false,
     this.durationMin,
     this.cost = 0.0,
     this.isFree = false,
@@ -187,6 +230,9 @@ class Stop {
     required this.createdAt,
     this.sourceLang,
   });
+
+  /// A Google place the map and Open in Google Maps can still find by its ID.
+  bool get hasLiveGooglePlace => googlePlaceId != null && !googlePlaceMissing;
 
 
   factory Stop.fromJson(Map<String, dynamic> json) {
@@ -203,6 +249,10 @@ class Stop {
       lng: (json['lng'] as num?)?.toDouble(),
       placeType: PlaceType.fromString(json['place_type'] as String?),
       mapUrl: json['map_url'] as String?,
+      placeSource: PlaceSource.fromString(json['place_source'] as String?),
+      googlePlaceId: json['google_place_id'] as String?,
+      googlePlaceQuery: json['google_place_query'] as String?,
+      googlePlaceMissing: json['google_place_missing'] as bool? ?? false,
       durationMin: json['duration_min'] as int?,
       cost: (json['cost'] as num?)?.toDouble() ?? 0.0,
       isFree: json['is_free'] as bool? ?? false,
@@ -229,6 +279,10 @@ class Stop {
       if (lng != null) 'lng': lng,
       if (placeType != null) 'place_type': placeType!.name,
       if (mapUrl != null) 'map_url': mapUrl,
+      if (placeSource != null) 'place_source': placeSource!.name,
+      if (googlePlaceId != null) 'google_place_id': googlePlaceId,
+      if (googlePlaceQuery != null) 'google_place_query': googlePlaceQuery,
+      'google_place_missing': googlePlaceMissing,
       if (durationMin != null) 'duration_min': durationMin,
       'cost': cost,
       'is_free': isFree,
@@ -250,6 +304,10 @@ class Stop {
     double? lng,
     PlaceType? placeType,
     String? mapUrl,
+    PlaceSource? placeSource,
+    String? googlePlaceId,
+    String? googlePlaceQuery,
+    bool? googlePlaceMissing,
     int? durationMin,
     double? cost,
     bool? isFree,
@@ -270,6 +328,10 @@ class Stop {
       lng: lng ?? this.lng,
       placeType: placeType ?? this.placeType,
       mapUrl: mapUrl ?? this.mapUrl,
+      placeSource: placeSource ?? this.placeSource,
+      googlePlaceId: googlePlaceId ?? this.googlePlaceId,
+      googlePlaceQuery: googlePlaceQuery ?? this.googlePlaceQuery,
+      googlePlaceMissing: googlePlaceMissing ?? this.googlePlaceMissing,
       durationMin: durationMin ?? this.durationMin,
       cost: cost ?? this.cost,
       isFree: isFree ?? this.isFree,

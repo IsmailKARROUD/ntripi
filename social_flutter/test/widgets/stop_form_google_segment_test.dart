@@ -1,0 +1,343 @@
+// The stop form's place search: OpenStreetMap first, on submit; Google Places
+// as the Google Maps segment's fallback; a pasted link never fetched.
+//
+// Pinned through what actually leaves the form: every request the API Dio
+// sends (RecordingDio), every Nominatim query (a recording geocoder), every
+// link fetch (a recording preview service — there must be none), and the body
+// of the save.
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:http_mock_adapter/http_mock_adapter.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/core/connectivity/connectivity_service.dart';
+import 'package:ntripi/core/services/geocoding_service.dart';
+import 'package:ntripi/core/services/location_service.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
+import 'package:ntripi/features/itineraries/data/link_preview_service.dart';
+import 'package:ntripi/features/itineraries/data/places_repository.dart';
+import 'package:ntripi/features/itineraries/presentation/stop_form_screen.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/place_search_box.dart';
+import 'package:ntripi/features/itineraries/providers/edit_lock_provider.dart';
+import 'package:ntripi/features/itineraries/providers/places_providers.dart';
+import 'package:ntripi/features/profile/providers/profile_provider.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/models/user.dart';
+
+import '../support/held_claim.dart';
+import '../support/recording_dio.dart';
+import '../support/trip_json.dart';
+
+const _placeId = 'ChIJLU7jZClu5kcR4PcOOO6p3I0';
+// Google's display text: shown to choose from, never stored or sent back.
+const _googleName = 'SENTINEL Chez Marcel (Google)';
+
+class _FakeMyProfile extends MyProfileNotifier {
+  @override
+  Future<User> build() async => User(
+        id: 'user-1',
+        username: 'me',
+        isPrivate: false,
+        followersCount: 0,
+        followingCount: 0,
+        createdAt: DateTime.utc(2026, 1, 1),
+      );
+}
+
+class _NoLocation extends LocationService {
+  @override
+  Future<LocationOutcome> getCurrentLatLng() async => const LocationUnavailable();
+}
+
+/// Records every Nominatim query and answers [results].
+class _RecordingGeocoding extends GeocodingService {
+  _RecordingGeocoding([this.results = const []]);
+
+  final List<PlaceSuggestion> results;
+  final List<String> queries = [];
+
+  @override
+  Future<List<PlaceSuggestion>> search(
+    String query, {
+    String? languageCode,
+    LatLng? near,
+    LatLng? boxSw,
+    LatLng? boxNe,
+    bool bounded = false,
+  }) async {
+    queries.add(query);
+    return results;
+  }
+}
+
+/// The stop page's link fetcher. The form must never reach it.
+class _RecordingPreviews extends LinkPreviewService {
+  final List<String> fetched = [];
+
+  @override
+  Future<LinkPreview?> fetch(String url) async {
+    fetched.add(url);
+    return null;
+  }
+}
+
+class _Harness {
+  final RecordingDio api;
+  final _RecordingGeocoding geocoding;
+  final _RecordingPreviews previews;
+  final AppLocalizations l10n;
+
+  _Harness(this.api, this.geocoding, this.previews, this.l10n);
+
+  /// The POST /stops body the save sent.
+  Map<String, dynamic> get savedStop => api.sent
+      .lastWhere((o) =>
+          o.method == 'POST' && o.path == itineraryStopsEndpoint(kTripId))
+      .data as Map<String, dynamic>;
+}
+
+Future<_Harness> _pumpForm(
+  WidgetTester tester, {
+  List<PlaceSuggestion> osmResults = const [],
+}) async {
+  tester.view.physicalSize = const Size(400, 1400);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+
+  final api = RecordingDio();
+  api.adapter
+    ..onGet(itineraryEndpoint(kTripId), (s) => s.reply(200, tripJson()))
+    ..onPost(
+      kGooglePlaceAutocompleteEndpoint,
+      (s) => s.reply(200, {
+        'suggestions': [
+          {
+            'place_id': _placeId,
+            'main_text': _googleName,
+            'secondary_text': 'Montmartre, Paris',
+          },
+        ],
+      }),
+      data: Matchers.any,
+    )
+    ..onPost(
+      itineraryStopsEndpoint(kTripId),
+      (s) => s.reply(201,
+          tripAnswer(tripJson(tracks: [trackJson('t1', [stopJson('new')])]),
+              createdId: 'new')),
+      data: Matchers.any,
+      queryParameters: {'return': 'itinerary'},
+    );
+  final geocoding = _RecordingGeocoding(osmResults);
+  final previews = _RecordingPreviews();
+
+  final router = GoRouter(routes: [
+    GoRoute(path: '/', builder: (_, _) => const Scaffold(body: SizedBox())),
+    GoRoute(
+      path: '/itineraries/:id/stops/new',
+      builder: (_, state) =>
+          StopFormScreen(itineraryId: state.pathParameters['id']!),
+    ),
+  ]);
+  addTearDown(router.dispose);
+
+  await tester.pumpWidget(ProviderScope(
+    overrides: [
+      itineraryRepositoryProvider.overrideWithValue(ItineraryRepository(api.dio)),
+      placesRepositoryProvider.overrideWithValue(PlacesRepository(api.dio)),
+      // Search on; maps off, so no WebView is built under test.
+      placesConfigProvider.overrideWith((ref) async =>
+          const PlacesConfig(googleSearch: true, googleMaps: false)),
+      editLockProvider.overrideWith2(HeldClaim.new),
+      myProfileProvider.overrideWith(_FakeMyProfile.new),
+      isOnlineProvider.overrideWith((ref) => Stream.value(true)),
+      locationServiceProvider.overrideWithValue(_NoLocation()),
+      geocodingServiceProvider.overrideWithValue(geocoding),
+      linkPreviewServiceProvider.overrideWithValue(previews),
+    ],
+    child: MaterialApp.router(
+      theme: buildNtripiTheme(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: router,
+    ),
+  ));
+  router.push('/itineraries/$kTripId/stops/new');
+  await tester.pumpAndSettle();
+  final l10n = AppLocalizations.of(tester.element(find.byType(StopFormScreen)))!;
+  return _Harness(api, geocoding, previews, l10n);
+}
+
+Finder get _searchField => find.descendant(
+    of: find.byType(PlaceSearchBox), matching: find.byType(TextField));
+
+Finder get _nameField => find.byType(TextFormField).first;
+
+Future<void> _search(WidgetTester tester, String text) async {
+  await tester.enterText(_searchField, text);
+  await tester.pump();
+  await tester.testTextInput.receiveAction(TextInputAction.search);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _openGoogleSegment(WidgetTester tester, _Harness h) async {
+  await tester.tap(find.text(h.l10n.locationModeGoogleMaps));
+  await tester.pumpAndSettle();
+}
+
+const _louvre = PlaceSuggestion(
+  displayName: 'Louvre',
+  address: 'Rue de Rivoli, Paris, France',
+  lat: 48.8606,
+  lng: 2.3376,
+);
+
+void main() {
+  setUp(() => FlutterSecureStorage.setMockInitialValues({}));
+
+  testWidgets('OpenStreetMap is searched on submit, never while typing',
+      (tester) async {
+    final h = await _pumpForm(tester);
+
+    await tester.enterText(_searchField, 'louvre');
+    await tester.pump(const Duration(seconds: 2));
+    expect(h.geocoding.queries, isEmpty);
+
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+    expect(h.geocoding.queries, ['louvre']);
+  });
+
+  testWidgets('an OSM pick fills the address, and the name only when empty',
+      (tester) async {
+    await _pumpForm(tester, osmResults: [_louvre]);
+    await tester.enterText(_nameField, 'Morning at the museum');
+    await _search(tester, 'louvre');
+
+    await tester.tap(find.text('Louvre'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Morning at the museum'), findsOneWidget);
+    // The address fills its field; the list (the only other place it showed)
+    // closed on the pick.
+    expect(find.text('Rue de Rivoli, Paris, France'), findsOneWidget);
+    expect(find.text('Louvre'), findsNothing);
+  });
+
+  testWidgets(
+      'in the Google Maps segment an empty OSM answer asks Google, and a pick '
+      'keeps only the place ID and what the user typed', (tester) async {
+    final h = await _pumpForm(tester);
+    await _openGoogleSegment(tester, h);
+    await tester.enterText(_nameField, 'Lunch');
+
+    await _search(tester, 'chez marcel');
+
+    expect(h.geocoding.queries, ['chez marcel']);
+    expect(h.api.lines, contains('POST $kGooglePlaceAutocompleteEndpoint'));
+    // Google's attribution, under its suggestions.
+    expect(
+        find.descendant(
+            of: find.byType(PlaceSearchBox), matching: find.text('Google Maps')),
+        findsOneWidget);
+    await tester.tap(find.text(_googleName));
+    await tester.pumpAndSettle();
+
+    // The title stays the user's: never prefilled from Google.
+    expect(find.text('Lunch'), findsOneWidget);
+    expect(find.text(h.l10n.googlePlaceSearchedAs('chez marcel')), findsOneWidget);
+
+    await tester.tap(find.text(h.l10n.save));
+    await tester.pumpAndSettle();
+
+    final body = h.savedStop;
+    expect(body['place_name'], 'Lunch');
+    expect(body['place_source'], 'google');
+    expect(body['google_place_id'], _placeId);
+    expect(body['google_place_query'], 'chez marcel');
+    expect([body['lat'], body['lng'], body['map_url'], body['place_address']],
+        [null, null, null, null]);
+    expect(body.toString().contains('SENTINEL'), isFalse,
+        reason: "nothing Google returned is ever sent back to be stored");
+  });
+
+  testWidgets('OSM results offer Google, which asks only when tapped',
+      (tester) async {
+    final h = await _pumpForm(tester, osmResults: [_louvre]);
+    await _openGoogleSegment(tester, h);
+
+    await _search(tester, 'louvre');
+    expect(find.text('Louvre'), findsOneWidget);
+    expect(find.text('© OpenStreetMap contributors'), findsOneWidget);
+    expect(h.api.lines.where((l) => l.contains('/places/')), isEmpty);
+
+    await tester.tap(find.text(h.l10n.searchOnGoogleMaps));
+    await tester.pumpAndSettle();
+
+    expect(h.api.lines, contains('POST $kGooglePlaceAutocompleteEndpoint'));
+    expect(find.text(_googleName), findsOneWidget);
+  });
+
+  testWidgets('without Google search the Coordinates segment says OSM found '
+      'nothing, and never asks Google', (tester) async {
+    final h = await _pumpForm(tester);
+
+    await _search(tester, 'nowhere at all');
+
+    expect(find.text(h.l10n.placeSearchNoResults), findsOneWidget);
+    expect(h.api.lines.where((l) => l.contains('/places/')), isEmpty);
+  });
+
+  testWidgets(
+      'a pasted short link fetches nothing, says it cannot go on the map, '
+      'and saves without coordinates', (tester) async {
+    final h = await _pumpForm(tester);
+    await _openGoogleSegment(tester, h);
+    await tester.enterText(_nameField, 'Hidden gem');
+
+    final link = find.widgetWithText(TextFormField, h.l10n.mapLinkHint);
+    await tester.ensureVisible(link);
+    await tester.enterText(link, 'https://maps.app.goo.gl/abc123');
+    await tester.pumpAndSettle();
+
+    expect(find.text(h.l10n.mapLinkShortLinkHint), findsOneWidget);
+    expect(h.previews.fetched, isEmpty);
+
+    await tester.tap(find.text(h.l10n.save));
+    await tester.pumpAndSettle();
+
+    final body = h.savedStop;
+    expect(body['map_url'], 'https://maps.app.goo.gl/abc123');
+    expect(body['place_source'], 'link');
+    expect([body['lat'], body['lng']], [null, null]);
+    expect(h.previews.fetched, isEmpty);
+    // Only our own API was asked anything.
+    for (final request in h.api.sent) {
+      expect(request.uri.host, Uri.parse(kApiBaseUrl).host);
+    }
+  });
+
+  testWidgets("a full link's coordinates are never saved", (tester) async {
+    final h = await _pumpForm(tester);
+    await _openGoogleSegment(tester, h);
+    await tester.enterText(_nameField, 'Tower');
+
+    final link = find.widgetWithText(TextFormField, h.l10n.mapLinkHint);
+    await tester.ensureVisible(link);
+    await tester.enterText(link,
+        'https://www.google.com/maps/place/Eiffel+Tower/@48.8583,2.2944,17z');
+    await tester.pumpAndSettle();
+    // Its text places it: no hint.
+    expect(find.text(h.l10n.mapLinkShortLinkHint), findsNothing);
+
+    await tester.tap(find.text(h.l10n.save));
+    await tester.pumpAndSettle();
+
+    expect([h.savedStop['lat'], h.savedStop['lng']], [null, null]);
+    expect(h.previews.fetched, isEmpty);
+  });
+}

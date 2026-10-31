@@ -7,7 +7,7 @@
 // coordinates use their custom scheme (OsmAnd) or the platform `geo:` chooser.
 
 import 'package:flutter/foundation.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:ntripi/features/itineraries/domain/map_point.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 enum ExternalMapApp {
@@ -97,13 +97,20 @@ class MapsLauncherService {
   /// Opens the route in Google Maps (the only app with multi-stop deep
   /// links). Returns true when the route was truncated to the waypoint cap.
   Future<bool> openRoute(
-    List<LatLng> orderedPoints, {
+    List<MapPoint> orderedPoints, {
     required RouteStart start,
   }) async {
     assert(orderedPoints.length >= 2, 'a route needs at least two points');
     await _launch(routeUri(orderedPoints, start: start));
     return orderedPoints.length > maxRouteStops(start);
   }
+
+  /// Opens a Google place in Google Maps by its ID. Maps URLs need no key.
+  Future<void> openGooglePlace(String placeId, String query) =>
+      _launch(googlePlaceUri(placeId, query));
+
+  /// Searches Google Maps for [query] — a Google place whose ID Google lost.
+  Future<void> searchGoogleMaps(String query) => _launch(googleSearchUri(query));
 
   Future<void> _launch(Uri uri) =>
       launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -172,8 +179,19 @@ class MapsLauncherService {
     }
   }
 
+  /// `query` is required by Maps URLs even with a place ID; Google reads it
+  /// only if it cannot find the ID.
   @visibleForTesting
-  Uri routeUri(List<LatLng> orderedPoints, {required RouteStart start}) {
+  Uri googlePlaceUri(String placeId, String query) => Uri.https(
+      'www.google.com', '/maps/search/',
+      {'api': '1', 'query': query, 'query_place_id': placeId});
+
+  @visibleForTesting
+  Uri googleSearchUri(String query) =>
+      Uri.https('www.google.com', '/maps/search/', {'api': '1', 'query': query});
+
+  @visibleForTesting
+  Uri routeUri(List<MapPoint> orderedPoints, {required RouteStart start}) {
     // Over the cap: keep the first stops and the destination — the start of
     // the trip is what the user navigates first.
     final cap = maxRouteStops(start);
@@ -183,18 +201,30 @@ class MapsLauncherService {
             orderedPoints.last,
           ]
         : orderedPoints;
-    String fmt(LatLng p) => '${p.latitude},${p.longitude}';
     final fromFirstStop = start == RouteStart.firstStop;
     final waypoints =
         points.sublist(fromFirstStop ? 1 : 0, points.length - 1);
+    final origin = points.first;
+    final destination = points.last;
+    // waypoint_place_ids must pair one ID with each waypoint, so it is sent
+    // only when every waypoint is a Google place; mixed, the text stands in.
+    final allPlaces =
+        waypoints.isNotEmpty && waypoints.every((p) => p.placeId != null);
     // No origin for myLocation — Google defaults it to the device location,
     // the only case where the app offers Start instead of a static preview.
     // No travelmode param — Google keeps the user's last-used mode.
     return Uri.https('www.google.com', '/maps/dir/', {
       'api': '1',
-      if (fromFirstStop) 'origin': fmt(points.first),
-      'destination': fmt(points.last),
-      if (waypoints.isNotEmpty) 'waypoints': waypoints.map(fmt).join('|'),
+      if (fromFirstStop) 'origin': origin.urlText,
+      if (fromFirstStop && origin.placeId != null)
+        'origin_place_id': origin.placeId!,
+      'destination': destination.urlText,
+      if (destination.placeId != null)
+        'destination_place_id': destination.placeId!,
+      if (waypoints.isNotEmpty)
+        'waypoints': waypoints.map((p) => p.urlText).join('|'),
+      if (allPlaces)
+        'waypoint_place_ids': waypoints.map((p) => p.placeId!).join('|'),
     });
   }
 }

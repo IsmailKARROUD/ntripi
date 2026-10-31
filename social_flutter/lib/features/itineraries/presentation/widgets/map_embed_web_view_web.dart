@@ -6,11 +6,10 @@ import 'package:flutter/widgets.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 
-/// Web renders the Google Maps Embed API directly as a browser `<iframe>` — no
-/// webview_flutter (it has no web backend here). A real browser sends the page
-/// origin as the `Referer`, so a website-restricted key is accepted when the
-/// origin is on its allowlist (add `localhost:<port>` for local `flutter run`,
-/// `ntripi.app` for the deployed build).
+/// Web frames our own /embed page (GoogleEmbed) in a browser `<iframe>` — no
+/// webview_flutter here. The page then frames Google, whose referrer check
+/// sees this site. /embed is the one path our pages may frame
+/// (EMBED_FRAME_ANCESTORS on the server: add a local dev origin there).
 class MapEmbedWebView extends StatefulWidget {
   final String embedUrl;
 
@@ -21,41 +20,44 @@ class MapEmbedWebView extends StatefulWidget {
 }
 
 class _MapEmbedWebViewState extends State<MapEmbedWebView> {
-  // registerViewFactory throws if the same viewType is registered twice, so key
-  // it by URL and register each once across the app's lifetime.
-  static final Set<String> _registered = <String>{};
-  // Per-view load flags keyed by viewType so the once-registered factory can
-  // flip the right widget's loader off when its iframe finishes loading.
-  static final Map<String, ValueNotifier<bool>> _loaded = {};
-
-  late final String _viewType;
+  // One view type per widget, registered once (registerViewFactory throws on a
+  // repeat); a new URL moves the same iframe, so swiping the route's
+  // alternatives never piles up registrations.
+  static int _nextId = 0;
+  late final String _viewType = 'gmaps-embed-${_nextId++}';
+  html.IFrameElement? _iframe;
   final ValueNotifier<bool> _isLoaded = ValueNotifier(false);
 
   @override
   void initState() {
     super.initState();
-    _viewType = 'gmaps-embed-${widget.embedUrl.hashCode}';
-    _loaded[_viewType] = _isLoaded;
-    if (_registered.add(_viewType)) {
-      ui_web.platformViewRegistry.registerViewFactory(
-        _viewType,
-        (int _) {
-          final iframe = html.IFrameElement()
-            ..src = widget.embedUrl
-            ..style.border = 'none'
-            ..style.width = '100%'
-            ..style.height = '100%';
-          // Hide the Ntripi loader once the map iframe paints.
-          iframe.onLoad.listen((_) => _loaded[_viewType]?.value = true);
-          return iframe;
-        },
-      );
+    ui_web.platformViewRegistry.registerViewFactory(_viewType, (int _) {
+      final iframe = html.IFrameElement()
+        ..src = widget.embedUrl
+        ..style.border = 'none'
+        ..style.width = '100%'
+        ..style.height = '100%'
+        // Display-only, as on phones: the tap belongs to the card around it.
+        ..style.pointerEvents = 'none';
+      // Hide the Ntripi loader once the map page paints.
+      iframe.onLoad.listen((_) {
+        if (mounted) _isLoaded.value = true;
+      });
+      return _iframe = iframe;
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant MapEmbedWebView old) {
+    super.didUpdateWidget(old);
+    if (old.embedUrl != widget.embedUrl) {
+      _isLoaded.value = false;
+      _iframe?.src = widget.embedUrl;
     }
   }
 
   @override
   void dispose() {
-    _loaded.remove(_viewType);
     _isLoaded.dispose();
     super.dispose();
   }

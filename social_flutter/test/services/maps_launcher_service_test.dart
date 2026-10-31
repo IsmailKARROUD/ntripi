@@ -5,8 +5,8 @@
 // channel.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:ntripi/features/itineraries/data/maps_launcher_service.dart';
+import 'package:ntripi/features/itineraries/domain/map_point.dart';
 
 import '../support/url_launches.dart';
 
@@ -111,11 +111,11 @@ void main() {
     });
   });
 
-  List<LatLng> points(int n) =>
-      List.generate(n, (i) => LatLng(10.0 + i, 20.0 + i));
+  List<MapPoint> points(int n) =>
+      List.generate(n, (i) => CoordPoint(10.0 + i, 20.0 + i));
 
   group('routeUri from my location', () {
-    Uri routeUri(List<LatLng> points) =>
+    Uri routeUri(List<MapPoint> points) =>
         service.routeUri(points, start: RouteStart.myLocation);
 
     test('omits origin so Google navigates from the device location', () {
@@ -162,7 +162,7 @@ void main() {
   });
 
   group('routeUri from the first stop', () {
-    Uri routeUri(List<LatLng> points) =>
+    Uri routeUri(List<MapPoint> points) =>
         service.routeUri(points, start: RouteStart.firstStop);
 
     test('the first stop is the origin, so Google shows the trip alone', () {
@@ -204,6 +204,66 @@ void main() {
       final waypoints = uri.queryParameters['waypoints']!.split('|');
       expect(waypoints.length, MapsLauncherService.maxGoogleWaypoints);
       expect(uri.queryParameters['destination'], '20.0,30.0');
+    });
+  });
+
+  group('Google places', () {
+    const tower = PlacePoint('ChIJLU7jZClu5kcR4PcOOO6p3I0', 'eiffel tower');
+    const louvre = PlacePoint('ChIJD3uTd9hx5kcR1IQvGfr8dbk', 'louvre');
+
+    test('a place opens by its ID, with the search text Maps URLs require', () {
+      final uri = service.googlePlaceUri(tower.placeId, tower.fallbackText);
+
+      expect(uri.path, '/maps/search/');
+      expect(uri.queryParameters, {
+        'api': '1',
+        'query': 'eiffel tower',
+        'query_place_id': 'ChIJLU7jZClu5kcR4PcOOO6p3I0',
+      });
+    });
+
+    test('a lost place is only searched for by its text', () {
+      final uri = service.googleSearchUri('eiffel tower');
+
+      expect(uri.queryParameters, {'api': '1', 'query': 'eiffel tower'});
+    });
+
+    test('origin and destination carry their own place IDs', () {
+      final uri = service.routeUri(
+        [tower, const CoordPoint(1.5, 2.5), louvre],
+        start: RouteStart.firstStop,
+      );
+
+      expect(uri.queryParameters['origin'], 'eiffel tower');
+      expect(uri.queryParameters['origin_place_id'], tower.placeId);
+      expect(uri.queryParameters['destination'], 'louvre');
+      expect(uri.queryParameters['destination_place_id'], louvre.placeId);
+      expect(uri.queryParameters['waypoints'], '1.5,2.5');
+    });
+
+    test('waypoint IDs go only when every waypoint has one', () {
+      final all = service.routeUri(
+        [const CoordPoint(1, 2), tower, louvre, const CoordPoint(3, 4)],
+        start: RouteStart.firstStop,
+      );
+      expect(all.queryParameters['waypoints'], 'eiffel tower|louvre');
+      expect(all.queryParameters['waypoint_place_ids'],
+          '${tower.placeId}|${louvre.placeId}');
+
+      final mixed = service.routeUri(
+        [const CoordPoint(1, 2), tower, const CoordPoint(5, 6), const CoordPoint(3, 4)],
+        start: RouteStart.firstStop,
+      );
+      expect(mixed.queryParameters['waypoints'], 'eiffel tower|5.0,6.0');
+      expect(mixed.queryParameters.containsKey('waypoint_place_ids'), isFalse);
+    });
+
+    test('from my location the first place is a waypoint, never an origin', () {
+      final uri = service.routeUri([tower, louvre], start: RouteStart.myLocation);
+
+      expect(uri.queryParameters.containsKey('origin'), isFalse);
+      expect(uri.queryParameters.containsKey('origin_place_id'), isFalse);
+      expect(uri.queryParameters['waypoint_place_ids'], tower.placeId);
     });
   });
 

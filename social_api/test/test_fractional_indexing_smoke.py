@@ -1472,3 +1472,199 @@ class TestUnanchoredTrackAndLastLeg:
 
         listed = client.get(f"/itineraries/{itinerary_id}/segments", headers=hdrs)
         assert listed.json() == []
+
+
+# ---------------------------------------------------------------------------
+# Where a stop's location comes from (place_source, Google places, links)
+# ---------------------------------------------------------------------------
+
+class TestPlaceSource:
+    """The only Google data a stop keeps is a place ID; services/stop_location
+    holds every client to that, installed builds included."""
+
+    PLACE_ID = "ChIJLU7jZClu5kcR4PcOOO6p3I0"
+
+    def _trip(self, client: TestClient):
+        user = register_user(client, "alice", "alice@example.com")
+        hdrs = auth_headers(user["access_token"])
+        r = client.post("/itineraries/", json={"title": "Places", "currency": "EUR"},
+                        headers=hdrs)
+        assert r.status_code == 201, r.text
+        return r.json()["id"], hdrs
+
+    def _add(self, client, itin_id, hdrs, body):
+        from conftest import edit_now
+        return client.post(f"/itineraries/{itin_id}/stops", json=body,
+                           headers=edit_now(client, itin_id, hdrs))
+
+    def _patch(self, client, itin_id, hdrs, stop_id, body):
+        from conftest import edit_now
+        return client.patch(f"/itineraries/{itin_id}/stops/{stop_id}", json=body,
+                            headers=edit_now(client, itin_id, hdrs))
+
+    def _row(self, stop_id):
+        from conftest import TestingSessionLocal
+        from app.models.stop import Stop
+        db = TestingSessionLocal()
+        try:
+            return db.get(Stop, uuid.UUID(stop_id))
+        finally:
+            db.close()
+
+    def test_a_google_place_keeps_only_its_id_and_the_search_text(self, client):
+        itin_id, hdrs = self._trip(client)
+        r = self._add(client, itin_id, hdrs, {
+            "place_name": "Lunch", "place_source": "google",
+            "google_place_id": self.PLACE_ID, "google_place_query": "chez marcel",
+        })
+        assert r.status_code == 201, r.text
+        stop = r.json()
+        assert stop["place_source"] == "google"
+        assert stop["google_place_id"] == self.PLACE_ID
+        assert stop["google_place_query"] == "chez marcel"
+        assert stop["google_place_missing"] is False
+        assert stop["lat"] is None and stop["lng"] is None
+        assert stop["place_address"] is None and stop["map_url"] is None
+        assert self._row(stop["id"]).google_place_checked_at is not None
+
+    def test_the_new_keys_come_after_every_existing_one(self, client):
+        itin_id, hdrs = self._trip(client)
+        r = self._add(client, itin_id, hdrs, {"place_name": "Paris"})
+        keys = list(r.json())
+        assert keys[keys.index("source_lang") + 1:] == [
+            "place_source", "google_place_id", "google_place_query",
+            "google_place_missing",
+        ]
+
+    def test_a_link_never_keeps_coordinates_even_from_an_installed_build(self, client):
+        # Installed builds unfurl the link and send what they found beside it.
+        itin_id, hdrs = self._trip(client)
+        r = self._add(client, itin_id, hdrs, {
+            "place_name": "Gem", "map_url": "https://maps.app.goo.gl/abc123",
+            "lat": 48.85, "lng": 2.35, "place_address": "Paris",
+        })
+        assert r.status_code == 201, r.text
+        stop = r.json()
+        assert stop["place_source"] == "link"
+        assert (stop["lat"], stop["lng"], stop["place_address"]) == (None, None, None)
+        assert stop["google_place_id"] is None
+
+    def test_a_place_id_written_in_a_link_is_kept(self, client):
+        itin_id, hdrs = self._trip(client)
+        link = ("https://www.google.com/maps/search/?api=1&query=Eiffel"
+                f"&query_place_id={self.PLACE_ID}")
+        r = self._add(client, itin_id, hdrs, {
+            "place_name": "Tower", "place_source": "link", "map_url": link,
+        })
+        assert r.status_code == 201, r.text
+        assert r.json()["google_place_id"] == self.PLACE_ID
+        assert r.json()["place_source"] == "link"
+
+    def test_the_hex_feature_id_of_a_long_link_is_not_a_place_id(self, client):
+        itin_id, hdrs = self._trip(client)
+        link = ("https://www.google.com/maps/place/Eiffel+Tower/@48.858,2.294,17z/"
+                "data=!4m6!3m5!1s0x47e66e2964e34e2d:0x8ddca9ee380ef7e0!8m2"
+                "!3d48.8583701!4d2.2944813")
+        r = self._add(client, itin_id, hdrs, {"place_name": "Tower", "map_url": link})
+        assert r.status_code == 201, r.text
+        assert r.json()["google_place_id"] is None
+        assert r.json()["lat"] is None
+
+    @pytest.mark.parametrize("body", [
+        # Google fields without saying it is a Google place.
+        {"google_place_id": "ChIJLU7jZClu5kcR4PcOOO6p3I0", "google_place_query": "x"},
+        # A Google place needs both halves.
+        {"place_source": "google", "google_place_id": "ChIJLU7jZClu5kcR4PcOOO6p3I0"},
+        # ... and nothing else that locates it.
+        {"place_source": "google", "google_place_id": "ChIJLU7jZClu5kcR4PcOOO6p3I0",
+         "google_place_query": "x", "lat": 1.0, "lng": 2.0},
+        {"place_source": "link"},
+        {"place_source": "link", "map_url": "https://maps.app.goo.gl/x", "lat": 1.0},
+        {"place_source": "osm", "map_url": "https://maps.app.goo.gl/x"},
+        {"place_source": "somewhere"},
+        {"place_source": "google", "google_place_id": "not/an/id",
+         "google_place_query": "x"},
+    ])
+    def test_a_location_the_rules_forbid_is_refused(self, client, body):
+        itin_id, hdrs = self._trip(client)
+        r = self._add(client, itin_id, hdrs, {"place_name": "Nope", **body})
+        assert r.status_code == 422, r.text
+
+    def test_an_installed_build_saving_a_google_stop_keeps_it_google(self, client):
+        itin_id, hdrs = self._trip(client)
+        stop = self._add(client, itin_id, hdrs, {
+            "place_name": "Lunch", "place_source": "google",
+            "google_place_id": self.PLACE_ID, "google_place_query": "chez marcel",
+        }).json()
+        # What an installed build's form sends: every location key, no source.
+        r = self._patch(client, itin_id, hdrs, stop["id"], {
+            "place_name": "Long lunch", "place_address": None,
+            "lat": None, "lng": None, "map_url": None,
+        })
+        assert r.status_code == 200, r.text
+        assert r.json()["place_source"] == "google"
+        assert r.json()["google_place_id"] == self.PLACE_ID
+
+    def test_coordinates_turn_a_google_stop_into_an_ordinary_one(self, client):
+        itin_id, hdrs = self._trip(client)
+        stop = self._add(client, itin_id, hdrs, {
+            "place_name": "Lunch", "place_source": "google",
+            "google_place_id": self.PLACE_ID, "google_place_query": "chez marcel",
+        }).json()
+        r = self._patch(client, itin_id, hdrs, stop["id"], {
+            "lat": 48.85, "lng": 2.35, "map_url": None,
+        })
+        assert r.status_code == 200, r.text
+        assert r.json()["google_place_id"] is None
+        assert r.json()["google_place_query"] is None
+        assert r.json()["place_source"] is None  # a build that cannot say where from
+        assert r.json()["lat"] == pytest.approx(48.85)
+
+    def test_an_osm_pick_replaces_a_link(self, client):
+        itin_id, hdrs = self._trip(client)
+        stop = self._add(client, itin_id, hdrs, {
+            "place_name": "Gem", "map_url": "https://maps.app.goo.gl/abc123",
+        }).json()
+        r = self._patch(client, itin_id, hdrs, stop["id"], {
+            "place_source": "osm", "lat": 50.85, "lng": 4.35,
+            "place_address": "Grand-Place, Brussels", "map_url": None,
+        })
+        assert r.status_code == 200, r.text
+        assert r.json()["place_source"] == "osm"
+        assert r.json()["map_url"] is None
+
+    def test_a_re_sent_id_keeps_its_refresh_stamps_and_a_new_one_resets_them(self, client):
+        from datetime import datetime, timedelta, timezone
+        from conftest import TestingSessionLocal
+        from app.models.stop import Stop
+
+        itin_id, hdrs = self._trip(client)
+        stop = self._add(client, itin_id, hdrs, {
+            "place_name": "Lunch", "place_source": "google",
+            "google_place_id": self.PLACE_ID, "google_place_query": "chez marcel",
+        }).json()
+        long_ago = datetime.now(timezone.utc) - timedelta(days=400)
+        db = TestingSessionLocal()
+        row = db.get(Stop, uuid.UUID(stop["id"]))
+        row.google_place_checked_at = long_ago
+        row.google_place_missing_at = long_ago
+        db.commit()
+        db.close()
+
+        same = self._patch(client, itin_id, hdrs, stop["id"], {
+            "place_source": "google", "google_place_id": self.PLACE_ID,
+            "google_place_query": "chez marcel again",
+        })
+        assert same.status_code == 200, same.text
+        assert same.json()["google_place_missing"] is True
+        assert self._row(stop["id"]).google_place_checked_at.replace(
+            tzinfo=timezone.utc) == long_ago
+
+        other = self._patch(client, itin_id, hdrs, stop["id"], {
+            "place_source": "google", "google_place_id": "ChIJN1t_tDeuEmsRUsoyG83frY4",
+            "google_place_query": "chez paul",
+        })
+        assert other.status_code == 200, other.text
+        assert other.json()["google_place_missing"] is False
+        assert self._row(stop["id"]).google_place_checked_at.replace(
+            tzinfo=timezone.utc) > long_ago

@@ -104,6 +104,9 @@ RELEASES: tuple[Release, ...] = (
             "**Stopps an einem Ort anordnen.** Im Bearbeitungsmodus macht **Stopps anordnen** (die vier Pfeile) über den Stopps aus der Reise Reihen von Stopps. Ziehen oder tippen Sie einen Stopp, um ihn zur Alternative einer anderen Spalte zu machen oder ihm zwischen zwei anderen eine eigene Spalte zu geben; ziehen Sie die Nummer einer Spalte, um die ganze Spalte zu verschieben. Nichts ändert sich, bevor Sie auf **Speichern** tippen, und die getrennten Knöpfe zum Umordnen und Verschieben an jedem Stopp sind verschwunden.",
             "**Senden bleibt in Reichweite.** Beim Melden eines Fehlers — und beim Melden von Inhalten, Bewerten einer Reise, Hinzufügen von Transport und bei einem Einspruch — bleiben die Knöpfe jetzt unten, beim Tippen über der Tastatur, statt aus dem Blick zu scrollen. Beim Melden eines Fehlers steht außerdem die Beschreibung an erster Stelle; eine Kategorie zu wählen ist optional.",
             "**Wählen Sie, wo die Route beginnt.** Der Pfeil über den Stopps fragt jetzt, wo es losgehen soll, bevor sich Google Maps öffnet: **Von meinem Standort**, für die Route von dort, wo Sie sind, oder **Ab dem ersten Stopp**, um nur die Reise zu sehen.",
+            "**Einen Ort finden, den Google Maps kennt, ohne Ntripi zu verlassen.** In der Position eines Stopps sucht der Tab **Google Maps** zuerst in OpenStreetMap und dann in Google Maps; von einem Google-Ort behält Ntripi nur seine Kennung, und den Namen des Stopps geben Sie selbst ein. Eine Suche startet, wenn Sie auf **Suchen** tippen. Einen Link einzufügen geht weiterhin, und Ntripi öffnet ihn nicht mehr.",
+            "**Die Karte der Reise ist ihre Route.** Die **Karten**-Ansicht zeigt jetzt die Route durch die Stopps auf Ihrem Bildschirm, auf der Karte von Google — Google-Orte eingeschlossen.",
+            "**Aktualisierte Nutzungsbedingungen und Datenschutzerklärung.** Sie decken jetzt Google Maps ab, das einen Teil der Karten von Ntripi und seine Ortssuche liefert. Sie werden einmal gebeten, sie anzunehmen.",
         ),
     ),
     Release(
@@ -217,7 +220,7 @@ Neue Reisen sind **nur für Sie** sichtbar, bis Sie das ändern — Ausprobieren
                 body="""Tippen Sie in der Reise auf **+**, um einen Stopp anzulegen. Ein Stopp enthält:
 
 - **Name und Adresse** — wie der Ort heißt.
-- **Position** — einen Punkt auf der Karte wählen oder einen Google-Maps-Link einfügen und Ntripi die Koordinaten daraus lesen lassen.
+- **Position** — den Ort suchen (zuerst in OpenStreetMap, dann in Google Maps), einen Punkt auf der Karte wählen oder einen Google-Maps-Link einfügen.
 - **Ortstyp** — Essen und Trinken, Schlafen, Sehenswürdigkeiten, Natur, Einkaufen und so weiter. Das zeichnet das richtige Symbol auf der Karte und in der Liste.
 - **Kosten** — ungefähr, was es pro Person kostet. Leer lassen oder als kostenlos markieren.
 - **Aufenthaltsdauer** — wie viel Zeit einzuplanen ist. Das macht einen Plan realistisch statt optimistisch.
@@ -265,7 +268,7 @@ Siehe [wie Sie eine Reise teilen, ohne sie zu veröffentlichen](/help/share-an-i
             "planung",
         ),
         related=("plan-alternative-options", "share-an-itinerary-privately", "getting-started"),
-        updated="2026-10-27",
+        updated="2026-10-31",
         cta="Planen Sie Ihre eigene Reiseroute — etwa zehn Minuten.",
     ),
     Article(
@@ -488,19 +491,27 @@ Für eine Warnung, die schwer zu übersehen sein soll statt nebenbei gelesen zu 
     ),
     Article(
         slug="add-locations-from-google-maps",
-        title="So fügen Sie einen Ort aus einem Google-Maps-Link hinzu",
-        summary="Maps-Link einfügen und Ntripi liest die Koordinaten heraus — oder setzen Sie den Punkt selbst auf der Karte.",
+        title="So fügen Sie einen Ort aus Google Maps hinzu",
+        summary="Suchen Sie in OpenStreetMap und, wenn es nichts findet, in Google Maps, oder fügen Sie einen Link ein. Von Google behält Ntripi nur die Kennung des Orts.",
         category="building",
         schema=SCHEMA_HOWTO,
-        intro="Ein Stopp kann seine Position auf zwei Wegen bekommen: den Punkt auf Ntripis eigener Karte wählen, oder einen Google-Maps-Link einfügen und Ntripi die Koordinaten daraus lesen lassen. Das zweite ist meist schneller, weil Sie den Ort dort vermutlich schon gefunden haben.",
+        intro="Ein Stopp bekommt seine Position auf drei Wegen: Sie suchen ihn — zuerst in OpenStreetMap, dann in Google Maps, wenn OpenStreetMap den Ort nicht kennt —, fügen einen Google-Maps-Link ein oder setzen den Punkt auf Ntripis eigener Karte. Suchen ist meist am schnellsten, ohne die App zu verlassen, um einen Link zu kopieren.",
         blocks=(
             Block(
-                anchor="paste-a-link",
-                heading="Einen Google-Maps-Link einfügen",
+                anchor="search-google-maps",
+                heading="In OpenStreetMap suchen, dann in Google Maps",
                 kind=KIND_STEP,
-                body="""Wechseln Sie im Positionsfeld des Stopps auf die Link-Option und fügen Sie die URL ein. Ntripi liest die Koordinaten heraus und behält den Link, sodass der Stopp eine kleine Kartenvorschau zeigt und Sie den Ort später in Maps öffnen können.
+                body="""Öffnen Sie in der Position des Stopps den Tab **Google Maps**, geben Sie den Ort ein und tippen Sie auf **Suchen**. Ntripi sucht zuerst in OpenStreetMap. Findet OpenStreetMap nichts, fragt Ntripi von selbst Google Maps; Sie können auch unter den Ergebnissen von OpenStreetMap auf **In Google Maps suchen** tippen. Die Vorschläge von Google folgen dann Ihrer Eingabe.
 
-Sowohl die lange Desktop-URL als auch der kurze Teilen-Link funktionieren. Nur Google-Maps-Adressen werden akzeptiert — ein Link auf etwas anderes wird abgelehnt, statt gespeichert und stillschweigend ignoriert zu werden.""",
+Wählen Sie einen Vorschlag, und der Ort erscheint auf der Karte von Google. **Geben Sie den Namen des Stopps selbst ein**: Von Google behält Ntripi nur die Kennung des Orts und die Wörter, nach denen Sie gesucht haben — niemals den Namen oder die Adresse von Google.""",
+            ),
+            Block(
+                anchor="paste-a-link",
+                heading="Oder fügen Sie einen Google-Maps-Link ein",
+                kind=KIND_STEP,
+                body="""Fügen Sie die URL in das Linkfeld unter der Suche ein. Ntripi behält den Link so, wie Sie ihn eingefügt haben, und öffnet ihn nicht — geben Sie den Namen des Stopps also selbst ein.
+
+Ein langer Link aus Ihrem Browser kann auf der Karte der Reise erscheinen. Ein kurzer Teilen-Link (maps.app.goo.gl) kann das nicht — er sagt nicht, um welchen Ort es geht —, deshalb schlägt Ntripi vor, den Ort stattdessen zu suchen. Nur Google-Maps-Adressen werden angenommen: Ein Link zu etwas anderem wird abgelehnt, statt gespeichert und still ignoriert zu werden.""",
             ),
             Block(
                 anchor="pick-on-the-map",
@@ -521,32 +532,42 @@ Beim ersten Mal wird die Standortberechtigung angefragt. **Ablehnen blockiert ni
             Block(
                 anchor="opening-in-maps",
                 heading="Einen Stopp oder die ganze Reise in Ihrer Karten-App öffnen",
-                body="""Ein Stopp mit Position bietet an, sich in der installierten Karten-App zu öffnen, damit Sie am Tag selbst die Route bekommen, ohne etwas abzutippen.
+                body="""Ein Stopp mit Position bietet an, sich in der installierten Karten-App zu öffnen, damit Sie am Tag selbst die Route bekommen, ohne etwas abzutippen. Ein in Google Maps gefundener oder als Link gespeicherter Ort öffnet sich in Google Maps.
 
 Der Pfeil über den Stopps öffnet die ganze Reise in Google Maps, der einzigen Karten-App, die mehrere Stopps auf einmal annimmt, und fragt, wo es losgehen soll. **Von meinem Standort** gibt Ihnen die Route von dort, wo Sie gerade sind, durch die Stopps der Reise — Google Maps ermittelt Ihren Standort selbst, Ntripi fragt also nie danach. **Ab dem ersten Stopp** zeigt nur die Reise, vom ersten bis zum letzten Stopp. Wo die Reise Alternativen hat, führt die Route über die, die Sie auf dem Bildschirm sehen. Google Maps nimmt bis zu 10 Stopps ab Ihrem Standort und 11 ab dem ersten Stopp; eine längere Reise öffnet sich mit ihren ersten Stopps und dem letzten, und Ntripi weist darauf hin.
 
-Die Karte von Ntripi dient zum Lesen des Plans; Ihre Karten-App dient dazu, ihn abzulaufen.""",
+Die **Karten**-Ansicht einer Reise zeigt dieselbe Route auf der Karte von Google, durch die Stopps auf Ihrem Bildschirm. Einen Stopp, den sie nicht platzieren kann — einen kurzen Link —, lässt sie aus, und die Karte sagt, wie viele.""",
+            ),
+            Block(
+                anchor="place-not-found",
+                heading="Wenn Google einen Ort nicht mehr findet",
+                body="""Google zieht manchmal einen Ort zurück — er hat geschlossen, ist umgezogen oder wurde mit einem anderen zusammengelegt. Ntripi prüft jeden Google-Ort etwa einmal im Jahr. Ist einer verschwunden, sieht es, wer die Reise bearbeitet, am Stopp, mit **Erneut suchen** und den alten Suchwörtern bereit; Lesende können weiterhin in Google Maps nach diesen Wörtern suchen.""",
             ),
         ),
         keywords=(
             "google maps",
+            "suchen",
+            "ort finden",
+            "autovervollständigung",
+            "orts-id",
             "link",
             "einfügen",
+            "kurzlink",
             "koordinaten",
             "gps",
-            "stecknadel",
-            "position",
+            "pin",
+            "standort",
             "kartenauswahl",
             "breitengrad",
             "längengrad",
-            "wo",
             "route",
-            "navigation",
             "wegbeschreibung",
+            "navigation",
             "startpunkt",
+            "nicht gefunden",
         ),
         related=("add-places-to-an-itinerary", "permissions"),
-        updated="2026-10-29",
+        updated="2026-10-31",
         cta="Setzen Sie Ihren ersten Stopp auf die Karte.",
     ),
     Article(
@@ -1434,9 +1455,9 @@ Passwort ändern oder Konto löschen finden Sie im Bearbeitungsbildschirm Ihres 
                 anchor="location",
                 heading="Standort — wofür?",
                 kind=KIND_FAQ,
-                body="""Um die Karte beim Anlegen eines Stopps auf Ihren Standort zu zentrieren, damit Sie nicht quer über einen Kontinent scrollen, um die Stadt zu finden, in der Sie stehen.
+                body="""Um die Karte beim Anlegen eines Stopps auf Ihren Standort zu zentrieren, damit Sie nicht quer über einen Kontinent scrollen, um die Stadt zu finden, in der Sie stehen. Und, solange eine Reise noch keinen Stopp mit Position hat, um in einer Ortssuche zuerst Ergebnisse in Ihrer Nähe zu zeigen: Dann begleitet nur Ihr ungefährer Standort (auf etwa 10 km gerundet) die Suche, und er wird nie gespeichert.
 
-Gefragt wird beim ersten Nutzen der Standort-Schaltfläche der Karte, und **nur während Sie die App benutzen** — es gibt keinen Hintergrundstandort und kein Tracking. Ablehnen blockiert nichts: Die Karte öffnet sich woanders und Sie verschieben sie selbst.""",
+Gefragt wird, wenn Sie zum ersten Mal einen Stopp anlegen oder bearbeiten, und **nur während Sie die App benutzen** — es gibt keinen Hintergrundstandort und kein Tracking. Ablehnen blockiert nichts: Die Karte öffnet sich woanders und Sie verschieben sie selbst.""",
             ),
             Block(
                 anchor="notifications",
@@ -1499,7 +1520,7 @@ Am wichtigsten ist das bei Benachrichtigungen, für die iOS nicht erneut fragt: 
             "ablehnen",
         ),
         related=("your-data-and-privacy", "notifications", "add-locations-from-google-maps"),
-        updated="2026-09-01",
+        updated="2026-10-31",
         cta="Sehen Sie genau, was die App anfragt — und was nicht.",
     ),
     Article(
@@ -1516,6 +1537,7 @@ Am wichtigsten ist das bei Benachrichtigungen, für die iOS nicht erneut fragt: 
                 kind=KIND_FAQ,
                 body="""- **Ihr Konto** — Anzeigename, Benutzername, E-Mail-Adresse und Geburtsdatum (wird niemandem gezeigt).
 - **Was Sie erstellen** — Reisen, Stopps, Notizen, Bewertungen und alle hochgeladenen Bilder.
+- **Ein in Google Maps gefundener Ort** — nur die Kennung, die Google ihm gibt, und die Wörter, nach denen Sie gesucht haben, nie der Name oder die Adresse von Google.
 - **Ihre Verbindungen** — wem Sie folgen, wer Ihnen folgt, wen Sie blockiert haben.
 - **Sitzungsdaten** — genug, um Sie angemeldet zu halten, und ein Gerätetoken, falls Sie Push aktiviert haben.
 
@@ -1575,7 +1597,7 @@ Dieselbe Adresse deckt Anträge auf Berichtigung, Einschränkung und Widerspruch
             "permissions", "sign-in-and-account-security",
             "share-an-itinerary-privately", "read-trips-in-another-language",
         ),
-        updated="2026-10-07",
+        updated="2026-10-31",
     ),
     Article(
         slug="sign-in-and-account-security",

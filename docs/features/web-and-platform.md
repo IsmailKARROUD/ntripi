@@ -70,6 +70,13 @@ the three affects the security ordering.
   - It skips `STATIC_PREFIXES`, matched on a segment boundary
     (`is_static_path`) — a bare `startswith("/app")` also skipped `/appeal/…`
     and `/appeals/…`, leaving the public appeal form frameable until 2026-09-28.
+  - **`/embed/*` is the one framable path family** (`is_embed_path`, segment
+    boundary): the Google map pages answer `X-Frame-Options: SAMEORIGIN` and
+    `Content-Security-Policy: default-src 'none'; frame-src
+    https://www.google.com; style-src 'unsafe-inline'; base-uri 'none';
+    frame-ancestors <EMBED_FRAME_ANCESTORS>` (default `'self'`) plus
+    `X-Robots-Tag: noindex`, so the web app and a listed local web build may
+    frame them. See [places-and-maps.md](places-and-maps.md).
 - **`CORSMiddleware` uses explicit method and header lists, never `["*"]`.**
   Methods `GET POST PATCH DELETE OPTIONS`; headers `Content-Type`,
   `Authorization`, `If-Match`, `If-None-Match`, **`X-Edit-Lock`** — dropping the
@@ -372,17 +379,16 @@ ProviderScope
   keeps its own connections. See
   [decisions.md](../decisions.md#2026-10-25--the-app-keeps-its-connection-to-the-api-open-for-two-minutes).
 - The app is **locked to portrait**.
-- **Build-time config is `--dart-define`**: `API_BASE_URL`, `SHARE_BASE_URL`,
-  `GOOGLE_MAPS_EMBED_API_KEY`.
+- **Build-time config is `--dart-define`**: `API_BASE_URL`, `SHARE_BASE_URL`.
+  The Maps Embed key left the build on 2026-10-31: it is the backend's
+  `GOOGLE_MAPS_EMBED_API_KEY`, used inside `/embed/*`.
 
 ## Known gaps / TODOs
 
-- **The Dockerfile hardcodes three build values** (`Dockerfile:15`):
-  `API_BASE_URL`, `SHARE_BASE_URL`, and **`GOOGLE_MAPS_EMBED_API_KEY=AIzaSy…`**.
-  An Embed key necessarily ships to the client and this one is referrer-restricted,
-  so exposure is not the issue — but it is a committed, un-rotatable build
-  constant, against the project's own "no hardcoded values" rule. See
-  [constraints.md](../constraints.md#known-deviations) and
+- **The Dockerfile hardcodes two build values** (`Dockerfile:13-14`):
+  `API_BASE_URL` and `SHARE_BASE_URL`, which is what stops one image serving a
+  staging environment. The third, the Maps Embed key, moved to the backend on
+  2026-10-31. See [constraints.md](../constraints.md#known-deviations) and
   [backlog.md](../backlog.md).
 - **A pooled connection the network drops silently while the app is open**,
   with no network change reported, still fails the request sent down it:
@@ -408,3 +414,4 @@ ProviderScope
 - [collaborative-editing.md](collaborative-editing.md) — why `X-Edit-Lock` is in CORS
 - [app-links.md](app-links.md) — the `/.well-known` files, the link routing, `singleTask`
 - [constraints.md](../constraints.md)
+- [places-and-maps.md](places-and-maps.md) — the `/embed/*` map pages and their framing exception

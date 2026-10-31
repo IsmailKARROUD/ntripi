@@ -306,3 +306,4 @@ For each article the change touches:
 - [translations.md](translations.md) — `read-trips-in-another-language`, the article that explains it
 - [admin-and-appeals.md](admin-and-appeals.md) — why `robots.txt` names no crawlers
 - [constraints.md](../constraints.md)
+- [places-and-maps.md](places-and-maps.md) — `/help/add-locations-from-google-maps` describes it

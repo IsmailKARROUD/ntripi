@@ -275,7 +275,10 @@ registered from the same router under the `/users` prefix.
   stops header (`_RoutePillButton`; read mode only, shown once the route has
   two points) opens the trip in Google Maps, the one maps app with multi-stop
   links. The route takes one point per track, the alternative on screen
-  (`_routePoints`). It asks every time where to start (`showRouteStartSheet`,
+  (`tripRoute`, `domain/trip_route.dart`): a Google place by its place ID
+  (`*_place_id`, with its search text as the required fallback), a coordinate
+  stop by its coordinates, a full link by what its own text carries; a short
+  link or a place Google lost is skipped. It asks every time where to start (`showRouteStartSheet`,
   `widgets/route_start_sheet.dart`, which returns a `RouteStart` and launches
   nothing; its answers scroll, so the largest text sizes cannot push the second
   one off a small phone): `myLocation` sends no `origin`, so Google starts at
@@ -290,6 +293,14 @@ registered from the same router under the `/users` prefix.
   `test/services/maps_launcher_service_test.dart`,
   `test/widgets/itinerary_route_start_test.dart`,
   `test/widgets/route_start_sheet_test.dart`.
+- **The Map view is the same route on Google's map** (since 2026-10-31,
+  `_TripRouteMap`) — the Maps Embed API's directions through the `tripRoute`
+  points (≤ 22: origin, 20 waypoints, destination), Google choosing the travel
+  mode; one point shows that place, none an empty state; a note counts the
+  stops it could not place. Display only: a tap opens the route sheet. The
+  List/Map toggle is hidden while the server has no embed key. The OSM
+  `flutter_map` that drew every stop with coordinates, alternatives included,
+  is gone from this screen. See [places-and-maps.md](places-and-maps.md).
 - **Model** — `Itinerary` (`features/itineraries/domain/itinerary.dart`), manual
   `fromJson`/`toJson`. `_parseTracks()` is where stop roles are derived.
 
@@ -332,6 +343,7 @@ registered from the same router under the `/users` prefix.
 - [feed-and-search.md](feed-and-search.md) · [sharing.md](sharing.md)
 - [translations.md](translations.md) — title, description and period note carry `source_lang`; their translations cascade with the trip
 - [reference/data-model.md](../reference/data-model.md)
+- [places-and-maps.md](places-and-maps.md) — the trip's route on Google's map, and the route link's place IDs
 
 ## OPEN QUESTIONS
 

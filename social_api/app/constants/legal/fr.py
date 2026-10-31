@@ -92,9 +92,11 @@ Lorsque vous signalez un problème depuis l'application, vous nous envoyez une c
 
 12. SERVICES TIERS ET ATTRIBUTION
 
-Ntripi utilise des services exploités par d'autres entreprises pour fonctionner : hébergement et diffusion d'images, recherche d'adresses, connexion, modération automatique des contenus et suivi des rapports de bogue. Ils sont énumérés dans notre Politique de confidentialité avec ce que chacun reçoit.
+Ntripi utilise des services exploités par d'autres entreprises pour fonctionner : hébergement et diffusion d'images, recherche d'adresses, cartes et recherche de lieux, connexion, notifications push, modération automatique des contenus, traduction et suivi des rapports de bogue. Ils sont énumérés dans notre Politique de confidentialité avec ce que chacun reçoit.
 
-Les données cartographiques et le géocodage proviennent d'OpenStreetMap, utilisées sous licence Open Database (ODbL). Les fonds de carte sont servis par les serveurs de tuiles de la Fondation OpenStreetMap.
+La recherche d'adresses, et les cartes que Ntripi dessine lui-même, utilisent des données d'OpenStreetMap sous licence Open Database (ODbL) ; leurs fonds de carte sont servis par les serveurs de tuiles de la Fondation OpenStreetMap.
+
+Certaines cartes de Ntripi, ainsi que sa recherche de lieux Google Maps, sont fournies par Google. Leur utilisation est soumise aux Conditions d'utilisation supplémentaires de Google Maps/Google Earth (https://www.google.com/help/terms_maps/) et aux Règles de confidentialité de Google (https://policies.google.com/privacy).
 
 La connexion avec Google est régie par les propres conditions et la politique de confidentialité de Google, en plus des nôtres.
 
@@ -170,7 +172,9 @@ Votre date de naissance : nous la demandons une seule fois, à la création de v
 
 Contenu que vous créez : itinéraires, noms d'étapes, adresses, notes, annotations, informations de transport, évaluations et avis, et les photos que vous téléversez.
 
-Localisation que vous saisissez : les coordonnées des étapes que vous ajoutez. Ntripi ne suit pas la position de votre appareil ; une coordonnée n'est enregistrée que parce que vous avez recherché un lieu, l'avez sélectionné sur la carte ou l'avez saisi.
+Localisation que vous saisissez : les coordonnées des étapes que vous ajoutez. Ntripi ne suit pas la position de votre appareil ; une coordonnée n'est enregistrée que parce que vous avez recherché un lieu, l'avez sélectionné sur la carte ou l'avez saisi. Lorsque vous recherchez un lieu dans un itinéraire qui ne compte encore aucune étape avec des coordonnées, la position approximative de votre appareil (arrondie à environ 10 km) est envoyée avec cette recherche afin que les résultats proches apparaissent en premier ; elle n'est pas conservée.
+
+Lieux Google : lorsque vous choisissez un lieu trouvé via Google Maps, nous ne conservons que l'identifiant que Google attribue à ce lieu et les mots de recherche que vous avez saisis — jamais le nom, l'adresse ni aucune autre information renvoyée par Google. Les mots de recherche sont conservés avec l'étape, où toute personne qui peut voir l'étape peut les voir, et servent à retrouver le lieu dans Google Maps si l'identifiant cesse un jour de fonctionner.
 
 Données techniques : votre adresse IP au moment d'une requête, ainsi que les informations sur votre appareil et l'application lorsque vous envoyez un rapport de bogue.
 
@@ -194,7 +198,7 @@ Pour corriger les problèmes que vous nous signalez.
 
 Le contenu que vous publiez est vérifié automatiquement avant d'être visible, à l'aide de services exploités par d'autres entreprises.
 
-Le texte — titres et descriptions d'itinéraires, noms d'étapes, adresses et notes, annotations, informations de transport, notes d'avis, votre nom affiché et votre biographie, ainsi que le nom d'utilisateur et le nom choisis à l'inscription — est envoyé au service de modération d'OpenAI. La requête contient le texte et le nom du modèle, et rien d'autre : aucun identifiant de compte, aucune adresse e-mail, aucun identifiant de contenu. OpenAI ne peut pas savoir à qui appartient ce texte.
+Le texte — titres et descriptions d'itinéraires, noms d'étapes, adresses et notes, mots de recherche conservés avec un lieu Google, annotations, informations de transport, notes d'avis, votre nom affiché et votre biographie, ainsi que le nom d'utilisateur et le nom choisis à l'inscription — est envoyé au service de modération d'OpenAI. La requête contient le texte et le nom du modèle, et rien d'autre : aucun identifiant de compte, aucune adresse e-mail, aucun identifiant de contenu. OpenAI ne peut pas savoir à qui appartient ce texte.
 
 Les photos sont envoyées à un service de modération d'images afin d'y détecter les images explicites et violentes : le service Rekognition d'Amazon Web Services, ou Google Cloud Vision, qui les analyse dans l'Union européenne. Seule l'image est transmise. Google Cloud Vision traite l'image en mémoire sans l'écrire sur disque, et Google ne l'utilise pas pour entraîner ni améliorer Cloud Vision.
 
@@ -231,7 +235,9 @@ Google (Cloud Vision) — modération d'images, comme décrit ci-dessus.
 
 Google — connexion, si vous l'utilisez. Google reçoit le fait que vous vous êtes connecté à Ntripi.
 
-OpenStreetMap / Nominatim — recherche d'adresses. Le texte de lieu que vous saisissez en ajoutant une étape est envoyé à Nominatim, et votre appareil demande des tuiles cartographiques à OpenStreetMap tant qu'une carte est affichée. Nous ne conservons pas vos requêtes brutes.
+Google (Google Maps Platform) — recherche de lieux et cartes. Lorsque vous demandez à l'application de chercher dans Google Maps, vos mots de recherche, la langue de l'application et une position approximative pour classer les résultats — les coordonnées d'une étape déjà présente dans l'itinéraire, ou la position de votre appareil arrondie à environ 10 km si l'itinéraire n'en compte aucune — sont envoyés à Google depuis notre serveur, sans aucun identifiant de compte. Les cartes d'une étape et du trajet d'un itinéraire sont des cadres Google Maps que votre appareil charge depuis Google : Google reçoit donc l'adresse IP de votre appareil et le lieu ou le trajet affiché.
+
+OpenStreetMap / Nominatim — recherche d'adresses. Le texte de lieu que vous saisissez en ajoutant une étape est envoyé à Nominatim depuis votre appareil, avec une zone où chercher en premier : autour d'une étape déjà présente dans l'itinéraire, ou autour de la position approximative de votre appareil si l'itinéraire n'en compte aucune. Votre appareil demande des tuiles cartographiques à OpenStreetMap tant qu'une des cartes propres à Ntripi est affichée. Nous ne conservons pas ce que vous recherchez, à l'exception des mots de recherche saisis pour un lieu choisi via Google Maps (voir la section 2).
 
 Have I Been Pwned — lorsque vous choisissez un mot de passe, nous vérifions s'il figure dans des données de fuites connues. La vérification n'envoie que les cinq premiers caractères d'une empreinte de votre mot de passe ; votre mot de passe ne quitte jamais notre serveur.
 
@@ -271,6 +277,8 @@ Les pages du site web déposent un unique cookie de préférence (ntripi_lang) a
 
 Si vous vous connectez avec Google, Google peut déposer ses propres cookies dans le cadre de son service de connexion ; ceux-ci sont régis par la politique de confidentialité de Google.
 
+Les cartes des étapes et des trajets sont des cadres Google Maps ; Google peut y déposer ses propres cookies, régis par la politique de confidentialité de Google.
+
 Nous n'utilisons ni cookies de mesure d'audience, ni cookies publicitaires, ni aucun script de pistage tiers.
 
 
@@ -291,6 +299,8 @@ Les notifications dans l'application sont supprimées 90 jours après leur lectu
 Les rapports de bogue et leurs captures sont supprimés une fois le rapport clos et sorti des archives.
 
 Les traductions sont supprimées lorsque le texte qu'elles traduisent est modifié ou supprimé.
+
+L'identifiant Google d'un lieu que vous avez choisi, et les mots de recherche conservés avec lui, sont gardés tant que l'étape existe et supprimés avec elle.
 
 
 11. VOS DROITS

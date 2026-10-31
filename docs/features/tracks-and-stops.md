@@ -78,6 +78,11 @@ or moving one item writes exactly one row.
   (`schemas/itinerary.py:62`) allows http(s) only, any path on
   `maps.google.com` / `maps.app.goo.gl`, and only `/maps` paths on
   `google.com` / `www.google.com` / `goo.gl`.
+- **A stop's location follows the rules of
+  [places-and-maps.md](places-and-maps.md)**, enforced for every client by
+  `services/stop_location.normalize` and two CHECKs: no coordinates beside a
+  `map_url` or a `google_place_id`; from Google, only a place ID and the user's
+  own search text; `place_source` records where the location came from.
 - `is_free` is distinct from `cost = 0` — the totals calculation sums only
   non-`is_free` rows.
 
@@ -163,7 +168,11 @@ side-effect of stop writes, and reordered through `reorder`.
 `StopCreate` placement fields: `track_id?`, `after_stop_id?`, `before_stop_id?`,
 `after_track_id?`, `before_track_id?`. Content fields: `place_name` (≤200),
 `place_address` (≤400), `lat` (−90..90), `lng` (−180..180), `map_url` (≤500),
-`place_type`, `duration_min` (≥0), `cost` (≥0), `is_free`, `notes` (≤2000).
+`place_type`, `duration_min` (≥0), `cost` (≥0), `is_free`, `notes` (≤2000),
+`place_source` (`osm|google|link|typed`), `google_place_id` (≤1024, the
+place-ID alphabet), `google_place_query` (≤200). `StopResponse` appends
+`place_source`, `google_place_id`, `google_place_query` and
+`google_place_missing` after `source_lang`.
 
 `ReorderRequest` = `{stop_orders: {track_id: [stop_id…]}, track_order?: [...],
 layout?: [{track_id: id | null, stop_ids: [stop_id…]}], segments_to_delete: [...]}`
@@ -309,6 +318,7 @@ trip edit.
 - [text-moderation.md](text-moderation.md) — stop name, address and notes are scanned
 - [translations.md](translations.md) — stop notes carry `source_lang` (never the place name); deleting a stop purges what cascaded
 - [help-centre.md](help-centre.md) — `/help/plan-alternative-options` describes arrange mode to users
+- [places-and-maps.md](places-and-maps.md) — how a stop is placed, what it may store from Google, and every map
 - [reference/data-model.md](../reference/data-model.md)
 
 ## OPEN QUESTIONS

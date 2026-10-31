@@ -107,7 +107,9 @@ from app.schemas.itinerary import (
     TransportLegResponse,
     TransportLegUpdate,
 )
-from app.services import edit_lock_service, notification_service, translation_service
+from app.services import (
+    edit_lock_service, notification_service, stop_location, translation_service,
+)
 from app.services.block_service import blocked_user_ids, require_not_blocked_or_404
 from app.services.image_service import ImageProcessingError, process_and_store, process_cover_image
 from app.services.moderation_service import (
@@ -255,6 +257,9 @@ def _stamp_itinerary_text(ctx, itinerary: Itinerary, db: Session) -> None:
 
 # The itinerary's own prose — what a header write hands to the text scan.
 _ITINERARY_TEXT_FIELDS = ("title", "description", "recommended_period_note")
+# A stop's stored text: the search text of a Google place is the user's own
+# typing and is shown to readers, so it is moderated like the name.
+_STOP_TEXT_FIELDS = ("place_name", "place_address", "notes", "google_place_query")
 
 
 def _itinerary_text_fields(data: dict) -> dict[str, str | None]:
@@ -1812,10 +1817,17 @@ def add_stop(
       IntegrityError. We retry up to 3 times (re-fetching ranks each time)
       before giving up with 409. In practice collisions are extremely rare.
     """
+    # Exclude the positioning fields — they're not columns on the stops table.
+    stop_fields = stop_location.normalize(
+        body.model_dump(exclude={
+            'track_id', 'after_stop_id', 'before_stop_id',
+            'after_track_id', 'before_track_id',
+        }),
+        None, datetime.now(timezone.utc),
+    )
     # Before the retry loop: a rank collision must not re-bill the moderation call.
     _moderate_itinerary_text(
-        {"place_name": body.place_name, "place_address": body.place_address,
-         "notes": body.notes},
+        {key: stop_fields[key] for key in _STOP_TEXT_FIELDS},
         itinerary, db, _verified,
     )
 
@@ -1838,11 +1850,6 @@ def add_stop(
                 db.flush()  # flush to get track.id before creating the stop
                 stop_rank = key_between(None, None)  # "a0" — first key in empty range
 
-            # Exclude the positioning fields — they're not columns on the stops table.
-            stop_fields = body.model_dump(exclude={
-                'track_id', 'after_stop_id', 'before_stop_id',
-                'after_track_id', 'before_track_id',
-            })
             stop = Stop(
                 itinerary_id=itinerary_id,
                 track_id=track.id,
@@ -1899,13 +1906,15 @@ def update_stop(
     old_track_id = stop.track_id
 
     # Apply scalar field updates.
-    scalar_fields = body.model_dump(exclude_unset=True, exclude={
-        'track_id', 'after_stop_id', 'before_stop_id',
-        'after_track_id', 'before_track_id',
-    })
+    scalar_fields = stop_location.normalize(
+        body.model_dump(exclude_unset=True, exclude={
+            'track_id', 'after_stop_id', 'before_stop_id',
+            'after_track_id', 'before_track_id',
+        }),
+        stop, datetime.now(timezone.utc),
+    )
     _moderate_itinerary_text(
-        {key: scalar_fields[key]
-         for key in ("place_name", "place_address", "notes") if key in scalar_fields},
+        {key: scalar_fields[key] for key in _STOP_TEXT_FIELDS if key in scalar_fields},
         itinerary, db, current_user,
     )
     for field, value in scalar_fields.items():

@@ -273,6 +273,27 @@ class Settings(BaseSettings):
     # publish and on a title change, so feed cards need no request. Empty = off.
     TRANSLATION_PRETRANSLATE_LANGS: str = "en,fr,es,de,ar,zh"
 
+    # ── Google Maps Platform (place search + map embeds) ────────────────────
+    # Two keys, one per job, each OFF while unset ("unset = invisible", as Jira):
+    # the Places key stays on the server (API-restricted to Places API (New));
+    # the Embed key is written into /embed/* pages a browser loads, so it must be
+    # referrer-restricted to this site (plus the dev API host).
+    GOOGLE_PLACES_API_KEY: str = ""
+    GOOGLE_MAPS_EMBED_API_KEY: str = ""
+    # Autocomplete is billed per request, so each user has an hourly budget.
+    GOOGLE_PLACES_USER_HOURLY_LIMIT: int = Field(default=60, ge=1)
+    GOOGLE_PLACES_TIMEOUT_SECONDS: float = Field(default=5.0, gt=0)
+    # Google recommends refreshing a stored place ID once it is a year old; the
+    # IDs-only Place Details call that does it is free.
+    GOOGLE_PLACE_REFRESH_DAYS: int = Field(default=365, ge=1)
+    GOOGLE_PLACE_REFRESH_BATCH: int = Field(default=100, ge=1)
+    # slowapi per-IP guards in front of the per-user budget and the embed pages.
+    PLACE_SEARCH_RATE_LIMIT: str = "60/minute"
+    EMBED_RATE_LIMIT: str = "240/minute"
+    # Who may frame /embed/* (CSP frame-ancestors). 'self' covers the deployed
+    # web app; a local web build on another port needs its origin added here.
+    EMBED_FRAME_ANCESTORS: str = "'self'"
+
     # Hours after which an unreviewed report is auto-actioned. The DSA clock is
     # 24h from when the report is *filed*, and the sweep only runs periodically,
     # so the cap is 22 to leave margin for a missed run during a deploy.
@@ -600,6 +621,22 @@ class Settings(BaseSettings):
     @property
     def translation_enabled(self) -> bool:
         return bool(self.translation_providers)
+
+    @property
+    def google_place_search_enabled(self) -> bool:
+        return bool(self.GOOGLE_PLACES_API_KEY.strip())
+
+    @property
+    def google_map_embeds_enabled(self) -> bool:
+        return bool(self.GOOGLE_MAPS_EMBED_API_KEY.strip())
+
+    @property
+    def embed_frame_ancestors(self) -> str:
+        """EMBED_FRAME_ANCESTORS as a CSP source list. A bare `self` is quoted
+        here: a .env file strips the quotes off 'self', and CSP needs them."""
+        sources = self.EMBED_FRAME_ANCESTORS.replace(",", " ").split()
+        quoted = ["'self'" if source.strip("'") == "self" else source for source in sources]
+        return " ".join(quoted) or "'self'"
 
     @property
     def translation_supported_langs(self) -> list[str]:

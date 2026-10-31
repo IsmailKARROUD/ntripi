@@ -1635,7 +1635,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchAPlaceHelpMessage =>
-      'Type a place, restaurant, or landmark name. Pick a result to autofill the place name, address, and coordinates below.';
+      'Type a place, restaurant or landmark name, then press Search. Pick a result to fill in the address and coordinates below — and the name, if you haven\'t typed one.';
 
   @override
   String get searchPlaceHintText => 'e.g. Eiffel Tower, Paris';
@@ -1678,7 +1678,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locationModeCoordinates => 'Coordinates';
 
   @override
-  String get locationModeMapLink => 'Google Maps link';
+  String get locationModeGoogleMaps => 'Google Maps';
 
   @override
   String get linkPreviewOpensInMaps => 'Opens in Google Maps';
@@ -1692,6 +1692,62 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get linkPreviewMapMobileOnly =>
       'Map preview available in the mobile app';
+
+  @override
+  String get googleMapsSearchHelpTitle => 'Search Google Maps';
+
+  @override
+  String get googleMapsSearchHelpMessage =>
+      'Ntripi searches OpenStreetMap first. If the place isn\'t there, search Google Maps. For a Google place, Ntripi keeps only Google\'s ID for it and your search words, so type the stop\'s name yourself.';
+
+  @override
+  String get placeSearchButton => 'Search';
+
+  @override
+  String get placeSearchNoResults => 'No places found on OpenStreetMap.';
+
+  @override
+  String get searchOnGoogleMaps => 'Search on Google Maps';
+
+  @override
+  String get googleMapsPlaceLabel => 'Google Maps place';
+
+  @override
+  String googlePlaceSearchedAs(String query) {
+    return 'Searched: “$query”';
+  }
+
+  @override
+  String get googlePlaceChange => 'Change';
+
+  @override
+  String get googlePlaceMissing =>
+      'Google can\'t find this place anymore. Search for it again.';
+
+  @override
+  String get googlePlaceSearchAgain => 'Search again';
+
+  @override
+  String get mapLinkShortLinkHint =>
+      'A short link can\'t appear on the trip\'s map. Search for the place above to put it there.';
+
+  @override
+  String get placeCreditOpenStreetMap =>
+      'Place data © OpenStreetMap contributors';
+
+  @override
+  String tripMapStopsNotShown(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count stops aren\'t on the map',
+      one: '1 stop isn\'t on the map',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tripMapEmpty => 'No stops on the map yet';
 
   @override
   String get coordinatesHelp =>
@@ -2596,6 +2652,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get apiErrorReportRateLimited =>
       'Too many reports. Please try again later.';
+
+  @override
+  String get apiErrorPlaceSearchRateLimited =>
+      'You\'ve used this hour\'s Google searches. Try again later, or paste a Google Maps link.';
+
+  @override
+  String get apiErrorPlaceSearchUnavailable =>
+      'Google search isn\'t available right now. You can paste a Google Maps link instead.';
 
   @override
   String get imageBlockedNsfw =>

@@ -1560,7 +1560,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get searchAPlaceHelpMessage =>
-      '输入地点、餐厅或地标的名称。选择一个结果即可自动填写下方的地点名称、地址和坐标。';
+      '输入地点、餐厅或地标的名称，然后点按“搜索”。选择一个结果即可填写下方的地址和坐标；如果您尚未输入名称，也会一并填写名称。';
 
   @override
   String get searchPlaceHintText => '例如：巴黎埃菲尔铁塔';
@@ -1602,7 +1602,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get locationModeCoordinates => '坐标';
 
   @override
-  String get locationModeMapLink => 'Google 地图链接';
+  String get locationModeGoogleMaps => 'Google 地图';
 
   @override
   String get linkPreviewOpensInMaps => '在 Google 地图中打开';
@@ -1615,6 +1615,58 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get linkPreviewMapMobileOnly => '地图预览在移动应用中可用';
+
+  @override
+  String get googleMapsSearchHelpTitle => '在 Google 地图中搜索';
+
+  @override
+  String get googleMapsSearchHelpMessage =>
+      'Ntripi 会先在 OpenStreetMap 中搜索。如果找不到该地点，请在 Google 地图中搜索。对于 Google 地点，Ntripi 只保存 Google 为其分配的标识符和您的搜索词，因此请自行输入站点名称。';
+
+  @override
+  String get placeSearchButton => '搜索';
+
+  @override
+  String get placeSearchNoResults => '在 OpenStreetMap 中未找到地点。';
+
+  @override
+  String get searchOnGoogleMaps => '在 Google 地图中搜索';
+
+  @override
+  String get googleMapsPlaceLabel => 'Google 地图地点';
+
+  @override
+  String googlePlaceSearchedAs(String query) {
+    return '搜索词：“$query”';
+  }
+
+  @override
+  String get googlePlaceChange => '更改';
+
+  @override
+  String get googlePlaceMissing => 'Google 已找不到此地点。请重新搜索。';
+
+  @override
+  String get googlePlaceSearchAgain => '重新搜索';
+
+  @override
+  String get mapLinkShortLinkHint => '短链接无法显示在行程地图上。请在上方搜索该地点，以便将其显示在地图上。';
+
+  @override
+  String get placeCreditOpenStreetMap => '地点数据 © OpenStreetMap 贡献者';
+
+  @override
+  String tripMapStopsNotShown(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '有 $count 个站点不在地图上',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tripMapEmpty => '地图上还没有站点';
 
   @override
   String get coordinatesHelp => '此停靠点的地图位置。点按“在地图上选择”以设置或调整。';
@@ -2464,6 +2516,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get apiErrorReportRateLimited => '举报次数过多。请稍后再试。';
+
+  @override
+  String get apiErrorPlaceSearchRateLimited =>
+      '您已用完本小时的 Google 搜索次数。请稍后再试，或粘贴 Google 地图链接。';
+
+  @override
+  String get apiErrorPlaceSearchUnavailable =>
+      'Google 搜索暂时不可用。您可以改为粘贴 Google 地图链接。';
 
   @override
   String get imageBlockedNsfw => '此图片似乎包含不允许的内容。';

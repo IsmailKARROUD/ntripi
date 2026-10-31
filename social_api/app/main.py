@@ -43,9 +43,10 @@ from app.middleware.language import LanguageCookieMiddleware
 from app.middleware.open_host import OpenHostMiddleware
 from app.middleware.request_timing import RequestTimingMiddleware, install_outbound_hooks
 from app.middleware.security_headers import SecurityHeadersMiddleware
+from app.middleware import is_embed_path
 from app.routers import (
-    admin, appeals, auth, bug_reports, devices, users, follows, internal,
-    itineraries, notifications, share, translations, web, waitlist, reports,
+    admin, appeals, auth, bug_reports, devices, embed, users, follows, internal,
+    itineraries, notifications, places, share, translations, web, waitlist, reports,
 )
 # Aliased: `help` is a builtin, and shadowing it inside main is a trap for the
 # next person who reaches for it in a debugger.
@@ -249,6 +250,8 @@ def _rate_limit_response(request: Request, exc: RateLimitExceeded) -> Response:
     # text; every other limited route keeps slowapi's JSON.
     if request.url.path.startswith("/share/"):
         return share.rate_limited_page(request, exc)
+    if is_embed_path(request.url.path):
+        return embed.rate_limited_page(request, exc)
     return _rate_limit_exceeded_handler(request, exc)
 
 
@@ -334,6 +337,8 @@ app.include_router(notifications.router)  # /notifications — in-app notificati
 app.include_router(devices.router)  # /devices — FCM push registration
 app.include_router(appeals.router)  # /appeals — user appeals against moderation
 app.include_router(translations.router)  # /translations — read content in your language
+app.include_router(places.router)   # /places — the stop form's Google place search
+app.include_router(embed.router)    # /embed — the page every Google map is drawn through
 app.include_router(admin.router)    # /admin — internal moderation dashboard (HTML)
 app.include_router(internal.router) # /internal/moderation-sweep — scheduler-triggered
 app.include_router(help_pages.router)  # /help — public documentation

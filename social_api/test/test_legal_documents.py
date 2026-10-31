@@ -73,6 +73,23 @@ class TestDocumentBodies:
         # Chinese sets the parentheses full-width, as for its other processors.
         assert name in body or name.replace(" (", "（").replace(")", "）") in body
 
+    @pytest.mark.parametrize("lang", SUPPORTED)
+    def test_privacy_names_google_maps_platform(self, lang):
+        # Place search goes to Google from our server and every Google map is
+        # loaded from Google by the device — a processor in every language.
+        body = get_privacy(lang)
+        assert "Google (Google Maps Platform)" in body or (
+            "Google（Google Maps Platform）" in body
+        )
+
+    @pytest.mark.parametrize("lang", SUPPORTED)
+    def test_tos_binds_users_to_googles_maps_terms(self, lang):
+        # Google's Places policies: the app's terms must incorporate Google's
+        # terms and privacy policy wherever its maps or place search are used.
+        body = get_tos(lang)
+        assert "https://www.google.com/help/terms_maps/" in body
+        assert "https://policies.google.com/privacy" in body
+
     def test_tos_keeps_the_ratings_retention_clause(self):
         # privacy.py and migration e493ea56a71b both cite the ToS as the
         # consent basis for keeping anonymised ratings. Dropping it would cut

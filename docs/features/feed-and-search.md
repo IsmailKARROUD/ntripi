@@ -68,10 +68,14 @@ our database.
 
 ### Place search
 
-Not a backend feature. `placeSearchProvider` / `mapPlaceSearchProvider` call
-`core/services/geocoding_service.dart` (OpenStreetMap / Nominatim), and results
-are localised to the app language. There is no Ntripi endpoint involved and no
-Google Maps SDK — see [constraints.md](../constraints.md#frontend).
+OpenStreetMap first, from the device: `placeSearchProvider` /
+`mapPlaceSearchProvider` call `core/services/geocoding_service.dart`
+(Nominatim) **when the user submits the search, never as they type**
+(Nominatim's policy), with results localised to the app language and biased
+toward the trip's own stops. Google Places is the stop form's fallback in its
+Google Maps segment, through the backend (`POST /places/google/autocomplete`).
+No Google Maps SDK — see [places-and-maps.md](places-and-maps.md) and
+[constraints.md](../constraints.md#frontend).
 
 ## Data model
 
@@ -153,4 +157,5 @@ page.
 - [saved-itineraries.md](saved-itineraries.md) · [sharing.md](sharing.md)
 - [etag-concurrency.md](etag-concurrency.md) — 304 on both
 - [translations.md](translations.md) — the title translation on each card
+- [places-and-maps.md](places-and-maps.md) — the place search: OSM on submit, Google as the fallback
 - [reference/data-model.md](../reference/data-model.md)

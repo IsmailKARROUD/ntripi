@@ -104,6 +104,9 @@ RELEASES: tuple[Release, ...] = (
             "**Organiser les étapes au même endroit.** En mode édition, **Organiser les étapes** (les quatre flèches) au-dessus des étapes transforme le voyage en rangées d’étapes. Faites glisser ou touchez une étape pour en faire l’alternative d’une autre piste, ou pour lui donner sa propre piste entre deux autres ; faites glisser le numéro d’une piste pour déplacer toute la piste. Rien ne change avant que vous touchiez **Enregistrer**, et les boutons séparés pour réorganiser et déplacer sur chaque étape ont disparu.",
             "**Le bouton Envoyer reste à portée de main.** En signalant un bug — et en signalant un contenu, en évaluant un voyage, en ajoutant un transit ou en contestant une décision — les boutons restent désormais en bas, au-dessus du clavier pendant la saisie, au lieu de sortir de l’écran. Le signalement d’un bug demande aussi d’abord ce qui ne va pas ; choisir une catégorie est facultatif.",
             "**Choisissez d’où part le trajet.** La flèche au-dessus des étapes demande maintenant d’où partir avant d’ouvrir Google Maps : **Depuis ma position**, pour l’itinéraire depuis l’endroit où vous êtes, ou **Depuis la première étape**, pour voir seulement le voyage.",
+            "**Trouvez un lieu que connaît Google Maps, sans quitter Ntripi.** Dans la position d’une étape, l’onglet **Google Maps** cherche d’abord dans OpenStreetMap, puis dans Google Maps ; d’un lieu Google, Ntripi ne garde que son identifiant, et c’est vous qui nommez l’étape. Une recherche part quand vous appuyez sur **Rechercher**. Coller un lien fonctionne toujours, et Ntripi ne l’ouvre plus.",
+            "**La carte du voyage, c’est son trajet.** La vue **Carte** montre désormais le trajet par les étapes affichées à l’écran, sur la carte de Google — lieux Google compris.",
+            "**Conditions et Politique de confidentialité mises à jour.** Elles couvrent désormais Google Maps, qui dessine une partie des cartes de Ntripi et sa recherche de lieux. Il vous sera demandé de les accepter une fois.",
         ),
     ),
     Release(
@@ -218,7 +221,7 @@ Les nouveaux voyages ne sont visibles que par **vous seul** tant que vous ne cha
                 body="""Appuyez sur **+** à l’intérieur du voyage pour ajouter une étape. Une étape contient :
 
 - **Nom et adresse** — comment s’appelle le lieu.
-- **Position** — choisissez un point sur la carte, ou collez un lien Google Maps et laissez Ntripi en extraire les coordonnées.
+- **Position** — cherchez le lieu (d’abord dans OpenStreetMap, puis dans Google Maps), choisissez un point sur la carte, ou collez un lien Google Maps.
 - **Type de lieu** — manger et boire, dormir, visites, nature, achats, etc. C’est ce qui dessine la bonne icône sur la carte et dans la liste.
 - **Coût** — approximativement ce que cela coûte par personne. Laissez vide ou marquez-le gratuit.
 - **Temps à prévoir** — combien de temps compter. C’est ce qui rend un plan réaliste plutôt qu’optimiste.
@@ -266,7 +269,7 @@ Voir [comment partager un voyage sans le rendre public](/help/share-an-itinerary
             "planification",
         ),
         related=("plan-alternative-options", "share-an-itinerary-privately", "getting-started"),
-        updated="2026-10-27",
+        updated="2026-10-31",
         cta="Planifiez votre propre itinéraire — comptez une dizaine de minutes.",
     ),
     Article(
@@ -490,19 +493,27 @@ Pour un avertissement qui doit être difficile à manquer plutôt que lu en pass
     ),
     Article(
         slug="add-locations-from-google-maps",
-        title="Comment ajouter un lieu depuis un lien Google Maps",
-        summary="Collez un lien Maps et Ntripi en extrait les coordonnées, ou placez vous-même le point sur la carte.",
+        title="Comment ajouter un lieu depuis Google Maps",
+        summary="Cherchez dans OpenStreetMap, puis dans Google Maps s’il ne trouve rien, ou collez un lien Maps. De Google, Ntripi ne garde que l’identifiant du lieu.",
         category="building",
         schema=SCHEMA_HOWTO,
-        intro="Une étape peut obtenir sa position de deux façons : choisir le point sur la carte de Ntripi, ou coller un lien Google Maps et laisser Ntripi en extraire les coordonnées. La seconde est en général plus rapide, parce que vous avez probablement déjà trouvé le lieu là-bas.",
+        intro="Une étape peut obtenir sa position de trois façons : la chercher — d’abord dans OpenStreetMap, puis dans Google Maps quand OpenStreetMap ne connaît pas le lieu —, coller un lien Google Maps, ou placer le point sur la carte de Ntripi. Chercher est souvent le plus rapide, sans quitter l’application pour copier un lien.",
         blocks=(
             Block(
-                anchor="paste-a-link",
-                heading="Coller un lien Google Maps",
+                anchor="search-google-maps",
+                heading="Chercher dans OpenStreetMap, puis dans Google Maps",
                 kind=KIND_STEP,
-                body="""Dans le champ de position de l’étape, basculez sur l’option lien et collez l’URL. Ntripi en extrait les coordonnées et conserve le lien, si bien que l’étape affiche un petit aperçu de carte et que vous pourrez ouvrir le lieu dans Maps plus tard.
+                body="""Dans la position de l’étape, ouvrez l’onglet **Google Maps**, saisissez le lieu et appuyez sur **Rechercher**. Ntripi cherche d’abord dans OpenStreetMap. Quand OpenStreetMap ne trouve rien, Ntripi interroge Google Maps de lui-même ; vous pouvez aussi toucher **Rechercher dans Google Maps** sous les résultats d’OpenStreetMap. Les suggestions de Google suivent alors votre saisie.
 
-L’URL longue du bureau comme le lien de partage court fonctionnent. Seules les adresses Google Maps sont acceptées — un lien vers autre chose est refusé plutôt que stocké et ignoré en silence.""",
+Choisissez une suggestion et le lieu apparaît sur la carte de Google. **Saisissez vous-même le nom de l’étape** : de Google, Ntripi ne garde que l’identifiant du lieu et les mots que vous avez cherchés — jamais le nom ni l’adresse de Google.""",
+            ),
+            Block(
+                anchor="paste-a-link",
+                heading="Ou collez un lien Google Maps",
+                kind=KIND_STEP,
+                body="""Collez l’URL dans le champ de lien sous la recherche. Ntripi garde le lien tel que vous l’avez collé et ne l’ouvre pas : saisissez donc vous-même le nom de l’étape.
+
+Un lien long copié depuis votre navigateur peut apparaître sur la carte du voyage. Un lien de partage court (maps.app.goo.gl) ne le peut pas — il ne dit pas de quel lieu il s’agit — et Ntripi vous propose plutôt de chercher le lieu. Seules les adresses Google Maps sont acceptées : un lien vers autre chose est refusé plutôt que stocké et ignoré en silence.""",
             ),
             Block(
                 anchor="pick-on-the-map",
@@ -523,17 +534,27 @@ Il demande l’autorisation de localisation la première fois. **Refuser ne bloq
             Block(
                 anchor="opening-in-maps",
                 heading="Ouvrir une étape, ou tout le voyage, dans votre application de cartes",
-                body="""Une étape qui a une position propose de s’ouvrir dans l’application de cartes que vous avez installée, pour obtenir l’itinéraire le jour même sans rien retaper.
+                body="""Une étape qui a une position propose de s’ouvrir dans l’application de cartes que vous avez installée, pour obtenir l’itinéraire le jour même sans rien retaper. Un lieu trouvé dans Google Maps, ou enregistré comme lien, s’ouvre dans Google Maps.
 
 La flèche au-dessus des étapes ouvre tout le voyage dans Google Maps, la seule application de cartes qui accepte plusieurs étapes à la fois, et demande d’où partir. **Depuis ma position** vous donne l’itinéraire depuis l’endroit où vous êtes, par les étapes du voyage — c’est Google Maps qui trouve où vous êtes, Ntripi ne demande donc jamais votre position. **Depuis la première étape** montre seulement le voyage, de sa première étape à la dernière. Là où le voyage propose des alternatives, le trajet passe par celle affichée à l’écran. Google Maps accepte jusqu’à 10 étapes depuis votre position et 11 depuis la première étape ; un voyage plus long s’ouvre avec ses premières étapes et la dernière, et Ntripi vous le signale.
 
-La carte de Ntripi sert à lire le plan ; votre application de cartes sert à le parcourir.""",
+La vue **Carte** d’un voyage montre ce même trajet sur la carte de Google, par les étapes affichées à l’écran. Une étape qu’elle ne peut pas placer — un lien court — est laissée de côté, et la carte indique combien.""",
+            ),
+            Block(
+                anchor="place-not-found",
+                heading="Quand Google ne trouve plus un lieu",
+                body="""Google retire parfois un lieu — il a fermé, déménagé ou été fusionné avec un autre. Ntripi vérifie chaque lieu Google environ une fois par an. Quand l’un d’eux a disparu, la personne qui modifie le voyage le voit sur l’étape, avec **Rechercher à nouveau** et les anciens mots de recherche prêts ; les lecteurs peuvent toujours chercher ces mots dans Google Maps.""",
             ),
         ),
         keywords=(
             "google maps",
+            "rechercher",
+            "trouver un lieu",
+            "saisie automatique",
+            "identifiant du lieu",
             "lien",
             "coller",
+            "lien court",
             "coordonnées",
             "gps",
             "point",
@@ -541,14 +562,14 @@ La carte de Ntripi sert à lire le plan ; votre application de cartes sert à le
             "sélecteur de carte",
             "latitude",
             "longitude",
-            "où",
             "itinéraire",
             "trajet",
             "navigation",
             "point de départ",
+            "introuvable",
         ),
         related=("add-places-to-an-itinerary", "permissions"),
-        updated="2026-10-29",
+        updated="2026-10-31",
         cta="Placez votre première étape sur la carte.",
     ),
     Article(
@@ -1441,9 +1462,9 @@ Changer votre mot de passe ou supprimer votre compte se trouve sur l’écran de
                 anchor="location",
                 heading="Localisation — pourquoi ?",
                 kind=KIND_FAQ,
-                body="""Pour centrer la carte sur votre position quand vous ajoutez une étape, afin de ne pas traverser un continent pour retrouver la ville où vous vous tenez.
+                body="""Pour centrer la carte sur votre position quand vous ajoutez une étape, afin de ne pas traverser un continent pour retrouver la ville où vous vous tenez. Et, tant qu’un voyage n’a encore aucune étape avec une position, pour montrer d’abord les résultats proches de vous dans une recherche de lieu : seule votre position approximative (arrondie à environ 10 km) accompagne alors la recherche, et elle n’est jamais conservée.
 
-Elle est demandée la première fois que vous utilisez le bouton de localisation de la carte, et **uniquement pendant que vous utilisez l’application** — pas de position en arrière-plan, pas de pistage. La refuser ne bloque rien : la carte s’ouvre ailleurs et vous vous déplacez jusqu’à votre point.""",
+Elle est demandée la première fois que vous ajoutez ou modifiez une étape, et **uniquement pendant que vous utilisez l’application** — pas de position en arrière-plan, pas de pistage. La refuser ne bloque rien : la carte s’ouvre ailleurs et vous vous déplacez jusqu’à votre point.""",
             ),
             Block(
                 anchor="notifications",
@@ -1508,7 +1529,7 @@ Cela compte surtout pour les notifications, qu’iOS ne redemandera pas : une fo
             "refuser",
         ),
         related=("your-data-and-privacy", "notifications", "add-locations-from-google-maps"),
-        updated="2026-09-01",
+        updated="2026-10-31",
         cta="Voyez exactement ce que l’application demande — et ne demande pas.",
     ),
     Article(
@@ -1525,6 +1546,7 @@ Cela compte surtout pour les notifications, qu’iOS ne redemandera pas : une fo
                 kind=KIND_FAQ,
                 body="""- **Votre compte** — nom affiché, nom d’utilisateur, adresse e-mail et date de naissance (jamais montrée à personne).
 - **Ce que vous créez** — voyages, étapes, notes, évaluations et toutes les images que vous envoyez.
+- **Un lieu trouvé dans Google Maps** — seulement l’identifiant que Google lui attribue et les mots que vous avez cherchés, jamais le nom ni l’adresse de Google.
 - **Vos liens** — qui vous suivez, qui vous suit, qui vous avez bloqué.
 - **Données de session** — de quoi vous garder connecté, et un jeton d’appareil si vous avez activé les notifications push.
 
@@ -1584,7 +1606,7 @@ La même adresse couvre les demandes de rectification, de limitation et d’oppo
             "permissions", "sign-in-and-account-security",
             "share-an-itinerary-privately", "read-trips-in-another-language",
         ),
-        updated="2026-10-07",
+        updated="2026-10-31",
     ),
     Article(
         slug="sign-in-and-account-security",

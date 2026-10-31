@@ -445,6 +445,27 @@ def test_a_stops_three_text_fields_are_one_provider_call(client, owner, provider
     assert all(word in provider.calls[0] for word in ("Grote", "Brussels", "early"))
 
 
+def test_a_google_places_search_text_is_moderated_with_the_stop(client, owner, provider):
+    """The search text is the user's own typing and readers can reach it (it is
+    the fallback query of Open in Google Maps), so it is scanned like a name."""
+    itinerary = _create_itinerary(client, owner["access_token"])
+    etag = _etag(client, itinerary["id"], owner["access_token"])
+    provider.calls.clear()
+
+    response = client.post(
+        f"/itineraries/{itinerary['id']}/stops",
+        json={"place_name": "Lunch", "place_source": "google",
+              "google_place_id": "ChIJLU7jZClu5kcR4PcOOO6p3I0",
+              "google_place_query": "chez marcel montmartre"},
+        headers=locked_headers(client, itinerary["id"],
+                               auth_headers(owner["access_token"]), etag),
+    )
+
+    assert response.status_code == 201, response.text
+    assert len(provider.calls) == 1
+    assert "montmartre" in provider.calls[0]
+
+
 def test_rejected_stop_text_blocks_the_stop(client, owner, provider):
     itinerary = _create_itinerary(client, owner["access_token"])
     etag = _etag(client, itinerary["id"], owner["access_token"])

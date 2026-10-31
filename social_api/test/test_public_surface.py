@@ -49,6 +49,7 @@ MACHINE = "machine-file"       # robots, sitemap, llms, app association files
 HEALTH = "health"
 ANONYMOUS_WRITE = "anonymous-write"  # takes input, returns an acknowledgement
 INTERNAL = "internal"          # bearer-token maintenance; 404 without its token
+MAP_EMBED = "map-embed"        # a Google map frame built from its own query only
 
 PUBLIC_ROUTES = {
     ("GET", "/share/i/{itinerary_id}"): TEASER,
@@ -90,6 +91,10 @@ PUBLIC_ROUTES = {
     ("POST", "/bug-reports"): ANONYMOUS_WRITE,
     ("POST", "/waitlist/join"): ANONYMOUS_WRITE,
     ("POST", "/internal/moderation-sweep"): INTERNAL,
+    ("GET", "/embed/place"): MAP_EMBED,
+    ("GET", "/embed/point"): MAP_EMBED,
+    ("GET", "/embed/search"): MAP_EMBED,
+    ("GET", "/embed/directions"): MAP_EMBED,
 }
 
 # Static mounts. /uploads serves stored images by key — which is why step 2 of

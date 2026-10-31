@@ -17,8 +17,8 @@ for one.
 
 | Document | Version | Date |
 |---|---|---|
-| Terms of Service | **3.1** | 2026-08-08 |
-| Privacy Policy | **2.4** | 2026-10-25 |
+| Terms of Service | **3.2** | 2026-10-31 |
+| Privacy Policy | **2.5** | 2026-10-31 |
 | Community Guidelines | **1.1** | 2026-08-06 |
 
 - **Bodies live in `app/constants/legal/<lang>.py`, one module per *language*
@@ -66,6 +66,22 @@ for one.
 
 ### Acceptance
 
+- **Google Maps Platform (Terms 3.2, Privacy 2.5, 2026-10-31).** Google's
+  Places policies require an app's terms and privacy policy to incorporate
+  Google's, so ToS §12 names the Google Maps/Google Earth Additional Terms of
+  Service and the Google Privacy Policy by URL (and its service list now names
+  maps and place search, push notifications and translation — the last two
+  were missing). Privacy §2 says the device's position, rounded to about 10 km,
+  ranks a trip's first place search and is never stored, and that a Google
+  place keeps only its ID and the user's search words; §4 adds those words to
+  the moderated text; §5 names "Google (Google Maps Platform)" and says what
+  Nominatim receives; §9 the cookies Google may set in its map frames; §10 how
+  long the ID and the words are kept. The two sentences the feature made false
+  — "does not track your device's location" alone, and "we do not store your
+  raw search queries" — are rewritten in all six languages.
+  `test_privacy_names_google_maps_platform` and
+  `test_tos_binds_users_to_googles_maps_terms` hold every language to it. See
+  [places-and-maps.md](places-and-maps.md).
 - **`TOS_VERSION` is written verbatim into `users.tos_accepted_version` at
   signup, on both paths.** Bumping it is what makes "which document did this
   person agree to" answerable. **Rows are never backfilled.**
@@ -208,10 +224,6 @@ New error codes: `tos_required`, `underage`, `dob_required`.
 - **The six-language translations still need counsel review**, and English is
   authoritative in the meantime — the 2.3 translation paragraphs and the 2.4
   image-moderation paragraphs included.
-- **ToS §12's list of service categories names neither push notifications nor
-  translation.** It defers to the Privacy Policy for the list, and changing ToS
-  text needs a `TOS_VERSION` bump, which sends every user through the
-  re-acceptance gate — so it waits for the next ToS change that needs one.
 - **App Store privacy label and Play Data safety must name Microsoft** before
   translation is switched on.
 - Tests: `test_legal_documents.py`, `test_tos_acceptance.py`, `test_age_gate.py`,
@@ -228,6 +240,7 @@ New error codes: `tos_required`, `underage`, `dob_required`.
 - [reference/error-codes.md](../reference/error-codes.md#registration-tos-and-age-gate)
 - [translations.md](translations.md) — the two engines Privacy §4 and §5 disclose
 - [image-moderation.md](image-moderation.md) — the two image scanners Privacy §4 and §5 disclose
+- [places-and-maps.md](places-and-maps.md) — Terms 3.2 and Privacy 2.5 name Google Maps Platform
 
 ## OPEN QUESTIONS
 

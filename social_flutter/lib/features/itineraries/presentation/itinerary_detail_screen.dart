@@ -40,11 +40,9 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:ntripi/core/api/api_endpoints.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/cache/image_cache.dart';
 import 'package:ntripi/core/providers/long_press_hint_provider.dart';
@@ -55,12 +53,16 @@ import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/confirm_dialog.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
 import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
+import 'package:ntripi/features/itineraries/data/google_embed_urls.dart';
 import 'package:ntripi/features/itineraries/data/maps_launcher_service.dart';
+import 'package:ntripi/features/itineraries/domain/map_point.dart';
+import 'package:ntripi/features/itineraries/domain/trip_route.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/google_map_embed.dart';
+import 'package:ntripi/features/itineraries/providers/places_providers.dart';
 import 'package:ntripi/features/itineraries/domain/annotation.dart';
 import 'package:ntripi/features/itineraries/domain/edit_lock.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary.dart';
 import 'package:ntripi/features/itineraries/providers/saved_itineraries_provider.dart';
-import 'package:ntripi/features/itineraries/domain/track.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary_annotation.dart';
 import 'package:ntripi/features/itineraries/domain/transit_segment.dart';
 import 'package:ntripi/features/itineraries/domain/trip_arrangement.dart';
@@ -205,13 +207,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     if (ref.read(editLockProvider(widget.itineraryId)).holdsClaim) return;
     await ref.read(editLockProvider(widget.itineraryId).notifier).peek();
   }
-
-  // Fallback for untyped stops only — a typed stop's marker wears its place color.
-  static Map<StopType, Color> _markerColors(NtripiColors nt) => {
-        StopType.origin: nt.forest,
-        StopType.waypoint: nt.canopy,
-        StopType.arrival: nt.ratingRed,
-      };
 
   /// Enter edit mode — which means claiming the server-side edit lock first.
   ///
@@ -695,22 +690,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     }
   }
 
-  // One point per track: stops within a track are parallel ALTERNATIVES, so
-  // the route takes the user's active selection (fallback: first stop).
-  List<LatLng> _routePoints(List<Track> tracks) {
-    final points = <LatLng>[];
-    for (final track in tracks) {
-      if (track.stops.isEmpty) continue;
-      final idx = (_activeParallelByTrack[track.id] ?? 0)
-          .clamp(0, track.stops.length - 1);
-      final stop = track.stops[idx];
-      if (stop.lat != null && stop.lng != null) {
-        points.add(LatLng(stop.lat!, stop.lng!));
-      }
-    }
-    return points;
-  }
-
   Future<void> _toggleSaved(Itinerary itinerary) async {
     final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
@@ -732,7 +711,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     }
   }
 
-  Future<void> _openRouteInGoogleMaps(List<LatLng> points) async {
+  Future<void> _openRouteInGoogleMaps(List<MapPoint> points) async {
     final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
     final start = await showRouteStartSheet(context);
@@ -971,17 +950,13 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                   final segmentByToStop = {
                     for (final seg in itinerary.segments) seg.toStopId: seg,
                   };
-                  final mappableStops = allStops
-                      .where((s) => s.lat != null && s.lng != null)
-                      .toList();
-                  final polylinePoints =
-                      mappableStops.map((s) => LatLng(s.lat!, s.lng!)).toList();
-                  final mapCenter = mappableStops.isNotEmpty
-                      ? LatLng(
-                          mappableStops.first.lat!, mappableStops.first.lng!)
-                      : const LatLng(48.8566, 2.3522);
-                  // Not mappableStops — that flattens parallel alternatives.
-                  final routePoints = _routePoints(tracks);
+                  // One point per track — the alternative on screen — for both
+                  // the route link and the route map, so they draw one trip.
+                  final route = tripRoute(tracks, _activeParallelByTrack);
+                  final routePoints = route.points;
+                  final mapsOn =
+                      ref.watch(placesConfigProvider).value?.googleMaps ??
+                          false;
 
                   // Build interleaved list from tracks (server already sorted by rank).
                   List<Widget> buildInterleavedList() {
@@ -1642,8 +1617,10 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                 ],
-                                // List/Map pill toggle
-                                if (arrangement == null)
+                                // List/Map pill toggle — the map is Google's,
+                                // so it is there only while the server can draw
+                                // one.
+                                if (arrangement == null && mapsOn)
                                   _SegmentToggle(
                                     showMap: _mapVisible,
                                     onChanged: (showMap) =>
@@ -1655,83 +1632,15 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                         ),
 
                         // ── Map ────────────────────────────────────────────
-                        if (_mapVisible && arrangement == null)
+                        // Google's route through the stops on screen: the only
+                        // map a Google place can be drawn on (never on OSM).
+                        if (_mapVisible && arrangement == null && mapsOn)
                           SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(NtripiRadius.card),
-                                child: SizedBox(
-                                  height: 200,
-                                  child: Stack(
-                                    children: [
-                                      FlutterMap(
-                                        options: MapOptions(
-                                          initialCenter: mapCenter,
-                                          initialZoom:
-                                              mappableStops.isNotEmpty ? 12 : 5,
-                                        ),
-                                        children: [
-                                          TileLayer(
-                                            urlTemplate:
-                                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                            userAgentPackageName:
-                                                'com.ntripi.app',
-                                          ),
-                                          if (polylinePoints.length >= 2)
-                                            PolylineLayer(
-                                              polylines: [
-                                                Polyline(
-                                                  points: polylinePoints,
-                                                  color: nt.canopy.withValues(
-                                                      alpha: 0.6),
-                                                  strokeWidth: 3,
-                                                ),
-                                              ],
-                                            ),
-                                          MarkerLayer(
-                                            markers: mappableStops.map((stop) {
-                                              final type = stop.placeType;
-                                              final color = type?.color(nt) ??
-                                                  _markerColors(nt)[
-                                                      stop.type] ??
-                                                  nt.text2;
-                                              return Marker(
-                                                point: LatLng(
-                                                    stop.lat!, stop.lng!),
-                                                child: Container(
-                                                  padding:
-                                                      const EdgeInsets.all(4),
-                                                  decoration: BoxDecoration(
-                                                    color: color,
-                                                    shape: BoxShape.circle,
-                                                    border: Border.all(
-                                                        color: nt.overlayChrome,
-                                                        width: 2),
-                                                  ),
-                                                  child: Icon(
-                                                      type?.icon ?? Icons.place,
-                                                      // Same rule as StopCard's badge: surface contrasts with both place palettes.
-                                                      color: type == null
-                                                          ? nt.overlayChrome
-                                                          : nt.surface,
-                                                      size: 12),
-                                                ),
-                                              );
-                                            }).toList(),
-                                          ),
-                                          RichAttributionWidget(
-                                            attributions: [
-                                              TextSourceAttribution(l10n
-                                                  .openStreetMapContributors),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
+                            child: _TripRouteMap(
+                              route: route,
+                              onOpenRoute: routePoints.length >= 2
+                                  ? () => _openRouteInGoogleMaps(routePoints)
+                                  : null,
                             ),
                           ),
 
@@ -2869,4 +2778,68 @@ class _InertWhileArranging extends StatelessWidget {
           sliver: SliverMainAxisGroup(slivers: slivers),
         ),
       );
+}
+
+
+/// The trip page's Map view: Google's directions through one point per track
+/// (Maps Embed, free), or the place itself when there is only one. Display
+/// only — a tap opens the route sheet, as the route button does. Stops nothing
+/// locates (a short link, a place Google lost) are left out and counted.
+class _TripRouteMap extends StatelessWidget {
+  final TripRoute route;
+  final VoidCallback? onOpenRoute;
+
+  const _TripRouteMap({required this.route, required this.onOpenRoute});
+
+  @override
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    final l10n = AppLocalizations.of(context)!;
+    final language = GoogleEmbed.languageOf(context);
+    final points = route.points;
+    // Origin + 20 waypoints + destination; past it, the start of the trip and
+    // its destination, as the route link keeps them.
+    final shown = points.length > GoogleEmbed.maxRoutePoints
+        ? [...points.take(GoogleEmbed.maxRoutePoints - 1), points.last]
+        : points;
+    final Uri? url = switch (shown.length) {
+      0 => null,
+      1 => GoogleEmbed.point(shown.single, language),
+      _ => GoogleEmbed.directions(shown, language),
+    };
+    final notes = [
+      if (points.length > shown.length)
+        l10n.routeTruncated(GoogleEmbed.maxRoutePoints),
+      if (route.unmapped > 0) l10n.tripMapStopsNotShown(route.unmapped),
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(NtripiRadius.card),
+            child: url == null
+                ? Container(
+                    height: 120,
+                    color: nt.mist,
+                    alignment: Alignment.center,
+                    child: Text(l10n.tripMapEmpty,
+                        style: TextStyle(fontSize: 13, color: nt.text2)),
+                  )
+                : GestureDetector(
+                    onTap: onOpenRoute,
+                    child: GoogleMapEmbed(url: url, height: 200),
+                  ),
+          ),
+          for (final note in notes)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
+              child: Text(note,
+                  style: TextStyle(fontSize: 12, color: nt.text2)),
+            ),
+        ],
+      ),
+    );
+  }
 }

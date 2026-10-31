@@ -28,7 +28,11 @@ APP_RADII = (
 
 # Every template that starts a document. Each includes the partial, or its
 # var(--radius-*) resolve to nothing and every corner on the page goes square.
-LAYOUTS = {"_base.html", "_share_layout.html", "home.html", "admin/_base.html"}
+LAYOUTS = {
+    "_base.html", "_share_layout.html", "home.html", "admin/_base.html",
+    # The Google map frame: no corners of its own, but a page all the same.
+    "embed.html",
+}
 
 # Not chrome, so not on the scale: the homepage's phone mockup is a small
 # drawing of the app at its own size, and inline code is a text style.

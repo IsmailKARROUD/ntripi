@@ -22,6 +22,7 @@ import 'package:ntripi/features/feed/providers/feed_providers.dart';
 import 'package:ntripi/features/follows/providers/follow_provider.dart';
 import 'package:ntripi/features/itineraries/providers/edit_lock_provider.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
+import 'package:ntripi/features/itineraries/providers/places_providers.dart';
 import 'package:ntripi/features/itineraries/providers/saved_itineraries_provider.dart';
 import 'package:ntripi/features/notifications/providers/notification_provider.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
@@ -75,6 +76,8 @@ final List<ProviderOrFamily> _userScopedProviders = [
   // A translation is of something this account was allowed to read.
   translationConfigProvider,
   contentTranslationProvider,
+  // Read with this account's session, like the translation config.
+  placesConfigProvider,
 ];
 
 void _resetUserScopedState(Ref ref) {

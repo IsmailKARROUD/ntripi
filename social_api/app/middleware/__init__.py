@@ -14,3 +14,13 @@ def is_static_path(path: str) -> bool:
     /appeal/{token} and /appeals/*, stripping their security headers.
     """
     return any(path == p or path.startswith(p + "/") for p in STATIC_PREFIXES)
+
+
+# The Google map pages (routers/embed.py): the only paths our own pages may
+# frame. Everything else answers X-Frame-Options: DENY.
+EMBED_PREFIX = "/embed"
+
+
+def is_embed_path(path: str) -> bool:
+    """True for /embed and below — on a segment boundary, so /embedded is not."""
+    return path == EMBED_PREFIX or path.startswith(EMBED_PREFIX + "/")

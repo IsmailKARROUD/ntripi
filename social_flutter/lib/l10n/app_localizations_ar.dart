@@ -1674,7 +1674,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get searchAPlaceHelpMessage =>
-      'اكتب اسم مكان أو مطعم أو معلم. اختر نتيجة لملء اسم المكان والعنوان والإحداثيات أدناه تلقائيًا.';
+      'اكتب اسم مكان أو مطعم أو معلم، ثم اضغط بحث. اختر نتيجة لملء العنوان والإحداثيات أدناه — والاسم أيضًا إن لم تكن قد كتبته.';
 
   @override
   String get searchPlaceHintText => 'مثال: برج إيفل، باريس';
@@ -1716,7 +1716,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get locationModeCoordinates => 'الإحداثيات';
 
   @override
-  String get locationModeMapLink => 'رابط خرائط Google';
+  String get locationModeGoogleMaps => 'خرائط Google';
 
   @override
   String get linkPreviewOpensInMaps => 'يفتح في خرائط Google';
@@ -1730,6 +1730,66 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get linkPreviewMapMobileOnly =>
       'معاينة الخريطة متوفّرة في تطبيق الجوال';
+
+  @override
+  String get googleMapsSearchHelpTitle => 'البحث في خرائط Google';
+
+  @override
+  String get googleMapsSearchHelpMessage =>
+      'تبحث Ntripi في OpenStreetMap أولًا. وإن لم يكن المكان موجودًا فيه، فابحث في خرائط Google. ولا تحفظ Ntripi من مكان Google إلا مُعرّفه لدى Google وكلمات بحثك، لذا اكتب اسم المحطة بنفسك.';
+
+  @override
+  String get placeSearchButton => 'بحث';
+
+  @override
+  String get placeSearchNoResults => 'لم يُعثر على أماكن في OpenStreetMap.';
+
+  @override
+  String get searchOnGoogleMaps => 'البحث في خرائط Google';
+
+  @override
+  String get googleMapsPlaceLabel => 'مكان من خرائط Google';
+
+  @override
+  String googlePlaceSearchedAs(String query) {
+    return 'بُحث عن: «$query»';
+  }
+
+  @override
+  String get googlePlaceChange => 'تغيير';
+
+  @override
+  String get googlePlaceMissing =>
+      'لم تعد Google تعثر على هذا المكان. ابحث عنه مجددًا.';
+
+  @override
+  String get googlePlaceSearchAgain => 'البحث مجددًا';
+
+  @override
+  String get mapLinkShortLinkHint =>
+      'لا يمكن أن يظهر الرابط المختصر على خريطة المسار. ابحث عن المكان أعلاه لإظهاره عليها.';
+
+  @override
+  String get placeCreditOpenStreetMap =>
+      'بيانات المكان © المساهمون في OpenStreetMap';
+
+  @override
+  String tripMapStopsNotShown(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count محطة ليست على الخريطة',
+      many: '$count محطة ليست على الخريطة',
+      few: '$count محطات ليست على الخريطة',
+      two: 'محطتان ليستا على الخريطة',
+      one: 'محطة واحدة ليست على الخريطة',
+      zero: 'لا توجد محطات خارج الخريطة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tripMapEmpty => 'لا توجد محطات على الخريطة بعد';
 
   @override
   String get coordinatesHelp =>
@@ -2640,6 +2700,14 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get apiErrorReportRateLimited =>
       'عدد كبير جدًا من البلاغات. يُرجى المحاولة لاحقًا.';
+
+  @override
+  String get apiErrorPlaceSearchRateLimited =>
+      'لقد استنفدت عمليات البحث في Google لهذه الساعة. حاوِل لاحقًا، أو الصق رابط خرائط Google.';
+
+  @override
+  String get apiErrorPlaceSearchUnavailable =>
+      'البحث في Google غير متاح حاليًا. يمكنك لصق رابط خرائط Google بدلًا من ذلك.';
 
   @override
   String get imageBlockedNsfw =>

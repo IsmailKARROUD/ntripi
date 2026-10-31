@@ -92,9 +92,11 @@ Wenn Sie ein Problem aus der App heraus melden, senden Sie uns eine Aufnahme des
 
 12. DIENSTE DRITTER UND QUELLENANGABEN
 
-Ntripi nutzt für den Betrieb Dienste anderer Unternehmen: Hosting und Bildauslieferung, Adresssuche, Anmeldung, automatische Inhaltsmoderation und Fehlerverfolgung. Sie sind in unserer Datenschutzerklärung aufgeführt, jeweils mit dem, was sie erhalten.
+Ntripi nutzt für den Betrieb Dienste anderer Unternehmen: Hosting und Bildauslieferung, Adresssuche, Karten und Ortssuche, Anmeldung, Push-Benachrichtigungen, automatische Inhaltsmoderation, Übersetzung und Fehlerverfolgung. Sie sind in unserer Datenschutzerklärung aufgeführt, jeweils mit dem, was sie erhalten.
 
-Kartendaten und Geokodierung stammen von OpenStreetMap und werden unter der Open Database Licence (ODbL) genutzt. Das Kartenmaterial wird von den Kachelservern der OpenStreetMap Foundation ausgeliefert.
+Die Adresssuche und die Karten, die Ntripi selbst zeichnet, nutzen Daten von OpenStreetMap unter der Open Database Licence (ODbL); ihr Kartenmaterial wird von den Kachelservern der OpenStreetMap Foundation ausgeliefert.
+
+Einige Karten in Ntripi sowie die Ortssuche über Google Maps werden von Google bereitgestellt. Ihre Nutzung unterliegt den Zusätzlichen Nutzungsbedingungen für Google Maps/Google Earth (https://www.google.com/help/terms_maps/) und der Datenschutzerklärung von Google (https://policies.google.com/privacy).
 
 Die Anmeldung mit Google unterliegt zusätzlich zu unseren Bedingungen den eigenen Bedingungen und der Datenschutzerklärung von Google.
 
@@ -170,7 +172,9 @@ Ihr Geburtsdatum: Wir fragen es einmalig bei der Kontoerstellung ab, um zu prüf
 
 Von Ihnen erstellte Inhalte: Reiserouten, Stationsnamen, Adressen, Notizen, Anmerkungen, Verkehrsangaben, Bewertungen und Rezensionen sowie hochgeladene Fotos.
 
-Von Ihnen eingegebene Standorte: die Koordinaten der Stationen, die Sie hinzufügen. Ntripi verfolgt den Standort Ihres Geräts nicht; eine Koordinate wird nur gespeichert, weil Sie einen Ort gesucht, auf der Karte ausgewählt oder eingetippt haben.
+Von Ihnen eingegebene Standorte: die Koordinaten der Stationen, die Sie hinzufügen. Ntripi verfolgt den Standort Ihres Geräts nicht; eine Koordinate wird nur gespeichert, weil Sie einen Ort gesucht, auf der Karte ausgewählt oder eingetippt haben. Wenn Sie in einer Reiseroute, die noch keine Station mit Koordinaten hat, nach einem Ort suchen, wird der ungefähre Standort Ihres Geräts (auf etwa 10 km gerundet) mit dieser Suche gesendet, damit Ergebnisse in der Nähe zuerst erscheinen; er wird nicht gespeichert.
+
+Google-Orte: Wenn Sie einen über Google Maps gefundenen Ort auswählen, speichern wir nur die Kennung, die Google diesem Ort gibt, und die Suchwörter, die Sie eingegeben haben — niemals den Namen, die Adresse oder andere Angaben, die Google zurückgibt. Die Suchwörter werden mit der Station gespeichert, wo jeder sie sehen kann, der die Station sehen kann, und dienen dazu, den Ort in Google Maps wiederzufinden, falls die Kennung einmal nicht mehr funktioniert.
 
 Technische Daten: Ihre IP-Adresse zum Zeitpunkt einer Anfrage sowie Geräte- und App-Angaben, wenn Sie einen Fehlerbericht senden.
 
@@ -194,7 +198,7 @@ Um Probleme zu beheben, die Sie uns melden.
 
 Von Ihnen veröffentlichte Inhalte werden automatisch geprüft, bevor sie sichtbar werden, mithilfe von Diensten anderer Unternehmen.
 
-Text — Titel und Beschreibungen von Reiserouten, Stationsnamen, Adressen und Notizen, Anmerkungen, Verkehrsangaben, Rezensionstexte, Ihr Anzeigename und Ihre Biografie sowie der bei der Registrierung gewählte Benutzer- und Anzeigename — wird an den Moderationsdienst von OpenAI gesendet. Die Anfrage enthält den Text und den Namen des Modells und sonst nichts: keine Kontokennung, keine E-Mail-Adresse, keine Inhaltskennung. OpenAI kann nicht erkennen, von wem der Text stammt.
+Text — Titel und Beschreibungen von Reiserouten, Stationsnamen, Adressen und Notizen, die mit einem Google-Ort gespeicherten Suchwörter, Anmerkungen, Verkehrsangaben, Rezensionstexte, Ihr Anzeigename und Ihre Biografie sowie der bei der Registrierung gewählte Benutzer- und Anzeigename — wird an den Moderationsdienst von OpenAI gesendet. Die Anfrage enthält den Text und den Namen des Modells und sonst nichts: keine Kontokennung, keine E-Mail-Adresse, keine Inhaltskennung. OpenAI kann nicht erkennen, von wem der Text stammt.
 
 Fotos werden an einen Dienst zur Bildmoderation gesendet, um sie auf explizite und gewalttätige Darstellungen zu prüfen: an den Dienst Rekognition von Amazon Web Services oder an Google Cloud Vision, das sie in der Europäischen Union prüft. Übermittelt wird nur das Bild. Google Cloud Vision verarbeitet das Bild im Arbeitsspeicher, ohne es auf einen Datenträger zu schreiben, und Google verwendet es nicht, um Cloud Vision zu trainieren oder zu verbessern.
 
@@ -231,7 +235,9 @@ Google (Cloud Vision) — Bildmoderation, wie oben beschrieben.
 
 Google — Anmeldung, sofern Sie sie nutzen. Google erfährt, dass Sie sich bei Ntripi angemeldet haben.
 
-OpenStreetMap / Nominatim — Adresssuche. Der Ortstext, den Sie beim Hinzufügen einer Station eingeben, wird an Nominatim gesendet, und Ihr Gerät fordert Kartenkacheln von OpenStreetMap an, solange eine Karte angezeigt wird. Ihre Suchanfragen speichern wir nicht im Original.
+Google (Google Maps Platform) — Ortssuche und Karten. Wenn Sie die App in Google Maps suchen lassen, werden Ihre Suchwörter, die Sprache der App und ein ungefährer Standort zur Sortierung der Ergebnisse — die Koordinaten einer Station, die bereits in der Reiseroute ist, oder der auf etwa 10 km gerundete Standort Ihres Geräts, wenn die Reiseroute keine hat — von unserem Server an Google gesendet, ohne jede Kontokennung. Die Karten einer Station und des Wegs einer Reiseroute sind Google-Maps-Rahmen, die Ihr Gerät von Google lädt; Google erhält daher die IP-Adresse Ihres Geräts und den angezeigten Ort oder Weg.
+
+OpenStreetMap / Nominatim — Adresssuche. Der Ortstext, den Sie beim Hinzufügen einer Station eingeben, wird von Ihrem Gerät an Nominatim gesendet, zusammen mit einem Bereich, in dem zuerst gesucht wird: um eine Station, die bereits in der Reiseroute ist, oder um den ungefähren Standort Ihres Geräts, wenn die Reiseroute keine hat. Ihr Gerät fordert Kartenkacheln von OpenStreetMap an, solange eine von Ntripis eigenen Karten angezeigt wird. Was Sie suchen, speichern wir nicht — außer den Suchwörtern, die Sie für einen über Google Maps ausgewählten Ort eingegeben haben (siehe Abschnitt 2).
 
 Have I Been Pwned — bei der Wahl eines Passworts prüfen wir, ob es in bekannten Leak-Daten vorkommt. Die Prüfung sendet die ersten fünf Zeichen eines Hashes Ihres Passworts und sonst nichts; Ihr Passwort verlässt unseren Server nie.
 
@@ -271,6 +277,8 @@ Die Website-Seiten setzen ein einziges Präferenz-Cookie (ntripi_lang), um Ihre 
 
 Melden Sie sich mit Google an, kann Google im Rahmen seines Anmeldedienstes eigene Cookies setzen; diese unterliegen der Datenschutzerklärung von Google.
 
+Die Karten von Stationen und Wegen sind Google-Maps-Rahmen; Google kann darin eigene Cookies setzen, die der Datenschutzerklärung von Google unterliegen.
+
 Wir verwenden weder Analyse- noch Werbe-Cookies noch Tracking-Skripte Dritter.
 
 
@@ -291,6 +299,8 @@ Benachrichtigungen in der App werden 90 Tage nach dem Lesen gelöscht. Ungelesen
 Fehlerberichte und ihre Aufnahmen werden gelöscht, sobald der Bericht geschlossen und ausgelaufen ist.
 
 Übersetzungen werden gelöscht, wenn der übersetzte Text geändert oder gelöscht wird.
+
+Die Google-Kennung eines von Ihnen ausgewählten Orts und die damit gespeicherten Suchwörter bleiben erhalten, solange die Station besteht, und werden mit ihr gelöscht.
 
 
 11. IHRE RECHTE

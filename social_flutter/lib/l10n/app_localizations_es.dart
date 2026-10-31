@@ -1648,7 +1648,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get searchAPlaceHelpMessage =>
-      'Escribe el nombre de un lugar, restaurante o monumento. Elige un resultado para autocompletar el nombre del lugar, la dirección y las coordenadas de abajo.';
+      'Escribe el nombre de un lugar, restaurante o monumento y pulsa Buscar. Elige un resultado para completar la dirección y las coordenadas de abajo — y el nombre, si no lo has escrito.';
 
   @override
   String get searchPlaceHintText => 'p. ej. Torre Eiffel, París';
@@ -1692,7 +1692,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get locationModeCoordinates => 'Coordenadas';
 
   @override
-  String get locationModeMapLink => 'Enlace de Google Maps';
+  String get locationModeGoogleMaps => 'Google Maps';
 
   @override
   String get linkPreviewOpensInMaps => 'Se abre en Google Maps';
@@ -1706,6 +1706,63 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get linkPreviewMapMobileOnly =>
       'Vista previa del mapa disponible en la app móvil';
+
+  @override
+  String get googleMapsSearchHelpTitle => 'Buscar en Google Maps';
+
+  @override
+  String get googleMapsSearchHelpMessage =>
+      'Ntripi busca primero en OpenStreetMap. Si el lugar no está, busca en Google Maps. De un lugar de Google, Ntripi guarda solo su identificador de Google y tus palabras de búsqueda, así que escribe tú el nombre de la parada.';
+
+  @override
+  String get placeSearchButton => 'Buscar';
+
+  @override
+  String get placeSearchNoResults =>
+      'No se encontraron lugares en OpenStreetMap.';
+
+  @override
+  String get searchOnGoogleMaps => 'Buscar en Google Maps';
+
+  @override
+  String get googleMapsPlaceLabel => 'Lugar de Google Maps';
+
+  @override
+  String googlePlaceSearchedAs(String query) {
+    return 'Buscado: «$query»';
+  }
+
+  @override
+  String get googlePlaceChange => 'Cambiar';
+
+  @override
+  String get googlePlaceMissing =>
+      'Google ya no encuentra este lugar. Vuelve a buscarlo.';
+
+  @override
+  String get googlePlaceSearchAgain => 'Buscar de nuevo';
+
+  @override
+  String get mapLinkShortLinkHint =>
+      'Un enlace corto no puede aparecer en el mapa del itinerario. Busca el lugar arriba para ponerlo en él.';
+
+  @override
+  String get placeCreditOpenStreetMap =>
+      'Datos del lugar © colaboradores de OpenStreetMap';
+
+  @override
+  String tripMapStopsNotShown(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count paradas no están en el mapa',
+      one: '1 parada no está en el mapa',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tripMapEmpty => 'Aún no hay paradas en el mapa';
 
   @override
   String get coordinatesHelp =>
@@ -2622,6 +2679,14 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get apiErrorReportRateLimited =>
       'Demasiadas denuncias. Inténtalo de nuevo más tarde.';
+
+  @override
+  String get apiErrorPlaceSearchRateLimited =>
+      'Has usado las búsquedas de Google de esta hora. Inténtalo más tarde o pega un enlace de Google Maps.';
+
+  @override
+  String get apiErrorPlaceSearchUnavailable =>
+      'La búsqueda de Google no está disponible ahora. Puedes pegar un enlace de Google Maps en su lugar.';
 
   @override
   String get imageBlockedNsfw =>

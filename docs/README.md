@@ -73,8 +73,8 @@ last month's behaviour is worse than none, because the reader follows it.**
 
 | Document | What it is |
 |---|---|
-| [reference/data-model.md](reference/data-model.md) | All **33 tables**: columns, keys, FK on-delete behaviour, indexes, plus the **migration-only objects** the test suite cannot see |
-| [reference/error-codes.md](reference/error-codes.md) | All **65 error codes**: HTTP status, raise site, and whether the client localizes it |
+| [reference/data-model.md](reference/data-model.md) | All **34 tables**: columns, keys, FK on-delete behaviour, indexes, plus the **migration-only objects** the test suite cannot see |
+| [reference/error-codes.md](reference/error-codes.md) | All **67 error codes**: HTTP status, raise site, and whether the client localizes it |
 
 ### Features
 
@@ -102,6 +102,7 @@ last month's behaviour is worse than none, because the reader follows it.**
 | [itineraries.md](features/itineraries.md) | Itinerary CRUD, denormalised totals, currency, recommended travel period |
 | [visibility-and-access.md](features/visibility-and-access.md) | The four-level ladder, the allowlist, `can_view_itinerary`, `public_listing_criteria` |
 | [tracks-and-stops.md](features/tracks-and-stops.md) | Tracks, stops, fractional indexing, the two-phase renumber, place types, map URLs |
+| [places-and-maps.md](features/places-and-maps.md) | How a stop is placed — OpenStreetMap on submit, Google Places as the fallback, pasted links — what a stop may store from Google (a place ID), the `/embed` map pages, the trip's route map, the yearly place-ID refresh |
 | [transit-segments.md](features/transit-segments.md) | Segments, transport legs, leg modes, the orphan warning |
 | [annotations.md](features/annotations.md) | Both annotation systems — stop-level and trip-wide |
 | [ratings.md](features/ratings.md) | Multi-dimensional community ratings, SQL aggregates, per-rating moderation status |
@@ -165,7 +166,7 @@ for schema and endpoint detail. They remain useful for setup instructions.
 | Document | Status |
 |---|---|
 | [`README.md`](../README.md) | Setup and local-run instructions are current. **Stale**: the JWT lifetime, `ACCESS_TOKEN_EXPIRE_MINUTES`, the 401 behaviour, the ratings list, the repo tree, the test table, and the `is_private` default |
-| [`social_api/README.md`](../social_api/README.md) | Its **Key Design Decisions** section is good and has been folded into [decisions.md](decisions.md). **Stale**: documents 11 of 33 tables and omits roughly 60 endpoints |
+| [`social_api/README.md`](../social_api/README.md) | Its **Key Design Decisions** section is good and has been folded into [decisions.md](decisions.md). **Stale**: documents 11 of 34 tables and omits roughly 60 endpoints |
 | [`social_flutter/README.md`](../social_flutter/README.md) | **Stale**: still presents transit segments as a current feature |
 
 Every drifted claim is itemised in
@@ -179,7 +180,7 @@ Measured from the code, not estimated.
 
 | | |
 |---|---|
-| Backend | 251 Python files · **33 tables** · 17 routers · **149 routes** · **65 error codes** · 55 migrations |
+| Backend | 308 Python files · **34 tables** · 18 routers · **157 routes** · **67 error codes** · 58 migrations (2026-10-31) |
 | Frontend | 217 Dart files · 10 feature directories · **58 providers** · **36 live screens** · 5 shell branches |
 | Localization | 6 languages · 956 keys, complete in all six |
 | Help centre | 26 articles · 8 categories · 6 languages |

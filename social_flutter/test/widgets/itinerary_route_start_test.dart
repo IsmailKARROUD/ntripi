@@ -9,9 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
 import 'package:ntripi/features/itineraries/data/maps_launcher_service.dart';
+import 'package:ntripi/features/itineraries/domain/map_point.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary.dart';
 import 'package:ntripi/features/itineraries/presentation/itinerary_detail_screen.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
@@ -99,13 +99,13 @@ class _Viewer extends MyProfileNotifier {
 
 /// Records the routes the trip page asks Google Maps for, and opens nothing.
 class _RecordingLauncher extends MapsLauncherService {
-  final opened = <(List<LatLng>, RouteStart)>[];
+  final opened = <(List<MapPoint>, RouteStart)>[];
   // What openRoute answers: whether the route was cut to the cap.
   bool truncates = false;
 
   @override
   Future<bool> openRoute(
-    List<LatLng> orderedPoints, {
+    List<MapPoint> orderedPoints, {
     required RouteStart start,
   }) async {
     opened.add((orderedPoints, start));
@@ -185,7 +185,7 @@ void main() {
     final (points, start) = launcher.opened.single;
     expect(start, RouteStart.firstStop);
     // Museum, not Market: the route takes the alternative on screen.
-    expect(points, const [LatLng(10, 20), LatLng(11, 21), LatLng(13, 23)]);
+    expect(points, const [CoordPoint(10, 20), CoordPoint(11, 21), CoordPoint(13, 23)]);
     expect(find.text(l10n.routeFromFirstStop), findsNothing);
     // Nothing was cut, so nothing is said.
     expect(find.byType(SnackBar), findsNothing);
@@ -200,7 +200,7 @@ void main() {
 
     final (points, start) = launcher.opened.single;
     expect(start, RouteStart.myLocation);
-    expect(points, const [LatLng(10, 20), LatLng(11, 21), LatLng(13, 23)]);
+    expect(points, const [CoordPoint(10, 20), CoordPoint(11, 21), CoordPoint(13, 23)]);
     expect(find.text(l10n.routeFromMyLocation), findsNothing);
     expect(find.byType(SnackBar), findsNothing);
   });
@@ -244,7 +244,7 @@ void main() {
     await _openRoute(tester, l10n, RouteStart.firstStop);
 
     final (points, _) = launcher.opened.single;
-    expect(points, const [LatLng(10, 20), LatLng(12, 22), LatLng(13, 23)]);
+    expect(points, const [CoordPoint(10, 20), CoordPoint(12, 22), CoordPoint(13, 23)]);
   });
 
   testWidgets('a stop with no place on the map is left out of the route',
@@ -256,7 +256,7 @@ void main() {
     await _openRoute(tester, l10n, RouteStart.firstStop);
 
     final (points, _) = launcher.opened.single;
-    expect(points, const [LatLng(10, 20), LatLng(13, 23)]);
+    expect(points, const [CoordPoint(10, 20), CoordPoint(13, 23)]);
   });
 
   testWidgets('with fewer than two stops on the map there is no route arrow',

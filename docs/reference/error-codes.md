@@ -1,6 +1,6 @@
 # API error codes
 
-Every machine-readable error code the backend raises. **65 codes.**
+Every machine-readable error code the backend raises. **67 codes.**
 
 ## How the mechanism works
 
@@ -231,6 +231,20 @@ fails the schema's `pattern=` with a 422. The app only ever asks for a language
 `GET /translations/config` listed, so in practice this answers a stale client.
 With `TRANSLATION_PROVIDERS` unset the endpoint 404s with no code — the feature
 is invisible, not refused.
+
+### Google place search
+
+| Code | Status | Raised at | Client |
+|---|---|---|---|
+| `place_search_rate_limited` | 429 | `places.py:79` | localized |
+| `place_search_unavailable` | 503 | `places.py:89` | localized |
+
+The first is the per-user hourly budget (`GOOGLE_PLACES_USER_HOURLY_LIMIT`),
+answered with `Retry-After` to the next clock hour; the per-IP slowapi guard in
+front answers its own plain 429. The second is Google failing — a timeout, a
+non-200, or an answer that is not JSON — after the request was counted. With
+`GOOGLE_PLACES_API_KEY` unset the endpoint 404s with no code. See
+[places-and-maps.md](../features/places-and-maps.md).
 
 ### Bug reports and waitlist
 

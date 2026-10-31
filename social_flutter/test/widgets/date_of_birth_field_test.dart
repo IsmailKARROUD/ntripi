@@ -13,8 +13,9 @@ import 'package:ntripi/shared/widgets/date_of_birth_field.dart';
 /// reason the backend tests are: a literal stops testing anything in a year.
 DateTime _dobForAge(int years, {int offsetDays = 0}) {
   final now = DateTime.now();
-  return DateTime(now.year - years, now.month, now.day)
-      .add(Duration(days: offsetDays));
+  // Calendar days, not a Duration: 24 hours from midnight on a clock-change
+  // day (31 Oct 2010 in Europe) lands on the same date.
+  return DateTime(now.year - years, now.month, now.day + offsetDays);
 }
 
 Future<void> _pumpField(

@@ -1,12 +1,17 @@
 // presentation/stop_form_screen.dart — Add or edit a stop in an itinerary.
 //
 // The screen has three logical sections:
-//   1. Place search — debounced Nominatim search, pre-fills form fields.
+//   1. Place search — OpenStreetMap on submit (never as you type: Nominatim's
+//      policy), pre-fills the form; in the Google Maps segment Google Places is
+//      the fallback (PlaceSearchBox).
 //   2. Stop details — type, location, transit/place fields, cost, notes.
 //   3. Annotations — visible only in edit mode (stop must exist first).
 //
 // Legal note: Nominatim results are shown as suggestions only. Coordinates
-// are stored only when the user confirms a selection (ODbL compliance).
+// are stored only when the user confirms a selection (ODbL compliance). From
+// Google only a place ID and the user's own search text are ever stored, and a
+// pasted link is never fetched here — this file must not import
+// link_preview_service.dart (test/stop_form_link_fetch_guard_test.dart).
 
 import 'dart:async';
 
@@ -26,8 +31,14 @@ import 'package:ntripi/features/itineraries/presentation/widgets/edit_pencil_but
 import 'package:ntripi/core/ui/destructive_actions.dart';
 import 'package:ntripi/features/itineraries/presentation/annotation_screen.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
-import 'package:ntripi/features/itineraries/presentation/widgets/link_preview_card.dart';
-import 'package:ntripi/features/itineraries/data/link_preview_service.dart';
+import 'package:ntripi/features/itineraries/data/google_embed_urls.dart';
+import 'package:ntripi/features/itineraries/data/google_maps_links.dart';
+import 'package:ntripi/features/itineraries/data/places_repository.dart';
+import 'package:ntripi/features/itineraries/domain/map_point.dart';
+import 'package:ntripi/features/itineraries/domain/search_bias.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/google_map_embed.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/place_search_box.dart';
+import 'package:ntripi/features/itineraries/providers/places_providers.dart';
 import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
 import 'package:ntripi/features/itineraries/domain/edit_lock.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/edit_lock_lost_notice.dart';
@@ -94,9 +105,15 @@ const Object _clearPlaceTypeSentinel = Object();
 
 // A stop's location is entered one of two ways, chosen by a toggle at the top of
 // the form: `coordinates` (OSM search / lat-lng / pick-on-map, the default) or
-// `link` (a Google Maps URL, for places OSM's gazetteer can't resolve). The mode
-// governs which inputs are shown and which fields are authoritative on save.
-enum _LocationMode { coordinates, link }
+// `google` — the Google Maps segment: a search that tries OSM first and Google
+// Places after, and a pasted Google Maps link, for places OSM's gazetteer
+// can't resolve. The mode governs which inputs are shown and which fields are
+// authoritative on save.
+enum _LocationMode { coordinates, google }
+
+/// A Google place picked in this form: its ID and what the user typed to find
+/// it — nothing Google returned.
+typedef _GooglePick = ({String placeId, String query});
 
 class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   final _formKey = GlobalKey<FormState>();
@@ -113,7 +130,6 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   final _costController = TextEditingController();
   final _notesController = TextEditingController();
 
-  Timer? _debounce;
   bool _initialized = false;
   bool _saving = false;
   // Set when a save came back 409: the editing claim was taken over. NOTHING is
@@ -128,9 +144,20 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   double? _lng;
   bool _isFree = false;
 
-  // Coordinates (default) vs Google Maps link. In edit/view mode it's derived
-  // from whether the existing stop already has a map_url (see _initFromExistingStop).
+  // Coordinates (default) vs the Google Maps segment. In edit/view mode it's
+  // derived from the existing stop (see _initFromExistingStop).
   _LocationMode _locationMode = _LocationMode.coordinates;
+
+  // The Google place this stop points to, when one is picked (or loaded).
+  _GooglePick? _googlePick;
+  // Google answered that the loaded place ID is gone: an editor searches again.
+  bool _googlePlaceMissing = false;
+  // Where _lat/_lng came from: an OSM pick, or typed / the device.
+  PlaceSource? _coordsSource;
+  // Any location action this session. Without one, a save leaves the stop's
+  // place_source and Google fields to the server, so a place ID the yearly
+  // refresh replaced meanwhile is never overwritten with the old one.
+  bool _locationTouched = false;
 
   // Device position — preview-map centering + "you are here" dot only.
   // Never copied into _lat/_lng without an explicit user pick.
@@ -207,6 +234,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     _lngController.text,
     _mapUrlController.text,
     _locationMode,
+    _googlePick,
     _placeType,
     _durationDays,
     _durationHours,
@@ -295,10 +323,23 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       _latController.text = _formatCoord(found.lat);
       _lngController.text = _formatCoord(found.lng);
       _mapUrlController.text = found.mapUrl ?? '';
-      // A saved link opens the form in link mode; otherwise coordinates.
+      // A Google place is one with an ID and no link (a link may carry an ID
+      // of its own, read out of its text by the server).
+      final placeId = found.googlePlaceId;
+      _googlePick = placeId != null && (found.mapUrl ?? '').isEmpty
+          ? (placeId: placeId, query: found.googlePlaceQuery ?? '')
+          : null;
+      _googlePlaceMissing = _googlePick != null && found.googlePlaceMissing;
+      // The way back to a lost place starts from what found it last time.
+      if (_googlePlaceMissing) _searchController.text = _googlePick!.query;
+      _coordsSource = switch (found.placeSource) {
+        PlaceSource.osm || PlaceSource.typed => found.placeSource,
+        _ => null,
+      };
+      // A saved link or Google place opens the Google Maps segment.
       _locationMode =
-          (found.mapUrl != null && found.mapUrl!.isNotEmpty)
-              ? _LocationMode.link
+          ((found.mapUrl ?? '').isNotEmpty || _googlePick != null)
+              ? _LocationMode.google
               : _LocationMode.coordinates;
       _placeType = found.placeType;
       if (found.durationMin != null) {
@@ -319,7 +360,6 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
   @override
   void dispose() {
-    _debounce?.cancel();
     _searchController.dispose();
     _placeNameController.dispose();
     _placeAddressController.dispose();
@@ -332,30 +372,80 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     super.dispose();
   }
 
-  void _onSearchChanged(String value) {
-    _debounce?.cancel();
-    // 400ms debounce respects Nominatim's 1 request/second rate limit.
-    _debounce = Timer(const Duration(milliseconds: 400), () {
-      // near ranks suggestions closest-to-the-phone first when position known.
-      ref
-          .read(placeSearchProvider.notifier)
-          .search(value, near: _deviceLocation);
-    });
+  /// Where both searches look first: the trip's own stops, else the device.
+  BiasPoint? _searchBias() {
+    final itinerary =
+        ref.read(itineraryDetailProvider(widget.itineraryId)).value;
+    return searchBias(
+      tracks: itinerary?.tracks ?? const [],
+      trackId: widget.trackId ?? _existingStop?.trackId,
+      afterTrackId: widget.afterTrackId,
+      beforeTrackId: widget.beforeTrackId,
+      editingStopId: widget.stopId,
+      deviceLat: _deviceLocation?.latitude,
+      deviceLng: _deviceLocation?.longitude,
+    );
   }
 
+  /// An OpenStreetMap pick (either segment, or the map picker). OSM's data is
+  /// open, so it fills the address and the coordinates — and the name only if
+  /// the user has not typed one: their title is what the trip shows.
   void _applySuggestion(PlaceSuggestion suggestion) {
     setState(() {
-      _placeNameController.text = suggestion.displayName;
+      if (_placeNameController.text.trim().isEmpty) {
+        _placeNameController.text = suggestion.displayName;
+      }
       _placeAddressController.text = suggestion.address;
       _lat = suggestion.lat;
       _lng = suggestion.lng;
       _latController.text = _formatCoord(suggestion.lat);
       _lngController.text = _formatCoord(suggestion.lng);
+      // A picker pin whose reverse lookup found no address is just a point.
+      _coordsSource = suggestion.address.trim().isEmpty
+          ? PlaceSource.typed
+          : PlaceSource.osm;
+      _locationTouched = true;
+      // The last pick wins over a Google place or a link in the same segment.
+      _googlePick = null;
+      _googlePlaceMissing = false;
+      if (_locationMode == _LocationMode.google) _mapUrlController.clear();
     });
     _recenterPreview();
     _searchController.clear();
     ref.read(placeSearchProvider.notifier).clear();
     FocusScope.of(context).unfocus();
+  }
+
+  /// A Google pick keeps Google's place ID and the text the user typed —
+  /// never the suggestion's name or address, and it never fills the name.
+  void _applyGoogleSuggestion(GoogleSuggestion suggestion, String searchText) {
+    setState(() {
+      _googlePick = (placeId: suggestion.placeId, query: searchText.trim());
+      _googlePlaceMissing = false;
+      _locationTouched = true;
+      _mapUrlController.clear();
+      _placeAddressController.clear();
+      _lat = null;
+      _lng = null;
+      _latController.clear();
+      _lngController.clear();
+      _coordsSource = null;
+    });
+    _searchController.clear();
+    ref.read(placeSearchProvider.notifier).clear();
+    FocusScope.of(context).unfocus();
+  }
+
+  /// "Change" on the picked Google place: back to the search, starting from
+  /// the words that found it.
+  void _changeGooglePlace() {
+    final query = _googlePick?.query ?? '';
+    setState(() {
+      _googlePick = null;
+      _googlePlaceMissing = false;
+      _locationTouched = true;
+      _searchController.text = query;
+    });
   }
 
   /// ~0.1m precision is plenty for a stop; trailing zeros are noise in a form.
@@ -393,6 +483,8 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     setState(() {
       _lat = valid ? lat : null;
       _lng = valid ? lng : null;
+      _coordsSource = PlaceSource.typed;
+      _locationTouched = true;
     });
     if (valid) _recenterPreview();
   }
@@ -447,27 +539,28 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     });
   }
 
-  /// When a valid Google Maps link is pasted, pull any embedded coordinates into
-  /// the lat/lng fields so the stop still gets a map pin. A link without coords
-  /// (short link) leaves the existing coordinates alone — the async preview
-  /// unfurl (which resolves the short link) fills them in later. setState
-  /// refreshes the inline validator as the user types.
+  /// A typed or pasted Google Maps link. Nothing is read out of it here and
+  /// nothing is fetched: the link is stored as typed, and its coordinates —
+  /// Google's — are never saved (the server drops any sent beside a link).
+  /// setState refreshes the inline validator and the short-link hint.
   void _onMapUrlChanged(String value) {
-    final url = value.trim();
-    if (url.isNotEmpty && isGoogleMapsUrl(url)) {
-      final coords = extractMapCoords(url); // shared helper in link_preview_service
-      if (coords != null) {
-        _setCoordText(_latController, _formatCoord(coords.$1));
-        _setCoordText(_lngController, _formatCoord(coords.$2));
-        setState(() {
-          _lat = coords.$1;
-          _lng = coords.$2;
-        });
-        _recenterPreview();
-        return;
+    setState(() {
+      _locationTouched = true;
+      // The last action wins over a Google place picked in the same segment.
+      if (value.trim().isNotEmpty) {
+        _googlePick = null;
+        _googlePlaceMissing = false;
       }
-    }
-    setState(() {});
+    });
+  }
+
+  /// A pasted link whose own text names no place — a maps.app.goo.gl share
+  /// link — cannot be put on the trip's map (D18): the form says so.
+  bool get _isUnplaceableLink {
+    final url = _mapUrlController.text.trim();
+    return isGoogleMapsUrl(url) &&
+        extractPlaceId(url) == null &&
+        extractMapCoords(url) == null;
   }
 
   /// Fills the map-link field from the clipboard. Trimmed on the way in so a
@@ -521,6 +614,8 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
         _deviceLocation = position;
         _lat = position.latitude;
         _lng = position.longitude;
+        _coordsSource = PlaceSource.typed;
+        _locationTouched = true;
         _setCoordText(_latController, _formatCoord(position.latitude));
         _setCoordText(_lngController, _formatCoord(position.longitude));
       });
@@ -618,7 +713,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     final stops =
         ref.read(itineraryDetailProvider(widget.itineraryId)).value?.stops ??
         [];
+    final pick = _googlePick;
     for (final s in stops) {
+      if (pick != null && s.googlePlaceId == pick.placeId) return s;
       if (_lat != null && _lng != null && s.lat != null && s.lng != null) {
         // Use epsilon ~11m to handle floating-point rounding from DB storage.
         const eps = 0.0001;
@@ -633,6 +730,54 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       }
     }
     return null;
+  }
+
+  /// The location half of a save. The active segment is authoritative, and
+  /// every location key it does not hold goes out as null, so switching
+  /// persists — the backend's exclude_unset keeps an omitted key unchanged.
+  Map<String, dynamic> _locationPayload() {
+    final address = _placeAddressController.text.trim();
+    final link = _mapUrlController.text.trim();
+    final pick = _googlePick;
+    final inGoogleSegment = _locationMode == _LocationMode.google;
+    if (inGoogleSegment && pick != null) {
+      return {
+        'place_address': null,
+        'lat': null,
+        'lng': null,
+        'map_url': null,
+        // Only when picked this session: an untouched Google stop leaves its
+        // ID to the server, which may have refreshed it meanwhile.
+        if (_locationTouched) ...{
+          'place_source': PlaceSource.google.name,
+          'google_place_id': pick.placeId,
+          'google_place_query': pick.query,
+        },
+      };
+    }
+    if (inGoogleSegment && link.isNotEmpty) {
+      // Never with coordinates: those would be Google's. The server reads a
+      // place ID out of the link's text itself.
+      return {
+        'place_address': null,
+        'lat': null,
+        'lng': null,
+        'map_url': link,
+        if (_locationTouched) 'place_source': PlaceSource.link.name,
+      };
+    }
+    final source = _coordsSource;
+    return {
+      'place_address': address.isEmpty ? null : address,
+      'lat': _lat,
+      'lng': _lng,
+      'map_url': null,
+      // Coordinates, or nothing: no Google place stays on this stop.
+      'google_place_id': null,
+      'google_place_query': null,
+      if (_locationTouched && _lat != null && _lng != null && source != null)
+        'place_source': source.name,
+    };
   }
 
   Future<void> _save() async {
@@ -667,13 +812,6 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
     setState(() => _saving = true);
     try {
-      // The active mode is the source of truth: a link stop clears any address
-      // and never persists a stray coordinate-mode map_url, and vice-versa. Any
-      // coords a Google Maps URL carried are kept (extracted in _onMapUrlChanged)
-      // so a link stop still gets a map pin.
-      final bool isLink = _locationMode == _LocationMode.link;
-      final String mapUrl = _mapUrlController.text.trim();
-      final String address = _placeAddressController.text.trim();
       final data = <String, dynamic>{
         if (!widget.isEditMode) 'track_id': widget.trackId,
         if (!widget.isEditMode && widget.afterStopId != null)
@@ -684,19 +822,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
           'before_track_id': widget.beforeTrackId,
         if (_placeNameController.text.trim().isNotEmpty)
           'place_name': _placeNameController.text.trim(),
-        // Address belongs to a coordinate stop only; link mode clears it. Always
-        // sent (even null) so switching modes persists the change.
-        'place_address': isLink || address.isEmpty ? null : address,
-        // Always send lat/lng (even null) so clearing the coordinates
-        // persists — the backend's exclude_unset keeps omitted keys unchanged.
-        'lat': _lat,
-        'lng': _lng,
+        ..._locationPayload(),
         // Always send place_type (even null) so clearing it persists — the
         // backend's exclude_unset means an omitted key leaves the old value.
         'place_type': _placeType?.name,
-        // Link is authoritative only in link mode; coordinate mode clears it.
-        // Always sent (even null) so switching modes persists the change.
-        'map_url': isLink && mapUrl.isNotEmpty ? mapUrl : null,
         if (_totalDurationMin != null) 'duration_min': _totalDurationMin,
         'cost': double.tryParse(_costController.text.trim()) ?? 0.0,
         'is_free': _isFree,
@@ -951,8 +1080,104 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     }
   }
 
+  /// What the Google Maps segment holds, on Google's own map: a Google place by
+  /// its ID, or an OSM pick by its coordinates. A pasted link shows nothing —
+  /// it is never fetched here.
+  Widget _buildGoogleSegmentPlace(
+    BuildContext context,
+    NtripiColors nt,
+    AppLocalizations l10n,
+    bool readOnly,
+  ) {
+    final mapsOn = ref.watch(placesConfigProvider).value?.googleMaps ?? false;
+    final language = GoogleEmbed.languageOf(context);
+    final pick = _googlePick;
+    if (pick != null) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: Container(
+          decoration: BoxDecoration(
+            color: nt.surface,
+            borderRadius: BorderRadius.circular(NtripiRadius.tile),
+            border: Border.all(color: nt.border),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (mapsOn && !_googlePlaceMissing)
+                GoogleMapEmbed(
+                  url: GoogleEmbed.point(
+                      PlacePoint(pick.placeId, pick.query), language),
+                ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+                child: Row(
+                  children: [
+                    Icon(Icons.place_rounded, size: 18, color: nt.forest),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.googleMapsPlaceLabel,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: nt.bark,
+                            ),
+                          ),
+                          if (pick.query.isNotEmpty)
+                            Text(
+                              l10n.googlePlaceSearchedAs(pick.query),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 12, color: nt.text2),
+                            ),
+                        ],
+                      ),
+                    ),
+                    if (!readOnly)
+                      TextButton(
+                        onPressed: _changeGooglePlace,
+                        child: Text(_googlePlaceMissing
+                            ? l10n.googlePlaceSearchAgain
+                            : l10n.googlePlaceChange),
+                      ),
+                  ],
+                ),
+              ),
+              if (_googlePlaceMissing)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  child: SheetErrorRow(l10n.googlePlaceMissing),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (mapsOn &&
+        _mapUrlController.text.trim().isEmpty &&
+        _lat != null &&
+        _lng != null) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(NtripiRadius.tile),
+          child: GoogleMapEmbed(
+            url: GoogleEmbed.point(CoordPoint(_lat!, _lng!), language),
+          ),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
   /// Two-segment pill toggle choosing how the location is entered: coordinates
-  /// (OSM search / lat-lng) or a Google Maps link. Only shown in create/edit —
+  /// (OSM search / lat-lng) or Google Maps (OSM first, then Google; or a
+  /// pasted link). Only shown in create/edit —
   /// read-only view derives the visible section straight from the stop's data.
   Widget _buildModeToggle(
     BuildContext context,
@@ -973,6 +1198,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   ? null
                   : () {
                     FocusScope.of(context).unfocus();
+                    // Each segment searches afresh: OSM results from one must
+                    // not offer themselves in the other.
+                    _searchController.clear();
+                    ref.read(placeSearchProvider.notifier).clear();
                     setState(() => _locationMode = mode);
                   },
           child: AnimatedContainer(
@@ -1023,9 +1252,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
               l10n.locationModeCoordinates,
             ),
             segment(
-              _LocationMode.link,
-              Icons.link_rounded,
-              l10n.locationModeMapLink,
+              _LocationMode.google,
+              Icons.map_outlined,
+              l10n.locationModeGoogleMaps,
             ),
           ],
         ),
@@ -1045,7 +1274,6 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     // they need to change. Only collapse for first-time creation.
     final bool collapseOptional =
         !widget.isEditMode && !readOnly && !_showOptional;
-    final suggestionsAsync = ref.watch(placeSearchProvider);
     final duplicate = _findDuplicate();
 
     final currentUserId = ref.watch(myProfileProvider).value?.id;
@@ -1068,37 +1296,6 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
           } catch (_) {}
         });
       });
-    }
-
-    // Chat-app nicety: when a pasted link unfurls, seed an empty place name with
-    // its title, and — for a short link whose pasted form had no coords — drop a
-    // pin from the coords the unfurl recovered off the resolved URL. Both only
-    // fill when still blank, so neither clobbers what the user typed.
-    if (!readOnly && _locationMode == _LocationMode.link) {
-      final linkUrl = _mapUrlController.text.trim();
-      if (isGoogleMapsUrl(linkUrl)) {
-        ref.listen(linkPreviewProvider(linkUrl), (_, next) {
-          next.whenData((preview) {
-            if (preview == null || !mounted) return;
-            final title = preview.title?.trim() ?? '';
-            if (title.isNotEmpty && _placeNameController.text.trim().isEmpty) {
-              setState(() => _placeNameController.text = title);
-            }
-            if (preview.lat != null &&
-                preview.lng != null &&
-                _lat == null &&
-                _lng == null) {
-              _setCoordText(_latController, _formatCoord(preview.lat!));
-              _setCoordText(_lngController, _formatCoord(preview.lng!));
-              setState(() {
-                _lat = preview.lat;
-                _lng = preview.lng;
-              });
-              _recenterPreview();
-            }
-          });
-        });
-      }
     }
 
     final l10n = AppLocalizations.of(context)!;
@@ -1196,160 +1393,44 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       if (!readOnly) _buildModeToggle(context, nt, l10n),
 
                       // ----------------------------------------------------------------
-                      // Section 1: Place search (coordinates mode only, hidden in view)
+                      // Section 1: Place search (hidden in view). OSM on submit in
+                      // both segments; Google as the fallback in the Google one.
                       // ----------------------------------------------------------------
-                      if (!readOnly &&
-                          _locationMode == _LocationMode.coordinates) ...[
+                      if (!readOnly) ...[
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                           child: LabelWithHelp(
                             label: l10n.searchForPlaceLabel,
-                            helpTitle: l10n.searchAPlaceHelpTitle,
-                            helpMessage: l10n.searchAPlaceHelpMessage,
+                            helpTitle:
+                                _locationMode == _LocationMode.google
+                                    ? l10n.googleMapsSearchHelpTitle
+                                    : l10n.searchAPlaceHelpTitle,
+                            helpMessage:
+                                _locationMode == _LocationMode.google
+                                    ? l10n.googleMapsSearchHelpMessage
+                                    : l10n.searchAPlaceHelpMessage,
                             labelStyle: Theme.of(context).textTheme.titleSmall,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: TextField(
+                          child: PlaceSearchBox(
+                            // A segment switch starts a fresh search box.
+                            key: ValueKey(_locationMode),
                             controller: _searchController,
-                            decoration: InputDecoration(
-                              hintText: l10n.searchPlaceHintText,
-                              filled: true,
-                              fillColor: nt.surface,
-                              prefixIcon: Icon(
-                                Icons.search_rounded,
-                                color: nt.forest,
-                              ),
-                              suffixIcon:
-                                  _searchController.text.isNotEmpty
-                                      ? IconButton(
-                                        icon: const Icon(
-                                          Icons.close_rounded,
-                                          size: 18,
-                                        ),
-                                        onPressed: () {
-                                          _searchController.clear();
-                                          ref
-                                              .read(
-                                                placeSearchProvider.notifier,
-                                              )
-                                              .clear();
-                                        },
-                                      )
-                                      : null,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(NtripiRadius.field),
-                                borderSide: BorderSide(color: nt.border),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(NtripiRadius.field),
-                                borderSide: BorderSide(color: nt.border),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(NtripiRadius.field),
-                                borderSide: BorderSide(
-                                  color: nt.forest,
-                                  width: 1.5,
-                                ),
-                              ),
-                            ),
-                            onChanged: _onSearchChanged,
-                          ),
-                        ),
-
-                        // Suggestions list
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: suggestionsAsync.when(
-                            loading:
-                                () => const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 8),
-                                  child: LinearProgressIndicator(),
-                                ),
-                            error: (_, __) => const SizedBox.shrink(),
-                            data: (suggestions) {
-                              if (suggestions.isEmpty)
-                                return const SizedBox.shrink();
-                              // Tiles live in a Material (not a color-decorated
-                              // Container) so ListTile background/ink paint on it — a
-                              // colored intermediate box would hide them (Flutter
-                              // debug assert in list_tile.dart).
-                              return Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: Material(
-                                  color: nt.surface,
-                                  clipBehavior: Clip.antiAlias,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(NtripiRadius.tile),
-                                    side: BorderSide(color: nt.border),
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      for (
-                                        var i = 0;
-                                        i < suggestions.length;
-                                        i++
-                                      ) ...[
-                                        if (i > 0)
-                                          const Divider(height: 1, indent: 52),
-                                        ListTile(
-                                          dense: true,
-                                          leading: Container(
-                                            width: 36,
-                                            height: 36,
-                                            decoration: BoxDecoration(
-                                              color: nt.sand,
-                                              borderRadius:
-                                                  BorderRadius.circular(NtripiRadius.icon),
-                                            ),
-                                            alignment: Alignment.center,
-                                            child: Icon(
-                                              Icons.location_on_rounded,
-                                              size: 18,
-                                              color: nt.forest,
-                                            ),
-                                          ),
-                                          title: Text(
-                                            suggestions[i].displayName,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w700,
-                                              color: nt.bark,
-                                            ),
-                                          ),
-                                          // Full address, unabbreviated — it's what
-                                          // disambiguates same-named places.
-                                          subtitle: Text(
-                                            suggestions[i].address,
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: nt.text2,
-                                            ),
-                                          ),
-                                          trailing: Icon(
-                                            Icons.add_rounded,
-                                            size: 20,
-                                            color: nt.forest,
-                                          ),
-                                          onTap:
-                                              () => _applySuggestion(
-                                                suggestions[i],
-                                              ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
+                            googleFallback:
+                                _locationMode == _LocationMode.google,
+                            language: GoogleEmbed.languageOf(context),
+                            bias: _searchBias,
+                            onOsmPick: _applySuggestion,
+                            onGooglePick: _applyGoogleSuggestion,
                           ),
                         ),
                         const SizedBox(height: 20),
                       ],
+                      if (_locationMode == _LocationMode.google)
+                        _buildGoogleSegmentPlace(context, nt, l10n, readOnly),
 
                       // ── Place name + address ───────────────────────────────
                       SectionCard(
@@ -1461,11 +1542,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                 ],
                               ),
                             ),
-                          // Google Maps link — for places OSM can't resolve.
-                          // Pasting a full URL still auto-fills the coordinates
-                          // (kept for the map pin); a short link opens straight
-                          // in Google Maps with no pin. Shown in link mode only.
-                          if (_locationMode == _LocationMode.link)
+                          // Google Maps link — for places neither search finds.
+                          // Stored as typed and never fetched; no coordinates
+                          // are taken from it.
+                          if (_locationMode == _LocationMode.google &&
+                              (!readOnly ||
+                                  _mapUrlController.text.trim().isNotEmpty))
                             _SFBorderlessField(
                               label: l10n.mapLinkLabel.toUpperCase(),
                               childBuilder:
@@ -1703,17 +1785,28 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                         ],
                       ),
 
-                      // Unfurled Open Graph card for the pasted link (mobile
-                      // only; on web or a failed fetch it degrades to a plain
-                      // "Opens in Google Maps" row inside the card).
-                      if (_locationMode == _LocationMode.link &&
-                          isGoogleMapsUrl(_mapUrlController.text.trim()))
-                        // Coords extracted from the link feed the embed on web,
-                        // where the unfurl can't run to resolve them itself.
-                        LinkPreviewCard(
-                            url: _mapUrlController.text.trim(),
-                            lat: _lat,
-                            lng: _lng),
+                      // A short link names no place: it cannot go on the
+                      // trip's map, and searching would put it there (D18).
+                      if (_locationMode == _LocationMode.google &&
+                          _isUnplaceableLink)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.info_outline_rounded,
+                                  size: 16, color: nt.text2),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  l10n.mapLinkShortLinkHint,
+                                  style: TextStyle(
+                                      fontSize: 12, color: nt.text2),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
 
                       // ── Duplicate warning ──────────────────────────────────
                       if (!widget.isEditMode && duplicate != null)

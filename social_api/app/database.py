@@ -87,3 +87,25 @@ def upsert_insert(db, model):
     else:
         from sqlalchemy.dialects.sqlite import insert
     return insert(model)
+
+
+def reserve_within_limit(db, model, keys: dict, column, amount: int, limit: int) -> bool:
+    """Add `amount` to `column` on the `keys` row only if the total stays within
+    `limit`; True when it was counted.
+
+    ONE statement: an upsert whose UPDATE fires only while the new total fits,
+    returning the total when it did — no row back means refused, nothing
+    counted. Reading the count into Python and writing it back would lose
+    concurrent increments under READ COMMITTED. The caller owns the commit.
+    """
+    if amount <= 0:
+        return True
+    if amount > limit:
+        return False
+    stmt = upsert_insert(db, model).values(**keys, **{column.key: amount})
+    stmt = stmt.on_conflict_do_update(
+        index_elements=[getattr(model, name) for name in keys],
+        set_={column.key: column + stmt.excluded[column.key]},
+        where=column + stmt.excluded[column.key] <= limit,
+    ).returning(column)
+    return db.execute(stmt).first() is not None

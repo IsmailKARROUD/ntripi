@@ -20,7 +20,7 @@ from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import case, delete
 from sqlalchemy.orm import Session
 
-from app.database import upsert_insert
+from app.database import reserve_within_limit, upsert_insert
 from app.models.translation_usage import TranslationProviderUsage, TranslationUserUsage
 
 # Old enough that no limit can still read them.
@@ -37,19 +37,11 @@ def reserve_user_fields(
     db: Session, user_id: uuid.UUID, count: int, limit: int, now: datetime,
 ) -> bool:
     """Count `count` fields against the reader's hour if they fit under `limit`."""
-    if count <= 0:
-        return True
-    if count > limit:
-        return False
-    stmt = upsert_insert(db, TranslationUserUsage).values(
-        user_id=user_id, hour_start=hour_start(now), fields=count,
+    return reserve_within_limit(
+        db, TranslationUserUsage,
+        {"user_id": user_id, "hour_start": hour_start(now)},
+        TranslationUserUsage.fields, count, limit,
     )
-    stmt = stmt.on_conflict_do_update(
-        index_elements=[TranslationUserUsage.user_id, TranslationUserUsage.hour_start],
-        set_={"fields": TranslationUserUsage.fields + stmt.excluded.fields},
-        where=TranslationUserUsage.fields + stmt.excluded.fields <= limit,
-    ).returning(TranslationUserUsage.fields)
-    return db.execute(stmt).first() is not None
 
 
 def reserve_provider_chars(
@@ -59,17 +51,11 @@ def reserve_provider_chars(
     (None = unlimited, nothing recorded)."""
     if budget is None:
         return True
-    if chars > budget:
-        return False
-    stmt = upsert_insert(db, TranslationProviderUsage).values(
-        provider=provider, day=today, chars=chars,
+    return reserve_within_limit(
+        db, TranslationProviderUsage,
+        {"provider": provider, "day": today},
+        TranslationProviderUsage.chars, chars, budget,
     )
-    stmt = stmt.on_conflict_do_update(
-        index_elements=[TranslationProviderUsage.provider, TranslationProviderUsage.day],
-        set_={"chars": TranslationProviderUsage.chars + stmt.excluded.chars},
-        where=TranslationProviderUsage.chars + stmt.excluded.chars <= budget,
-    ).returning(TranslationProviderUsage.chars)
-    return db.execute(stmt).first() is not None
 
 
 def mark_provider_exhausted(

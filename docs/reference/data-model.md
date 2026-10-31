@@ -1,7 +1,7 @@
 # Data model — all tables
 
 Every table in the schema, extracted from `social_api/app/models/` via SQLAlchemy
-metadata. **33 tables.** Each row links to the feature doc that owns it.
+metadata. **34 tables.** Each row links to the feature doc that owns it.
 
 Conventions that hold everywhere:
 
@@ -52,6 +52,7 @@ Conventions that hold everywhere:
 | `content_translations` | [translations.md](../features/translations.md) | machine translation of one field, cached per source-text hash |
 | `translation_user_usage` | [translations.md](../features/translations.md) | fields one reader sent to an engine, per clock hour |
 | `translation_provider_usage` | [translations.md](../features/translations.md) | characters sent to each engine, per UTC day |
+| `place_search_usage` | [places-and-maps.md](../features/places-and-maps.md) | Google place searches one user sent, per clock hour |
 | `bug_reports` | [bug-reports.md](../features/bug-reports.md) | in-app bug ticket + screenshot key |
 | `waitlist` | [web-and-platform.md](../features/web-and-platform.md) | pre-launch signup |
 
@@ -204,15 +205,29 @@ Conventions that hold everywhere:
 | `place_name` | VARCHAR(200) | nullable |
 | `place_address` | TEXT | nullable |
 | `lat`, `lng` | NUMERIC(9,6) | nullable |
-| `map_url` | VARCHAR(500) | nullable — host-allowlisted Google Maps link |
+| `map_url` | VARCHAR(500) | nullable — host-allowlisted Google Maps link; never stored with `lat`/`lng` |
 | `place_type` | VARCHAR(50) | nullable — one of 11 camelCase values |
 | `duration_min` | INTEGER | nullable |
 | `cost` | NUMERIC(10,2) | NOT NULL, default `0.00` |
 | `is_free` | BOOLEAN | NOT NULL, default `false` — distinct from `cost = 0` |
 | `notes` | TEXT | nullable |
 | `source_lang` | TEXT | nullable — language of `notes` only, never of the place name |
+| `place_source` | VARCHAR(10) | nullable — `osm` / `google` / `link` / `typed`; NULL on rows saved before 2026-10-31 |
+| `google_place_id` | TEXT | nullable — the only Google content a stop keeps (a Google pick, or an ID read from a link's text) |
+| `google_place_query` | VARCHAR(200) | nullable — the user's own search text for a Google pick; moderated |
+| `google_place_checked_at` | TIMESTAMPTZ | nullable — last time Google confirmed the ID (pick or yearly refresh) |
+| `google_place_missing_at` | TIMESTAMPTZ | nullable — Google answered `NOT_FOUND`; cleared only by a new ID |
 
 - UNIQUE `uq_stop_rank (track_id, rank)`
+- CHECK `ck_stops_place_source`: `place_source IN ('osm','google','link','typed')`
+- CHECK `ck_stops_place_id_no_coords`: `google_place_id IS NULL OR (lat IS NULL AND lng IS NULL)`
+- CHECK `ck_stops_link_no_coords`: `map_url IS NULL OR (lat IS NULL AND lng IS NULL)`
+  — all three added `NOT VALID` in `70035c01ad25` and validated in `87528b459c5b`.
+- Partial index `ix_stops_google_place_refresh (google_place_checked_at) WHERE
+  google_place_id IS NOT NULL AND google_place_missing_at IS NULL` — the
+  sweep's refresh scan; built `CONCURRENTLY` in `87528b459c5b`.
+- `70035c01ad25` cleared `lat`/`lng` on every row with a `map_url` and set its
+  `place_source` to `link` — irreversible: the downgrade cannot restore them.
 - **There is no `type`, `position`, or `parallel_position` column.** Stop role is
   derived client-side from track order.
 
@@ -344,6 +359,14 @@ trailing column ("itineraries I can edit"), which the allowlist is not.
 `user_id` UUID FK → `users.id` **CASCADE** · `hour_start` TIMESTAMPTZ (the UTC
 clock hour) · `fields` INTEGER NOT NULL. **PK `(user_id, hour_start)`** — its
 leading column doubles as the FK index.
+
+### `place_search_usage`
+
+`user_id` UUID FK → `users.id` **CASCADE** · `hour_start` TIMESTAMPTZ (the UTC
+clock hour) · `requests` INTEGER NOT NULL. **PK `(user_id, hour_start)`**. Holds
+no search text. Written only by `database.reserve_within_limit`, the same
+conditional upsert as the translation counters; purged by the sweep after two
+days.
 
 ### `translation_provider_usage`
 

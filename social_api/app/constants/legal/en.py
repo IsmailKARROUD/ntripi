@@ -92,9 +92,11 @@ When you report a problem from inside the app, you send us a screenshot of the s
 
 12. THIRD-PARTY SERVICES AND ATTRIBUTION
 
-Ntripi uses services operated by other companies to run: hosting and image delivery, address search, sign-in, automated content moderation, and issue tracking for bug reports. They are listed in our Privacy Policy along with what each one receives.
+Ntripi uses services operated by other companies to run: hosting and image delivery, address search, maps and place search, sign-in, push notifications, automated content moderation, translation, and issue tracking for bug reports. They are listed in our Privacy Policy along with what each one receives.
 
-Map data and geocoding come from OpenStreetMap, used under the Open Database Licence (ODbL). Map imagery is served by the OpenStreetMap Foundation's tile servers.
+The address search, and the maps Ntripi draws itself, use data from OpenStreetMap under the Open Database Licence (ODbL); their map imagery is served by the OpenStreetMap Foundation's tile servers.
+
+Some maps in Ntripi, and its Google Maps place search, are provided by Google. Your use of them is subject to the Google Maps/Google Earth Additional Terms of Service (https://www.google.com/help/terms_maps/) and the Google Privacy Policy (https://policies.google.com/privacy).
 
 Signing in with Google is governed by Google's own terms and privacy policy in addition to ours.
 
@@ -170,7 +172,9 @@ Your date of birth: we ask for it once, when you create your account, to check t
 
 Content you create: itineraries, stop names, addresses, notes, annotations, transport details, ratings and reviews, and the photos you upload.
 
-Location you choose to enter: the coordinates of the stops you add. Ntripi does not track your device's location; a coordinate is only stored because you searched for a place, picked it on the map, or typed it in.
+Location you choose to enter: the coordinates of the stops you add. Ntripi does not track your device's location; a coordinate is only stored because you searched for a place, picked it on the map, or typed it in. When you search for a place in a trip that has no stop with coordinates yet, your device's approximate location (rounded to about 10 km) is sent with that search so that nearby results come first; it is not stored.
+
+Google places: when you pick a place found through Google Maps, we store only the identifier Google gives that place and the search words you typed — never the name, the address or any other information Google returns. The search words are kept with the stop, where anyone who can see the stop can see them, and are used to find the place in Google Maps again if the identifier ever stops working.
 
 Technical data: your IP address at the time of a request, and your device and app details when you send a bug report.
 
@@ -194,7 +198,7 @@ To fix problems you report to us.
 
 Content you publish is checked automatically before it becomes visible, using services run by other companies.
 
-Text — itinerary titles and descriptions, stop names, addresses and notes, annotations, transport details, review notes, your display name and bio, and the username and name you choose at registration — is sent to OpenAI's moderation service. The request carries the text and the name of the model, and nothing else: no account identifier, no email address, no content identifier. OpenAI cannot tell whose text it is.
+Text — itinerary titles and descriptions, stop names, addresses and notes, the search words kept with a Google place, annotations, transport details, review notes, your display name and bio, and the username and name you choose at registration — is sent to OpenAI's moderation service. The request carries the text and the name of the model, and nothing else: no account identifier, no email address, no content identifier. OpenAI cannot tell whose text it is.
 
 Photos are sent to an image moderation service to be checked for explicit and violent imagery: Amazon Web Services' Rekognition service, or Google Cloud Vision, which checks them in the European Union. Only the image is sent. Google Cloud Vision processes the image in memory without writing it to disk, and Google does not use it to train or improve Cloud Vision.
 
@@ -231,7 +235,9 @@ Google (Cloud Vision) — image moderation, as described above.
 
 Google — sign-in, if you use it. Google receives the fact that you signed in to Ntripi.
 
-OpenStreetMap / Nominatim — address search. The place text you type when adding a stop is sent to Nominatim, and your device requests map tiles from OpenStreetMap while a map is on screen. We do not store your raw search queries.
+Google (Google Maps Platform) — place search and maps. When you ask the app to search Google Maps, your search words, the app's language and an approximate location to rank the results — the coordinates of a stop already in the trip, or your device's location rounded to about 10 km when the trip has none — are sent to Google from our server, without any account identifier. The maps of a stop and of a trip's route are Google Maps frames your device loads from Google, so Google receives your device's IP address and the place or route on screen.
+
+OpenStreetMap / Nominatim — address search. The place text you type when adding a stop is sent to Nominatim from your device, with an area to look in first: around a stop already in the trip, or around your device's approximate location when the trip has none. Your device requests map tiles from OpenStreetMap while one of Ntripi's own maps is on screen. We do not store what you search for, except the search words you typed for a place you picked through Google Maps (see section 2).
 
 Have I Been Pwned — when you choose a password we check whether it appears in known breach data. The check sends the first five characters of a hash of your password and nothing else; your password never leaves our server.
 
@@ -271,6 +277,8 @@ Website pages set a single preference cookie (ntripi_lang) to remember your lang
 
 If you sign in with Google, Google may set its own cookies as part of its sign-in service; those are governed by Google's privacy policy.
 
+The maps of stops and routes are Google Maps frames; Google may set its own cookies in them, governed by Google's privacy policy.
+
 We do not use analytics cookies, advertising cookies, or any third-party tracking scripts.
 
 
@@ -291,6 +299,8 @@ In-app notifications are deleted 90 days after you have read them. Unread ones a
 Bug reports and their screenshots are deleted once the report is closed and has aged out.
 
 Translations are deleted when the text they translate is edited or deleted.
+
+Google's identifier for a place you picked, and the search words kept with it, are kept as long as the stop exists and are deleted with it.
 
 
 11. YOUR RIGHTS

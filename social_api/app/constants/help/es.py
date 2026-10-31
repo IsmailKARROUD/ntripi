@@ -104,6 +104,9 @@ RELEASES: tuple[Release, ...] = (
             "**Organiza las paradas en un solo sitio.** En modo edición, **Organizar paradas** (las cuatro flechas) sobre las paradas convierte el viaje en filas de paradas. Arrastra o toca una parada para convertirla en alternativa de otra columna, o para darle su propia columna entre otras dos; arrastra el número de una columna para moverla entera. Nada cambia hasta que tocas **Guardar**, y los botones aparte para reordenar y mover en cada parada ya no están.",
             "**Enviar, siempre a mano.** Al informar de un fallo —y también al denunciar contenido, valorar un viaje, añadir transporte o apelar— los botones se quedan ahora abajo, encima del teclado mientras escribes, en lugar de salirse de la vista. Al informar de un fallo, además, primero se pregunta qué falló; elegir una categoría es opcional.",
             "**Elige desde dónde empieza la ruta.** La flecha sobre las paradas ahora pregunta desde dónde empezar antes de abrir Google Maps: **Desde mi ubicación**, para indicaciones desde donde estás, o **Desde la primera parada**, para ver solo el viaje.",
+            "**Encuentra un lugar que conoce Google Maps, sin salir de Ntripi.** En la ubicación de una parada, la pestaña **Google Maps** busca primero en OpenStreetMap y luego en Google Maps; de un lugar de Google, Ntripi solo guarda su identificador, y el nombre de la parada lo pones tú. Una búsqueda empieza cuando pulsas **Buscar**. Pegar un enlace sigue funcionando, y Ntripi ya no lo abre.",
+            "**El mapa del viaje es su ruta.** La vista **Mapa** muestra ahora la ruta por las paradas que ves en pantalla, en el mapa de Google, con los lugares de Google incluidos.",
+            "**Condiciones y Política de privacidad actualizadas.** Ahora cubren Google Maps, que dibuja parte de los mapas de Ntripi y su búsqueda de lugares. Se te pedirá aceptarlas una vez.",
         ),
     ),
     Release(
@@ -217,7 +220,7 @@ Los viajes nuevos son visibles **solo para ti** hasta que lo cambies, así que e
                 body="""Toca **+** dentro del viaje para añadir una parada. Una parada contiene:
 
 - **Nombre y dirección** — cómo se llama el lugar.
-- **Ubicación** — elige un punto en el mapa, o pega un enlace de Google Maps y deja que Ntripi extraiga las coordenadas.
+- **Ubicación** — busca el lugar (primero en OpenStreetMap, luego en Google Maps), elige un punto en el mapa o pega un enlace de Google Maps.
 - **Tipo de lugar** — comer y beber, dormir, monumentos, naturaleza, compras, etc. Es lo que dibuja el icono correcto en el mapa y en la lista.
 - **Coste** — aproximadamente lo que cuesta por persona. Déjalo vacío o márcalo como gratis.
 - **Tiempo previsto** — cuánto tiempo reservar. Es lo que hace que un plan sea realista en vez de optimista.
@@ -265,7 +268,7 @@ Consulta [cómo compartir un viaje sin hacerlo público](/help/share-an-itinerar
             "planificación",
         ),
         related=("plan-alternative-options", "share-an-itinerary-privately", "getting-started"),
-        updated="2026-10-27",
+        updated="2026-10-31",
         cta="Planifica tu propio itinerario: son unos diez minutos.",
     ),
     Article(
@@ -488,19 +491,27 @@ Para un aviso que deba costar pasar por alto en vez de leerse de refilón, usa m
     ),
     Article(
         slug="add-locations-from-google-maps",
-        title="Cómo añadir un lugar desde un enlace de Google Maps",
-        summary="Pega un enlace de Maps y Ntripi extrae las coordenadas, o coloca tú mismo el punto en el mapa.",
+        title="Cómo añadir un lugar desde Google Maps",
+        summary="Busca en OpenStreetMap y, si no lo encuentra, en Google Maps, o pega un enlace de Maps. De Google, Ntripi solo guarda el identificador del lugar.",
         category="building",
         schema=SCHEMA_HOWTO,
-        intro="Una parada puede obtener su ubicación de dos maneras: eligiendo el punto en el propio mapa de Ntripi, o pegando un enlace de Google Maps y dejando que Ntripi extraiga las coordenadas. Lo segundo suele ser más rápido, porque probablemente ya has encontrado el lugar allí.",
+        intro="Una parada obtiene su ubicación de tres maneras: buscándola —primero en OpenStreetMap, luego en Google Maps cuando OpenStreetMap no conoce el lugar—, pegando un enlace de Google Maps o colocando el punto en el mapa de Ntripi. Buscar suele ser lo más rápido, sin salir de la aplicación para copiar un enlace.",
         blocks=(
             Block(
-                anchor="paste-a-link",
-                heading="Pegar un enlace de Google Maps",
+                anchor="search-google-maps",
+                heading="Busca en OpenStreetMap y luego en Google Maps",
                 kind=KIND_STEP,
-                body="""En el campo de ubicación de la parada, cambia a la opción de enlace y pega la URL. Ntripi extrae las coordenadas y conserva el enlace, así que la parada muestra una pequeña vista previa del mapa y podrás abrir el lugar en Maps más adelante.
+                body="""En la ubicación de la parada, abre la pestaña **Google Maps**, escribe el lugar y pulsa **Buscar**. Ntripi busca primero en OpenStreetMap. Cuando OpenStreetMap no encuentra nada, Ntripi pregunta a Google Maps por sí mismo; también puedes tocar **Buscar en Google Maps** bajo los resultados de OpenStreetMap. Las sugerencias de Google siguen entonces lo que escribes.
 
-Funcionan tanto la URL larga de escritorio como el enlace corto para compartir. Solo se aceptan direcciones de Google Maps: un enlace a cualquier otro sitio se rechaza en vez de guardarse e ignorarse en silencio.""",
+Elige una sugerencia y el lugar aparece en el mapa de Google. **Escribe tú el nombre de la parada**: de Google, Ntripi solo guarda el identificador del lugar y las palabras que buscaste — nunca el nombre ni la dirección de Google.""",
+            ),
+            Block(
+                anchor="paste-a-link",
+                heading="O pega un enlace de Google Maps",
+                kind=KIND_STEP,
+                body="""Pega la URL en el campo de enlace bajo la búsqueda. Ntripi guarda el enlace tal como lo pegaste y no lo abre, así que escribe tú el nombre de la parada.
+
+Un enlace largo copiado del navegador puede aparecer en el mapa del viaje. Un enlace corto para compartir (maps.app.goo.gl) no puede — no dice de qué lugar se trata —, así que Ntripi te sugiere buscar el lugar. Solo se aceptan direcciones de Google Maps: un enlace a cualquier otro sitio se rechaza en lugar de guardarse e ignorarse en silencio.""",
             ),
             Block(
                 anchor="pick-on-the-map",
@@ -521,17 +532,27 @@ Pide permiso de ubicación la primera vez. **Rechazarlo no bloquea nada**: el ma
             Block(
                 anchor="opening-in-maps",
                 heading="Abrir una parada, o todo el viaje, en tu aplicación de mapas",
-                body="""Una parada con ubicación ofrece abrirse en la aplicación de mapas que tengas instalada, para obtener indicaciones sobre la marcha sin volver a escribir nada.
+                body="""Una parada con ubicación ofrece abrirse en la aplicación de mapas que tengas instalada, para obtener indicaciones sobre la marcha sin volver a escribir nada. Un lugar encontrado en Google Maps, o guardado como enlace, se abre en Google Maps.
 
 La flecha sobre las paradas abre todo el viaje en Google Maps, la única aplicación de mapas que admite varias paradas a la vez, y te pregunta desde dónde empezar. **Desde mi ubicación** te da indicaciones desde donde estás, por las paradas del viaje — Google Maps te localiza por sí mismo, así que Ntripi nunca te pide tu ubicación. **Desde la primera parada** muestra solo el viaje, de su primera parada a la última. Donde el viaje tiene alternativas, la ruta pasa por la que ves en pantalla. Google Maps admite hasta 10 paradas desde tu ubicación y 11 desde la primera parada; un viaje más largo se abre con sus primeras paradas y la última, y Ntripi te lo avisa.
 
-El mapa de Ntripi sirve para leer el plan; tu aplicación de mapas sirve para recorrerlo.""",
+La vista **Mapa** de un viaje muestra esa misma ruta en el mapa de Google, por las paradas que ves en pantalla. Una parada que no puede situar — un enlace corto — se deja fuera, y el mapa dice cuántas.""",
+            ),
+            Block(
+                anchor="place-not-found",
+                heading="Cuando Google ya no encuentra un lugar",
+                body="""Google a veces retira un lugar: cerró, se mudó o se fusionó con otro. Ntripi comprueba cada lugar de Google más o menos una vez al año. Cuando uno ha desaparecido, quien edita el viaje lo ve en la parada, con **Buscar de nuevo** y las palabras de búsqueda anteriores listas; los lectores pueden seguir buscando esas palabras en Google Maps.""",
             ),
         ),
         keywords=(
             "google maps",
+            "buscar",
+            "encontrar un lugar",
+            "autocompletar",
+            "identificador del lugar",
             "enlace",
             "pegar",
+            "enlace corto",
             "coordenadas",
             "gps",
             "punto",
@@ -539,14 +560,14 @@ El mapa de Ntripi sirve para leer el plan; tu aplicación de mapas sirve para re
             "selector de mapa",
             "latitud",
             "longitud",
-            "dónde",
-            "cómo llegar",
+            "indicaciones",
             "ruta",
-            "navegación",
+            "navegar",
             "punto de partida",
+            "no encontrado",
         ),
         related=("add-places-to-an-itinerary", "permissions"),
-        updated="2026-10-29",
+        updated="2026-10-31",
         cta="Coloca tu primera parada en el mapa.",
     ),
     Article(
@@ -1438,9 +1459,9 @@ Cambiar tu contraseña o eliminar tu cuenta está en la pantalla de edición de 
                 anchor="location",
                 heading="Ubicación: ¿para qué?",
                 kind=KIND_FAQ,
-                body="""Para centrar el mapa en donde estás cuando añades una parada, y no tener que cruzar un continente para encontrar el pueblo en el que te encuentras.
+                body="""Para centrar el mapa en donde estás cuando añades una parada, y no tener que cruzar un continente para encontrar el pueblo en el que te encuentras. Y, mientras un viaje aún no tiene ninguna parada con ubicación, para mostrar primero los resultados cercanos en una búsqueda de lugares: solo tu ubicación aproximada (redondeada a unos 10 km) acompaña entonces a la búsqueda, y nunca se guarda.
 
-Se pide la primera vez que usas el botón de localización del mapa, y **solo mientras usas la aplicación**: no hay ubicación en segundo plano ni rastreo. Rechazarla no bloquea nada: el mapa se abre en otro sitio y tú te desplazas al tuyo.""",
+Se pide la primera vez que añades o editas una parada, y **solo mientras usas la aplicación**: no hay ubicación en segundo plano ni rastreo. Rechazarla no bloquea nada: el mapa se abre en otro sitio y tú te desplazas al tuyo.""",
             ),
             Block(
                 anchor="notifications",
@@ -1503,7 +1524,7 @@ Esto importa sobre todo para las notificaciones, que iOS no volverá a pedir: un
             "denegar",
         ),
         related=("your-data-and-privacy", "notifications", "add-locations-from-google-maps"),
-        updated="2026-09-01",
+        updated="2026-10-31",
         cta="Comprueba exactamente qué pide la aplicación, y qué no.",
     ),
     Article(
@@ -1520,6 +1541,7 @@ Esto importa sobre todo para las notificaciones, que iOS no volverá a pedir: un
                 kind=KIND_FAQ,
                 body="""- **Tu cuenta** — nombre visible, nombre de usuario, correo electrónico y fecha de nacimiento (que no se le muestra a nadie).
 - **Lo que creas** — viajes, paradas, notas, valoraciones y cualquier imagen que subas.
+- **Un lugar encontrado en Google Maps** — solo el identificador que Google le da y las palabras que buscaste, nunca el nombre ni la dirección de Google.
 - **Tus conexiones** — a quién sigues, quién te sigue, a quién has bloqueado.
 - **Datos de sesión** — lo justo para mantenerte con la sesión iniciada, y un identificador de dispositivo si activaste las notificaciones push.
 
@@ -1579,7 +1601,7 @@ La misma dirección cubre las solicitudes de rectificación, limitación y oposi
             "permissions", "sign-in-and-account-security",
             "share-an-itinerary-privately", "read-trips-in-another-language",
         ),
-        updated="2026-10-07",
+        updated="2026-10-31",
     ),
     Article(
         slug="sign-in-and-account-security",

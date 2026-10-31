@@ -15,6 +15,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from app.i18n import SUPPORTED
+from app.middleware import is_embed_path
 
 
 class LanguageCookieMiddleware(BaseHTTPMiddleware):
@@ -23,6 +24,10 @@ class LanguageCookieMiddleware(BaseHTTPMiddleware):
 
         content_type = response.headers.get("content-type", "")
         if "text/html" not in content_type:
+            return response
+        # A map frame's language is its own `language` query parameter: it
+        # varies by URL alone and must never write the site's cookie.
+        if is_embed_path(request.url.path):
             return response
 
         # HTML output depends on the visitor's preferred language.

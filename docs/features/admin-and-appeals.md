@@ -324,3 +324,4 @@ There is no admin client — `/admin` is server-rendered. The user-facing half:
 - [accounts-and-profiles.md](accounts-and-profiles.md) — `is_active`, `is_admin`
 - [passwords-and-email.md](passwords-and-email.md) — the shared email plumbing
 - `../../social_api/docs/csam_response_runbook.md`
+- [places-and-maps.md](places-and-maps.md) — the sweep's yearly place-ID refresh

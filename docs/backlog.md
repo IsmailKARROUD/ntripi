@@ -395,14 +395,47 @@ Three documents × six languages. English is authoritative and every other
 language carries a prevailing-language clause, which bounds the exposure in the
 meantime. → [features/legal-and-age-gate.md](features/legal-and-age-gate.md)
 
-### planned — a hardcoded Google Maps Embed key in the Dockerfile
+### planned — two build values hardcoded in the Dockerfile
 
-`Dockerfile:15` — `--dart-define=GOOGLE_MAPS_EMBED_API_KEY=AIzaSy…`, against the
-project's own "never hardcode secrets or environment values" rule. An Embed key
-necessarily ships to the client and this one is referrer-restricted, so exposure
-is not the issue; it is a **committed, un-rotatable build constant**.
-`API_BASE_URL` and `SHARE_BASE_URL` are hardcoded there too, which is what stops
-one image serving a staging environment. → [constraints.md](constraints.md#known-deviations)
+`Dockerfile:13-14` — `API_BASE_URL` and `SHARE_BASE_URL`, against the project's
+own "never hardcode environment values" rule, which is what stops one image
+serving a staging environment. The Google Maps Embed key that was the third
+moved to the backend (`GOOGLE_MAPS_EMBED_API_KEY`) on 2026-10-31.
+→ [constraints.md](constraints.md#known-deviations)
+
+### planned — revoke the old build-time Maps Embed key
+
+Builds installed before 2026-10-31 still embed maps with the key compiled into
+them, which is in git history. Once those builds have aged out, delete that key
+in Google Cloud; the server's new key is the only one in use.
+→ [features/places-and-maps.md](features/places-and-maps.md)
+
+### planned — a geocoder that can carry real traffic
+
+The OpenStreetMap search runs on the public Nominatim server, whose limit of
+one request per second applies to the whole app, not to each user. It now
+searches only on submit, as the policy requires, but launch traffic would
+still exceed it: self-host Nominatim (or Photon), or move to a paid OSM
+geocoder, before then. → [features/places-and-maps.md](features/places-and-maps.md)
+
+### idea — search-as-you-type on the OSM side
+
+Photon (komoot) is an OSM geocoder built for typing suggestions, which Nominatim
+forbids. Considered and set aside on 2026-10-31: a new third party to name in
+Privacy, on a free public server with no guarantees.
+
+### idea — the Google Maps logo under Google's suggestions
+
+Google's Places policies ask for the Google Maps logo where space allows and
+accept the text "Google Maps" where it is short; the stop form shows the text.
+The logo assets (light and dark) are not vendored.
+
+### idea — bug-report screenshots can capture Google's suggestions
+
+A screenshot taken while Google's suggestions are on screen keeps their text
+for as long as bug reports are kept (`BUG_REPORT_RETENTION_DAYS` after closing).
+User-initiated and short-lived, but it is the one place Google content can be
+stored.
 
 ### planned — `.env.example` is 14 settings behind
 

@@ -120,6 +120,13 @@ const kTranslationsConfigEndpoint = '/translations/config';
 /// Translate named content (never text) into the reader's language.
 const kTranslationsEndpoint = '/translations';
 
+/// Which Google place features the server has keys for.
+const kPlacesConfigEndpoint = '/places/config';
+
+/// Google's place suggestions for the stop form's search text (a POST, so the
+/// HTTP cache never keeps Google's answer).
+const kGooglePlaceAutocompleteEndpoint = '/places/google/autocomplete';
+
 /// List itineraries the authenticated user may edit but does not own. Returns
 /// feed-shaped rows (summary + owner attribution), newest first.
 const kSharedWithMeEndpoint = '/itineraries/shared-with-me';
@@ -240,12 +247,6 @@ const kShareBaseUrl = String.fromEnvironment(
 /// Android APK / Play Store download URL. Empty string means no link.
 const kAndroidDownloadUrl = String.fromEnvironment('ANDROID_DOWNLOAD_URL', defaultValue: '');
 
-/// Google Maps Embed API key for the stop link-preview map (never hardcoded —
-/// provisioned in Google Cloud, restricted to the Maps Embed API). Empty by
-/// default: the preview card falls back to a plain "Opens in Google Maps" row
-/// until the key is supplied via --dart-define, so the feature ships inert.
-const kGoogleMapsEmbedApiKey =
-    String.fromEnvironment('GOOGLE_MAPS_EMBED_API_KEY', defaultValue: '');
 
 /// Public-facing Terms of Service page URL.
 const kTermsUrl = '$kShareBaseUrl/terms';

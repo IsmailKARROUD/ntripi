@@ -28,6 +28,7 @@ import 'package:ntripi/features/itineraries/presentation/widgets/edit_pencil_but
 import 'package:ntripi/features/itineraries/presentation/widgets/leg_editor.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/leg_thoughts.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/link_preview_card.dart';
+import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/long_press_to_edit.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/open_in_maps_sheet.dart';
@@ -315,11 +316,20 @@ class _StopDetailView extends ConsumerWidget {
     final hasNotes = stop.notes != null && stop.notes!.trim().isNotEmpty;
     final hasAnnotations = stop.annotations.isNotEmpty;
     final hasTransit = inboundSegment != null || outboundSegment != null;
-    // A saved Google link previews the exact place; a coordinate-only stop
-    // previews its lat/lng. Prefer the link when both exist (richer place).
+    // A Google place maps by its ID, a saved link by what it names, a
+    // coordinate stop by its lat/lng.
     final hasMapLink = stop.mapUrl != null && isGoogleMapsUrl(stop.mapUrl!);
     final hasCoords = stop.lat != null && stop.lng != null;
-    final showMapPreview = hasMapLink || hasCoords;
+    final hasGooglePlace = !hasMapLink && stop.hasLiveGooglePlace;
+    // Google lost the place (D5): readers search its words, an editor is
+    // asked to find it again.
+    final placeLost = !hasMapLink && stop.googlePlaceMissing;
+    final showMapPreview = hasGooglePlace || hasMapLink || hasCoords;
+    // What Maps URLs search when a place ID is gone or missing.
+    final mapsQuery = (stop.googlePlaceQuery?.trim().isNotEmpty ?? false)
+        ? stop.googlePlaceQuery!.trim()
+        : (stop.placeName?.trim() ?? '');
+    final maps = ref.read(mapsLauncherServiceProvider);
     // One toggle swaps the notes, every annotation and the thoughts on the
     // transport in and out. Place names are never translated: nothing records
     // whether the author typed or imported one.
@@ -368,43 +378,63 @@ class _StopDetailView extends ConsumerWidget {
                         ref,
                         ReportTarget.stop(itineraryId, stop.id),
                       ),
-              // A saved Google Maps link opens straight in Google Maps (no
-              // app picker); a coordinate-only stop still offers the full
-              // installed-apps sheet.
-              onOpenInMaps: stop.mapUrl != null
-                  ? () => ref
-                      .read(mapsLauncherServiceProvider)
-                      .openUrl(stop.mapUrl!)
-                  : (stop.lat != null && stop.lng != null
-                      ? () => showOpenInMapsSheet(
-                            context: context,
-                            lat: stop.lat!,
-                            lng: stop.lng!,
-                            label: stop.placeName,
-                          )
-                      : null),
+              // A Google place or a saved Google Maps link opens straight in
+              // Google Maps (only Google knows where it is); a coordinate stop
+              // offers the installed-apps sheet.
+              onOpenInMaps: hasGooglePlace
+                  ? () => maps.openGooglePlace(stop.googlePlaceId!, mapsQuery)
+                  : placeLost && mapsQuery.isNotEmpty
+                      ? () => maps.searchGoogleMaps(mapsQuery)
+                      : stop.mapUrl != null
+                          ? () => maps.openUrl(stop.mapUrl!)
+                          : (hasCoords
+                              ? () => showOpenInMapsSheet(
+                                    context: context,
+                                    lat: stop.lat!,
+                                    lng: stop.lng!,
+                                    label: stop.placeName,
+                                  )
+                              : null),
             ),
           ),
 
           // ── Map preview ────────────────────────────────────────────────────
           // Sits under the hero so the map is right beside the place it names.
-          // LinkPreviewCard is self-contained (own providers/key/padding) and
-          // degrades to an "Opens in Google Maps" row when no embed is possible.
+          // LinkPreviewCard is self-contained (own providers/padding) and
+          // degrades to an "Opens in Google Maps" row when no map is possible.
           if (showMapPreview) ...[
             SliverToBoxAdapter(
               child: _SectionLabel(
                   icon: Icons.map_rounded, label: l10n.mapSection),
             ),
             SliverToBoxAdapter(
-              child: hasMapLink
-                  // Pass stored coords too: on web (no unfurl) they're the
-                  // fallback embed query when the saved link carries none.
-                  ? LinkPreviewCard(
-                      url: stop.mapUrl!, lat: stop.lat, lng: stop.lng)
-                  : LinkPreviewCard.coordinates(
-                      lat: stop.lat!, lng: stop.lng!, label: stop.placeName),
+              child: hasGooglePlace
+                  ? LinkPreviewCard.googlePlace(
+                      placeId: stop.googlePlaceId!, query: mapsQuery)
+                  : hasMapLink
+                      ? LinkPreviewCard(
+                          url: stop.mapUrl!, placeId: stop.googlePlaceId)
+                      : LinkPreviewCard.coordinates(
+                          lat: stop.lat!,
+                          lng: stop.lng!,
+                          label: stop.placeName),
             ),
           ],
+          if (placeLost && mayEdit)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Row(
+                  children: [
+                    Expanded(child: SheetErrorRow(l10n.googlePlaceMissing)),
+                    TextButton(
+                      onPressed: () => _openStopForm(context, ref),
+                      child: Text(l10n.googlePlaceSearchAgain),
+                    ),
+                  ],
+                ),
+              ),
+            ),
 
           // ── Stats row: time · cost ─────────────────────────────────────────
           SliverToBoxAdapter(
@@ -598,6 +628,14 @@ class _StopHero extends StatelessWidget {
     this.onOpenInMaps,
   });
 
+  // Who the location's data is from, under it: OpenStreetMap's licence asks
+  // for the credit, and it shows a reader (or Google) what came from where.
+  String? _creditText(AppLocalizations l10n) => switch (stop.placeSource) {
+        PlaceSource.osm => l10n.placeCreditOpenStreetMap,
+        PlaceSource.google || PlaceSource.link => 'Google Maps',
+        _ => null,
+      };
+
   // Prefer the human address; fall back to raw coordinates so a map-picked
   // stop (lat/lng but no address text) still shows its location.
   String? get _locationText {
@@ -726,6 +764,15 @@ class _StopHero extends StatelessWidget {
                                     ),
                                   ),
                                 ],
+                              ),
+                            ),
+                          if (_creditText(AppLocalizations.of(context)!)
+                              case final credit?)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Text(
+                                credit,
+                                style: TextStyle(fontSize: 11, color: nt.text2),
                               ),
                             ),
                         ],
