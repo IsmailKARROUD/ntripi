@@ -11,7 +11,6 @@ import 'dart:typed_data';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ntripi/core/api/api_client.dart';
-import 'package:ntripi/core/api/api_endpoints.dart';
 import 'package:ntripi/core/cache/image_cache.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
 import 'package:ntripi/core/providers/reload_keeps_content.dart';
@@ -20,17 +19,12 @@ import 'package:ntripi/features/profile/domain/violation.dart';
 import 'package:ntripi/shared/models/follow.dart';
 import 'package:ntripi/shared/models/user.dart';
 
-/// CachedNetworkImage / putFile key the entry by the absolute URL. The server
-/// sometimes returns a relative path (filesystem backend) and sometimes an
-/// absolute R2 URL — normalize before touching the cache.
-String _resolveAbsoluteUrl(String url) =>
-    url.startsWith('/') ? '$kApiBaseUrl$url' : url;
-
 /// Drop any stale entry for [url] in our project-wide image cache and seed
 /// it with the freshly uploaded [bytes]. The next `CachedNetworkImage(url)`
 /// render reads from disk — no network roundtrip, no flash of the old image.
 Future<void> _refreshImageCache(String url, Uint8List bytes) async {
-  final absUrl = _resolveAbsoluteUrl(url);
+  // CachedNetworkImage and putFile key the entry by the absolute URL.
+  final absUrl = absoluteImageUrl(url);
   await CachedNetworkImage.evictFromCache(
     absUrl,
     cacheManager: NtripiImageCacheManager(),
@@ -48,7 +42,7 @@ Future<void> _refreshImageCache(String url, Uint8List bytes) async {
 Future<void> _evictImageCache(String? url) async {
   if (url == null) return;
   await CachedNetworkImage.evictFromCache(
-    _resolveAbsoluteUrl(url),
+    absoluteImageUrl(url),
     cacheManager: NtripiImageCacheManager(),
   );
 }

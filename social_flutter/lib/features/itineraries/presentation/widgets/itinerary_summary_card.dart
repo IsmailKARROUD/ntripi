@@ -5,7 +5,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ntripi/core/api/api_endpoints.dart';
 import 'package:ntripi/core/cache/image_cache.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary.dart';
@@ -42,9 +41,7 @@ class ItinerarySummaryCard extends ConsumerWidget {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final coverUrl = itinerary.coverImageUrl != null
-        ? (itinerary.coverImageUrl!.startsWith('/')
-            ? '$kApiBaseUrl${itinerary.coverImageUrl}'
-            : itinerary.coverImageUrl!)
+        ? absoluteImageUrl(itinerary.coverImageUrl!)
         : null;
 
     return GestureDetector(

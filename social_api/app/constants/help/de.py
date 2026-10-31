@@ -106,6 +106,7 @@ RELEASES: tuple[Release, ...] = (
             "**Wählen Sie, wo die Route beginnt.** Der Pfeil über den Stopps fragt jetzt, wo es losgehen soll, bevor sich Google Maps öffnet: **Von meinem Standort**, für die Route von dort, wo Sie sind, oder **Ab dem ersten Stopp**, um nur die Reise zu sehen.",
             "**Einen Ort finden, den Google Maps kennt, ohne Ntripi zu verlassen.** In der Position eines Stopps sucht der Tab **Google Maps** zuerst in OpenStreetMap und dann in Google Maps; von einem Google-Ort behält Ntripi nur seine Kennung, und den Namen des Stopps geben Sie selbst ein. Eine Suche startet, wenn Sie auf **Suchen** tippen. Einen Link einzufügen geht weiterhin, und Ntripi öffnet ihn nicht mehr.",
             "**Die Karte der Reise ist ihre Route.** Die **Karten**-Ansicht zeigt jetzt die Route durch die Stopps auf Ihrem Bildschirm, auf der Karte von Google — Google-Orte eingeschlossen.",
+            "**Feed und Ihr Profil an den beiden Enden der Leiste.** Die Leiste unten lautet nun Feed, Suche, Reiserouten, Gespeichert, Profil, und der Tab Profil zeigt Ihr Profilfoto, sobald Sie eines hinzugefügt haben.",
             "**Aktualisierte Nutzungsbedingungen und Datenschutzerklärung.** Sie decken jetzt Google Maps ab, das einen Teil der Karten von Ntripi und seine Ortssuche liefert. Sie werden einmal gebeten, sie anzunehmen.",
         ),
     ),
@@ -154,11 +155,11 @@ Suchen Sie den Bestätigungslink in Ihrem Posteingang. Wenn Sie sich mit derselb
                 kind=KIND_STEP,
                 body="""Die Leiste unten hat fünf Tabs. Von links nach rechts:
 
+- **Feed** — öffentliche Reisen von allen, in der Reihenfolge **Top** und **Neueste**.
 - **Suche** — findet *Personen*, keine Reisen. Suchen Sie nach Benutzernamen.
-- **Profil** — Ihr eigenes Profil und das Zahnrad, das alle Einstellungen öffnet.
 - **Reiserouten** — Ihre eigenen Reisen sowie die, zu deren Bearbeitung Sie eingeladen wurden.
 - **Gespeichert** — Reisen, die Sie mit einem Lesezeichen versehen haben.
-- **Feed** — öffentliche Reisen von allen, in der Reihenfolge **Top** und **Neueste**.
+- **Profil** — Ihr eigenes Profil und das Zahnrad, das alle Einstellungen öffnet. Sobald Sie ein Profilfoto hinzugefügt haben, zeigt der Tab es an.
 
 Die Glocke neben dem Zahnrad in Ihrem Profil öffnet Ihre Benachrichtigungen.""",
             ),
@@ -191,7 +192,7 @@ Neue Reisen sind **nur für Sie** sichtbar, bis Sie das ändern — Ausprobieren
             "starten",
         ),
         related=("plan-a-trip-itinerary", "share-an-itinerary-privately"),
-        updated="2026-09-01",
+        updated="2026-10-31",
         cta="Lust, etwas zu planen? Legen Sie Ihre erste Reise an.",
     ),
     Article(
@@ -282,11 +283,11 @@ Siehe [wie Sie eine Reise teilen, ohne sie zu veröffentlichen](/help/share-an-i
                 anchor="bottom-nav",
                 heading="Die fünf Tabs",
                 kind=KIND_DIAGRAM,
-                body="""1. **Suche** — findet **Personen**, keine Reisen. Suchen Sie nach Benutzernamen. Öffentliche Reisen entdeckt man stattdessen über den Feed.
-2. **Profil** — Ihr eigenes Profil. Das Zahnrad öffnet alle Einstellungen, die Glocke daneben Ihre Benachrichtigungen.
+                body="""1. **Feed** — öffentliche Reisen von allen, in der Reihenfolge **Top** und **Neueste**.
+2. **Suche** — findet **Personen**, keine Reisen. Suchen Sie nach Benutzernamen. Öffentliche Reisen entdeckt man stattdessen über den Feed.
 3. **Reiserouten** — Ihre eigenen Reisen und eine zweite Ansicht für die, zu deren Bearbeitung andere Sie eingeladen haben.
 4. **Gespeichert** — Ihre Lesezeichen, mit einem Filterfeld.
-5. **Feed** — öffentliche Reisen von allen, in der Reihenfolge **Top** und **Neueste**.
+5. **Profil** — Ihr eigenes Profil; der Tab zeigt Ihr Profilfoto, sobald Sie eines hinzugefügt haben. Das Zahnrad öffnet alle Einstellungen, die Glocke daneben Ihre Benachrichtigungen.
 
 Ein Tippen auf den Tab, in dem Sie schon sind, bringt Sie an dessen Anfang zurück — der schnellste Weg aus einem tief verschachtelten Bildschirm.""",
             ),
@@ -335,7 +336,7 @@ Bei der Reise einer anderen Person bietet dieselbe Geste Melden oder Blockieren 
             "bildschirme",
         ),
         related=("getting-started", "app-settings"),
-        updated="2026-09-01",
+        updated="2026-10-31",
         cta="Sehen Sie selbst — öffnen Sie Ntripi.",
     ),
     Article(

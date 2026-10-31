@@ -324,8 +324,9 @@ ProviderScope
 - `initFirebase()` runs **before** `runApp` so the background message handler is
   registered first; it swallows a missing config so the app still launches.
 - **The router** (`core/router/app_router.dart`, 588 lines) has a
-  `StatefulShellRoute.indexedStack` with **five branches** — `/search`,
-  `/profile/me`, `/itineraries`, `/saved`, `/feed` — which keeps each tab's widget
+  `StatefulShellRoute.indexedStack` with **five branches** — `/feed`,
+  `/search`, `/itineraries`, `/saved`, `/profile/me`, in the bottom bar's order
+  (a branch's index is its tab's position) — which keeps each tab's widget
   tree alive. Root-level routes (`/splash`, `/login`, `/register`,
   `/forgot-password`, `/suspended`, and every `/itineraries/:id/...` detail route)
   sit outside it. `/profile/:userId` is declared **after** the shell so

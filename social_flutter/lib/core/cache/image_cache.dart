@@ -6,6 +6,7 @@
 // (TTL, key namespace, etc.) is changed in one place.
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/painting.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ntripi/core/api/api_endpoints.dart';
@@ -28,6 +29,21 @@ class NtripiImageCacheManager extends CacheManager {
     : super(Config(_key, stalePeriod: kImageCacheStalePeriod));
 }
 
+/// A stored image URL as one an image can load: filesystem storage answers a
+/// relative `/uploads/…` path, R2 an absolute URL, which passes through.
+String absoluteImageUrl(String url) =>
+    url.startsWith('/') ? '$kApiBaseUrl$url' : url;
+
+/// How a stored image URL becomes something to draw — through
+/// [NtripiImageCacheManager], so it is the same disk and memory copy
+/// `UserAvatar` draws. A provider because the real cache cannot run under test.
+final cachedImageProvider = Provider<ImageProvider Function(String url)>(
+  (ref) => (url) => CachedNetworkImageProvider(
+        absoluteImageUrl(url),
+        cacheManager: NtripiImageCacheManager(),
+      ),
+);
+
 /// Drops the cached copies of itinerary covers — on disk and in memory — so the
 /// next build fetches them again. A cover keeps its storage key when it is
 /// replaced (`itineraries/{id}.jpg`, no `?v=`), so this is the only way a new
@@ -49,7 +65,7 @@ class ImageCacheEviction {
   /// absolute; nulls and repeats are skipped.
   Future<void> evict(Iterable<String?> urls) => Future.wait([
         for (final url in {...urls.whereType<String>()})
-          _safely(url.startsWith('/') ? '$kApiBaseUrl$url' : url),
+          _safely(absoluteImageUrl(url)),
       ]);
 
   Future<void> _safely(String url) async {

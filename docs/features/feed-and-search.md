@@ -105,7 +105,7 @@ page.
 
 ## Flutter surface
 
-- **`FeedScreen`** — route `/feed`, its own shell branch (branch 5).
+- **`FeedScreen`** — route `/feed`, its own shell branch (branch 1).
   - `feedProvider` — `AsyncNotifierProvider`, the loaded pages. `loadMore` skips
     ids already shown (one trip published between pages shifted every row down
     one and repeated the last card), drops a page that belongs to a list rebuilt
@@ -126,7 +126,7 @@ page.
     written when its language is among the reader's profile `languages`, else
     the translation with a lit marker — either way one tap, with no request,
     flips it ([translations.md](translations.md#flutter-surface)).
-- **`SearchScreen`** — route `/search`, shell branch 1, with nested
+- **`SearchScreen`** — route `/search`, shell branch 2, with nested
   `/search/profile/:userId` and its `followers` / `following` children.
   - `searchQueryProvider` — `NotifierProvider`, the query string.
   - `searchResultsProvider` — `AsyncNotifierProvider`.

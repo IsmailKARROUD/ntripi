@@ -106,6 +106,7 @@ RELEASES: tuple[Release, ...] = (
             "**Choisissez d’où part le trajet.** La flèche au-dessus des étapes demande maintenant d’où partir avant d’ouvrir Google Maps : **Depuis ma position**, pour l’itinéraire depuis l’endroit où vous êtes, ou **Depuis la première étape**, pour voir seulement le voyage.",
             "**Trouvez un lieu que connaît Google Maps, sans quitter Ntripi.** Dans la position d’une étape, l’onglet **Google Maps** cherche d’abord dans OpenStreetMap, puis dans Google Maps ; d’un lieu Google, Ntripi ne garde que son identifiant, et c’est vous qui nommez l’étape. Une recherche part quand vous appuyez sur **Rechercher**. Coller un lien fonctionne toujours, et Ntripi ne l’ouvre plus.",
             "**La carte du voyage, c’est son trajet.** La vue **Carte** montre désormais le trajet par les étapes affichées à l’écran, sur la carte de Google — lieux Google compris.",
+            "**Le Fil et votre profil aux deux bouts de la barre.** La barre du bas se lit désormais Fil, Recherche, Itinéraires, Enregistrés, Profil, et l’onglet Profil affiche votre photo de profil une fois que vous en avez ajouté une.",
             "**Conditions et Politique de confidentialité mises à jour.** Elles couvrent désormais Google Maps, qui dessine une partie des cartes de Ntripi et sa recherche de lieux. Il vous sera demandé de les accepter une fois.",
         ),
     ),
@@ -154,11 +155,11 @@ Cherchez le lien de vérification dans votre boîte de réception. Si vous vous 
                 kind=KIND_STEP,
                 body="""La barre du bas comporte cinq onglets. De gauche à droite :
 
+- **Fil** — les voyages publics de tout le monde, dans l’ordre **Top** et **Récents**.
 - **Recherche** — trouve des *personnes*, pas des voyages. Cherchez par nom d’utilisateur.
-- **Profil** — votre propre profil, et l’icône d’engrenage qui ouvre tous les paramètres.
 - **Itinéraires** — les voyages qui vous appartiennent, plus ceux que l’on vous a invité à modifier.
 - **Enregistrés** — les voyages que vous avez mis en favori.
-- **Fil** — les voyages publics de tout le monde, dans l’ordre **Top** et **Récents**.
+- **Profil** — votre propre profil, et l’icône d’engrenage qui ouvre tous les paramètres. Une fois votre photo de profil ajoutée, l’onglet l’affiche.
 
 La cloche à côté de l’engrenage, sur votre profil, ouvre vos notifications.""",
             ),
@@ -192,7 +193,7 @@ Les nouveaux voyages ne sont visibles que par **vous seul** tant que vous ne cha
             "prise en main",
         ),
         related=("plan-a-trip-itinerary", "share-an-itinerary-privately"),
-        updated="2026-09-01",
+        updated="2026-10-31",
         cta="Envie de planifier quelque chose ? Lancez votre premier voyage.",
     ),
     Article(
@@ -283,11 +284,11 @@ Voir [comment partager un voyage sans le rendre public](/help/share-an-itinerary
                 anchor="bottom-nav",
                 heading="Les cinq onglets",
                 kind=KIND_DIAGRAM,
-                body="""1. **Recherche** — trouve des **personnes**, pas des voyages. Cherchez par nom d’utilisateur. Les voyages publics se découvrent plutôt dans le Fil.
-2. **Profil** — votre propre profil. L’engrenage ouvre tous les paramètres ; la cloche à côté ouvre vos notifications.
+                body="""1. **Fil** — les voyages publics de tout le monde, dans l’ordre **Top** et **Récents**.
+2. **Recherche** — trouve des **personnes**, pas des voyages. Cherchez par nom d’utilisateur. Les voyages publics se découvrent plutôt dans le Fil.
 3. **Itinéraires** — les voyages qui vous appartiennent, et une seconde vue pour ceux que d’autres vous ont invité à modifier.
 4. **Enregistrés** — les voyages mis en favori, avec un champ de filtre.
-5. **Fil** — les voyages publics de tout le monde, dans l’ordre **Top** et **Récents**.
+5. **Profil** — votre propre profil ; l’onglet affiche votre photo de profil une fois que vous en avez ajouté une. L’engrenage ouvre tous les paramètres ; la cloche à côté ouvre vos notifications.
 
 Appuyer sur l’onglet où vous êtes déjà vous ramène en haut de celui-ci, c’est le moyen le plus rapide de sortir d’un écran profond.""",
             ),
@@ -336,7 +337,7 @@ Sur le voyage de quelqu’un d’autre, le même geste propose de signaler ou de
             "écrans",
         ),
         related=("getting-started", "app-settings"),
-        updated="2026-09-01",
+        updated="2026-10-31",
         cta="Voyez par vous-même — ouvrez Ntripi.",
     ),
     Article(

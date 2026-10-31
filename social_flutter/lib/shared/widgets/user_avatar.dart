@@ -36,7 +36,7 @@ class UserAvatar extends StatelessWidget {
     return CircleAvatar(
       radius: radius,
       backgroundImage: CachedNetworkImageProvider(
-        avatarUrl!,
+        absoluteImageUrl(avatarUrl!),
         cacheManager: NtripiImageCacheManager(),
       ),
       // Show placeholder on network image load error.

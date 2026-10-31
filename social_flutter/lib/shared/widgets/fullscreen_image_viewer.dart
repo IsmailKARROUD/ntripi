@@ -8,7 +8,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
-import 'package:ntripi/core/api/api_endpoints.dart';
 import 'package:ntripi/core/cache/image_cache.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 
@@ -23,8 +22,7 @@ void showFullscreenImage(
   Offset? sourcePosition,
 }) {
   if (imageUrl.isEmpty) return;
-  // Same relative→absolute rule the profile hero uses for cover images.
-  final resolved = imageUrl.startsWith('/') ? '$kApiBaseUrl$imageUrl' : imageUrl;
+  final resolved = absoluteImageUrl(imageUrl);
 
   // Map the tap point to a scale alignment (-1..1 across the screen) so the
   // ScaleTransition emanates from exactly where the user tapped.

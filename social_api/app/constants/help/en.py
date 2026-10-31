@@ -174,6 +174,10 @@ RELEASES: tuple[Release, ...] = (
             "**The trip's map is its route.** The **Map** view now shows the "
             "route through the stops on your screen, on Google's map — Google "
             "places included.",
+            "**Feed and your profile at the two ends of the bar.** The bar "
+            "along the bottom now reads Feed, Search, Itineraries, Saved, "
+            "Profile, and the Profile tab shows your profile photo once you "
+            "have added one.",
             "**Updated Terms and Privacy Policy.** They now cover Google Maps, "
             "which draws some of Ntripi's maps and its place search. You'll be "
             "asked to accept them once.",
@@ -210,7 +214,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="getting-started",
         schema=SCHEMA_HOWTO,
-        updated="2026-09-01",
+        updated="2026-10-31",
         keywords=(
             "sign up", "signup", "register", "registration", "new account",
             "first time", "beginner", "tour", "basics", "onboarding", "start",
@@ -260,14 +264,14 @@ ARTICLES: tuple[Article, ...] = (
                 kind=KIND_STEP,
                 body=(
                     "The bar along the bottom has five tabs. From left to right:\n\n"
+                    "- **Feed** — public trips from everyone, in **Top** and "
+                    "**Recent** order.\n"
                     "- **Search** — finds *people*, not trips. Search by username.\n"
-                    "- **Profile** — your own profile, and the gear icon that opens "
-                    "every setting.\n"
                     "- **Itineraries** — trips you own, plus any you have been "
                     "invited to edit.\n"
                     "- **Saved** — trips you bookmarked.\n"
-                    "- **Feed** — public trips from everyone, in **Top** and "
-                    "**Recent** order.\n\n"
+                    "- **Profile** — your own profile, and the gear icon that opens "
+                    "every setting. Once you add a profile photo, the tab shows it.\n\n"
                     "The bell beside the gear on your profile opens your "
                     "notifications."
                 ),
@@ -417,7 +421,7 @@ ARTICLES: tuple[Article, ...] = (
             "you will meet along the way."
         ),
         category="getting-started",
-        updated="2026-09-01",
+        updated="2026-10-31",
         keywords=(
             "icons", "buttons", "menu", "navigation", "tabs", "where is",
             "what does this button do", "interface", "layout",
@@ -436,16 +440,17 @@ ARTICLES: tuple[Article, ...] = (
                 heading="The five tabs",
                 kind=KIND_DIAGRAM,
                 body=(
-                    "1. **Search** — finds **people**, not trips. Search by "
+                    "1. **Feed** — public trips from everyone, in **Top** and "
+                    "**Recent** order.\n"
+                    "2. **Search** — finds **people**, not trips. Search by "
                     "username. Public trips are discovered through the Feed "
                     "instead.\n"
-                    "2. **Profile** — your own profile. The gear opens every "
-                    "setting; the bell beside it opens your notifications.\n"
                     "3. **Itineraries** — trips you own, and a second view for "
                     "trips other people invited you to edit.\n"
                     "4. **Saved** — trips you bookmarked, with a filter box.\n"
-                    "5. **Feed** — public trips from everyone, in **Top** and "
-                    "**Recent** order.\n\n"
+                    "5. **Profile** — your own profile; the tab shows your "
+                    "profile photo once you add one. The gear opens every "
+                    "setting; the bell beside it opens your notifications.\n\n"
                     "Tapping the tab you are already on returns you to the top of "
                     "it, which is the fastest way out of a deep screen."
                 ),

@@ -106,6 +106,7 @@ RELEASES: tuple[Release, ...] = (
             "**Elige desde dónde empieza la ruta.** La flecha sobre las paradas ahora pregunta desde dónde empezar antes de abrir Google Maps: **Desde mi ubicación**, para indicaciones desde donde estás, o **Desde la primera parada**, para ver solo el viaje.",
             "**Encuentra un lugar que conoce Google Maps, sin salir de Ntripi.** En la ubicación de una parada, la pestaña **Google Maps** busca primero en OpenStreetMap y luego en Google Maps; de un lugar de Google, Ntripi solo guarda su identificador, y el nombre de la parada lo pones tú. Una búsqueda empieza cuando pulsas **Buscar**. Pegar un enlace sigue funcionando, y Ntripi ya no lo abre.",
             "**El mapa del viaje es su ruta.** La vista **Mapa** muestra ahora la ruta por las paradas que ves en pantalla, en el mapa de Google, con los lugares de Google incluidos.",
+            "**El Feed y tu perfil, en los dos extremos de la barra.** La barra inferior queda ahora Feed, Buscar, Itinerarios, Guardados, Perfil, y la pestaña Perfil muestra tu foto de perfil cuando añades una.",
             "**Condiciones y Política de privacidad actualizadas.** Ahora cubren Google Maps, que dibuja parte de los mapas de Ntripi y su búsqueda de lugares. Se te pedirá aceptarlas una vez.",
         ),
     ),
@@ -154,11 +155,11 @@ Busca el enlace de verificación en tu bandeja de entrada. Si te registraste con
                 kind=KIND_STEP,
                 body="""La barra inferior tiene cinco pestañas. De izquierda a derecha:
 
+- **Feed** — viajes públicos de todo el mundo, en orden **Top** y **Recientes**.
 - **Buscar** — encuentra *personas*, no viajes. Busca por nombre de usuario.
-- **Perfil** — tu propio perfil, y el engranaje que abre todos los ajustes.
 - **Itinerarios** — los viajes que son tuyos, más aquellos a los que te han invitado a editar.
 - **Guardados** — los viajes que has marcado.
-- **Feed** — viajes públicos de todo el mundo, en orden **Top** y **Recientes**.
+- **Perfil** — tu propio perfil, y el engranaje que abre todos los ajustes. Cuando añades una foto de perfil, la pestaña la muestra.
 
 La campana junto al engranaje, en tu perfil, abre tus notificaciones.""",
             ),
@@ -191,7 +192,7 @@ Los viajes nuevos son visibles **solo para ti** hasta que lo cambies, así que e
             "comenzar",
         ),
         related=("plan-a-trip-itinerary", "share-an-itinerary-privately"),
-        updated="2026-09-01",
+        updated="2026-10-31",
         cta="¿Listo para planificar algo? Empieza tu primer viaje.",
     ),
     Article(
@@ -282,11 +283,11 @@ Consulta [cómo compartir un viaje sin hacerlo público](/help/share-an-itinerar
                 anchor="bottom-nav",
                 heading="Las cinco pestañas",
                 kind=KIND_DIAGRAM,
-                body="""1. **Buscar** — encuentra **personas**, no viajes. Busca por nombre de usuario. Los viajes públicos se descubren en el Feed.
-2. **Perfil** — tu propio perfil. El engranaje abre todos los ajustes; la campana de al lado abre tus notificaciones.
+                body="""1. **Feed** — viajes públicos de todo el mundo, en orden **Top** y **Recientes**.
+2. **Buscar** — encuentra **personas**, no viajes. Busca por nombre de usuario. Los viajes públicos se descubren en el Feed.
 3. **Itinerarios** — los viajes que son tuyos, y una segunda vista para los que otras personas te han invitado a editar.
 4. **Guardados** — los viajes que has marcado, con un campo de filtro.
-5. **Feed** — viajes públicos de todo el mundo, en orden **Top** y **Recientes**.
+5. **Perfil** — tu propio perfil; la pestaña muestra tu foto de perfil cuando añades una. El engranaje abre todos los ajustes; la campana de al lado abre tus notificaciones.
 
 Tocar la pestaña en la que ya estás te devuelve arriba del todo, que es la salida más rápida de una pantalla profunda.""",
             ),
@@ -335,7 +336,7 @@ En el viaje de otra persona el mismo gesto ofrece denunciar o bloquear. Los dos 
             "pantallas",
         ),
         related=("getting-started", "app-settings"),
-        updated="2026-09-01",
+        updated="2026-10-31",
         cta="Compruébalo tú mismo: abre Ntripi.",
     ),
     Article(

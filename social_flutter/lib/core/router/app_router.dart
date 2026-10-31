@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/core/cache/image_cache.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
 import 'package:ntripi/core/router/app_links.dart';
 import 'package:ntripi/core/router/navigation_ext.dart';
@@ -15,6 +16,7 @@ import 'package:ntripi/features/auth/presentation/login_screen.dart';
 import 'package:ntripi/features/auth/presentation/register_screen.dart';
 import 'package:ntripi/features/auth/presentation/splash_screen.dart';
 import 'package:ntripi/features/auth/presentation/suspended_screen.dart';
+import 'package:ntripi/features/auth/providers/auth_provider.dart';
 import 'package:ntripi/features/feed/presentation/feed_screen.dart';
 import 'package:ntripi/features/follows/presentation/follow_list_screen.dart';
 import 'package:ntripi/features/follows/presentation/follow_requests_screen.dart';
@@ -42,8 +44,10 @@ import 'package:ntripi/features/profile/presentation/delete_account_screen.dart'
 import 'package:ntripi/features/profile/presentation/profile_by_username_screen.dart';
 import 'package:ntripi/features/profile/presentation/profile_screen.dart';
 import 'package:ntripi/features/profile/presentation/widgets/profile_unavailable_view.dart';
+import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/features/search/presentation/search_screen.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/profile_tab_icon.dart';
 
 /// Routes that require no authentication check — the only screens a signed-out
 /// user can be on, which is also how a notification tap knows to stand down.
@@ -121,7 +125,14 @@ final GoRouter appRouter = GoRouter(
           (context, state, navigationShell) =>
               _AppShell(navigationShell: navigationShell),
       branches: [
-        // Branch 0 — Search
+        // Branch 0 — Feed (public discovery feed)
+        StatefulShellBranch(
+          routes: [
+            GoRoute(path: '/feed', builder: (_, __) => const FeedScreen()),
+          ],
+        ),
+
+        // Branch 1 — Search
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -163,7 +174,36 @@ final GoRouter appRouter = GoRouter(
           ],
         ),
 
-        // Branch 1 — Own profile
+        // Branch 2 — Itineraries
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/itineraries',
+              builder: (_, __) => const ItineraryListScreen(),
+            ),
+            // NOTE: the itinerary detail / form / stop / map-picker routes are
+            // deliberately NOT nested here. They live at the root level (below,
+            // next to /profile/:userId) so they render full-screen on the root
+            // navigator. Nesting them in this branch made pushing them from a
+            // root-level page (e.g. another user's profile, also root) place a
+            // SECOND copy of the shell page on the root navigator → duplicate
+            // page-key assertion → the navigator wedges and the app freezes
+            // (ANR). go_router also forbids a branch sub-route from carrying a
+            // root parentNavigatorKey, so escaping requires living at the root.
+          ],
+        ),
+
+        // Branch 3 — Saved (bookmarked itineraries)
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/saved',
+              builder: (_, __) => const SavedItinerariesScreen(),
+            ),
+          ],
+        ),
+
+        // Branch 4 — Own profile
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -210,42 +250,6 @@ final GoRouter appRouter = GoRouter(
               path: '/settings/about',
               builder: (_, __) => const AboutScreen(),
             ),
-          ],
-        ),
-
-        // Branch 2 — Itineraries
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/itineraries',
-              builder: (_, __) => const ItineraryListScreen(),
-            ),
-            // NOTE: the itinerary detail / form / stop / map-picker routes are
-            // deliberately NOT nested here. They live at the root level (below,
-            // next to /profile/:userId) so they render full-screen on the root
-            // navigator. Nesting them in this branch made pushing them from a
-            // root-level page (e.g. another user's profile, also root) place a
-            // SECOND copy of the shell page on the root navigator → duplicate
-            // page-key assertion → the navigator wedges and the app freezes
-            // (ANR). go_router also forbids a branch sub-route from carrying a
-            // root parentNavigatorKey, so escaping requires living at the root.
-          ],
-        ),
-
-        // Branch 3 — Saved (bookmarked itineraries)
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/saved',
-              builder: (_, __) => const SavedItinerariesScreen(),
-            ),
-          ],
-        ),
-
-        // Branch 4 — Feed (public discovery feed)
-        StatefulShellBranch(
-          routes: [
-            GoRoute(path: '/feed', builder: (_, __) => const FeedScreen()),
           ],
         ),
       ],
@@ -365,7 +369,7 @@ final GoRouter appRouter = GoRouter(
 
     // Other-user profile routes at the root level with parentNavigatorKey so
     // they push on the root navigator (full-screen) rather than inside a branch.
-    // Listed AFTER StatefulShellRoute so /profile/me in Branch 1 is matched
+    // Listed AFTER StatefulShellRoute so /profile/me in Branch 4 is matched
     // first — this avoids the /profile/:userId wildcard catching "me".
     GoRoute(
       path: '/profile/:userId',
@@ -454,6 +458,14 @@ class _AppShellState extends ConsumerState<_AppShell> {
         !ref
             .watch(isOnlineProvider)
             .maybeWhen(data: (online) => online, orElse: () => true);
+    // TosGate's gate: it already loads the profile app-wide, so this costs no request.
+    final signedIn = ref.watch(hasSessionProvider).value ?? false;
+    final avatarUrl = signedIn
+        ? ref.watch(myProfileProvider.select((p) => p.value?.avatarUrl))
+        : null;
+    final photo = avatarUrl == null || avatarUrl.isEmpty
+        ? null
+        : ref.watch(cachedImageProvider)(avatarUrl);
     return Scaffold(
       // Resizes (the default) to lift the tabs above the keyboard, and hands them
       // no keyboard inset — so a tab's own Scaffold has nothing left to lift.
@@ -506,15 +518,15 @@ class _AppShellState extends ConsumerState<_AppShell> {
           },
           items: [
             BottomNavigationBarItem(
+              icon: const Icon(Icons.dynamic_feed_outlined),
+              activeIcon: const Icon(Icons.dynamic_feed),
+              label: AppLocalizations.of(context)!.navFeed,
+            ),
+            BottomNavigationBarItem(
               // person_search, not plain search: this tab only searches users.
               icon: const Icon(Icons.person_search_outlined),
               activeIcon: const Icon(Icons.person_search),
               label: AppLocalizations.of(context)!.navSearch,
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.person_outline_rounded),
-              activeIcon: const Icon(Icons.person_rounded),
-              label: AppLocalizations.of(context)!.navProfile,
             ),
             BottomNavigationBarItem(
               icon: const Icon(Icons.article_outlined),
@@ -527,9 +539,9 @@ class _AppShellState extends ConsumerState<_AppShell> {
               label: AppLocalizations.of(context)!.navSaved,
             ),
             BottomNavigationBarItem(
-              icon: const Icon(Icons.dynamic_feed_outlined),
-              activeIcon: const Icon(Icons.dynamic_feed),
-              label: AppLocalizations.of(context)!.navFeed,
+              icon: ProfileTabIcon(photo: photo),
+              activeIcon: ProfileTabIcon(photo: photo, selected: true),
+              label: AppLocalizations.of(context)!.navProfile,
             ),
           ],
         ),

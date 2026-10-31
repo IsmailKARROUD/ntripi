@@ -40,7 +40,6 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:ntripi/core/api/api_endpoints.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ntripi/core/api/api_client.dart';
@@ -1153,9 +1152,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
 
                   // Resolve absolute cover URL once.
                   final coverUrl = itinerary.coverImageUrl != null
-                      ? (itinerary.coverImageUrl!.startsWith('/')
-                          ? '$kApiBaseUrl${itinerary.coverImageUrl}'
-                          : itinerary.coverImageUrl!)
+                      ? absoluteImageUrl(itinerary.coverImageUrl!)
                       : null;
 
                   return RefreshIndicator(
@@ -2234,11 +2231,8 @@ class _OwnerRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final nt = context.nt;
-    final avatarUrl = owner.avatarUrl != null
-        ? (owner.avatarUrl!.startsWith('/')
-            ? '$kApiBaseUrl${owner.avatarUrl}'
-            : owner.avatarUrl!)
-        : null;
+    final avatarUrl =
+        owner.avatarUrl != null ? absoluteImageUrl(owner.avatarUrl!) : null;
     final ratingAvg = itinerary.ratingAvg;
     final myRating = ref.watch(myRatingProvider(itineraryId)).value;
 

@@ -14,6 +14,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
 import 'package:ntripi/core/router/app_router.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/auth/providers/auth_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/keyboard_avoidance.dart';
 
@@ -39,7 +40,11 @@ Widget _shell(Widget tab) {
     ],
   );
   return ProviderScope(
-    overrides: [isOnlineProvider.overrideWith((ref) => Stream.value(true))],
+    overrides: [
+      isOnlineProvider.overrideWith((ref) => Stream.value(true)),
+      // Signed out, the shell reads no profile for the Profile tab's photo.
+      hasSessionProvider.overrideWith((ref) async => false),
+    ],
     child: MaterialApp.router(
       theme: buildNtripiTheme(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,

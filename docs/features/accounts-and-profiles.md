@@ -165,7 +165,7 @@ itinerary_id, stop_id}]}` — derived from the user's stops, filtered by
 
 ## Flutter surface
 
-- **Screens** — `ProfileScreen` (`/profile/me` in shell branch 2, and
+- **Screens** — `ProfileScreen` (`/profile/me` in shell branch 5, and
   `/profile/:userId` at root, plus `/search/profile/:userId` nested),
   `DeleteAccountScreen` (`/settings/delete-account`), `CountryPickerScreen`
   (pushed imperatively from `profile_edit_form.dart`),
@@ -181,6 +181,16 @@ itinerary_id, stop_id}]}` — derived from the user's stops, filtered by
   | `userLocationsProvider` | `AsyncNotifierProvider.family` | the visited-locations map |
 - **Model** — `User` (`shared/models/user.dart`), manual
   `fromJson`/`toJson`/`copyWith`.
+- **The Profile tab shows your photo** (since 2026-10-31) — `ProfileTabIcon`
+  (`shared/widgets/profile_tab_icon.dart`), the last tab of the bottom bar.
+  The shell reads `avatarUrl` from `myProfileProvider` under `TosGate`'s gate
+  (`hasSessionProvider`), so it never sends a request of its own, and draws it
+  through `cachedImageProvider` (`core/cache/image_cache.dart`). The photo keeps
+  to the icon's 24 px box, so the Profile label lines up with the others; the
+  open tab rings it in the bar's selected color. With no photo, while it loads,
+  when it fails to load and when nobody is signed in, the tab shows the person
+  icon it always had. A changed or removed photo shows at once: the tab reads
+  the same state the profile adopts.
 - Profile screens use the Editorial layout; the map is `flutter_map` +
   OpenStreetMap.
 - The delete flow is Tier-3 destructive: `confirmTypedDestructiveAction()`.

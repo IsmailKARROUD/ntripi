@@ -9,7 +9,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:ntripi/core/api/api_endpoints.dart';
 import 'package:ntripi/core/cache/image_cache.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/features/profile/domain/visited_location.dart';
@@ -223,7 +222,7 @@ class ProfileMapHero extends StatelessWidget {
   String? _resolveCoverUrl() {
     final raw = coverImageUrl;
     if (raw == null || raw.isEmpty) return null;
-    return raw.startsWith('/') ? '$kApiBaseUrl$raw' : raw;
+    return absoluteImageUrl(raw);
   }
 
   @override

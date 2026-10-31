@@ -2720,3 +2720,56 @@ results become `autoDispose` (`placeSearchProvider`), like Google's.
   a new search, billed on Google.
 - **Showing the list only while the field has focus**: the keyboard's Search
   key takes the focus away, so a submitted search would hide its own answer.
+
+### 2026-10-31 — Feed and Profile at the ends of the bar; the Profile tab shows your photo
+
+**Context.** The bottom bar ran Search, Profile, Itineraries, Saved, Feed — the
+order the 2026-05-19 `StatefulShellRoute` entry records. The owner asked for
+Feed and Profile at the two ends, and for the Profile tab to show the user's
+photo, with the person icon as the fallback.
+
+**Decision.**
+- The bar is Feed, Search, Itineraries, Saved, Profile. The shell's branches
+  are reordered with it, so a branch's index is still its tab's position and
+  `currentIndex` / `goBranch` need no mapping. Supersedes the order in the
+  2026-05-19 entry; nothing else in it changes.
+- The Profile tab draws the photo with `ProfileTabIcon`, inside the icon's own
+  24 px box: the bar sizes a tab by its icon (`Align(heightFactor: 1.0)`), and
+  a bigger box puts the Profile label lower than the others. The photo is 20 px,
+  the visual weight of the other glyphs, and the 2 px margin is where the open
+  tab's ring goes — a photo cannot turn green like an icon, so the ring takes
+  the bar's selected color (the owner's choice).
+- The fallback is exactly today's icon — outlined, filled when open — with no
+  photo, while it loads, when it fails, and signed out.
+- The shell reads `avatarUrl` under `TosGate`'s gate, which already loads the
+  profile app-wide, so the photo costs no request.
+- The image comes from `cachedImageProvider`, a provider for the same reason as
+  `imageCacheEvictionProvider`: the real cache cannot run under test. The
+  stored-URL rule (relative `/uploads/…` on filesystem storage) became
+  `absoluteImageUrl`, replacing seven inline copies; `UserAvatar`, which used
+  the raw URL, goes through it too.
+
+**Consequences.**
+- The app still opens on the Profile tab: home is `/profile/me` by path
+  (`pushOverHome`, splash, `popOr` fallbacks), never by index, so it is now the
+  rightmost tab (leftmost in Arabic).
+- A new photo (cache-busted with `?v=`) or a removed one shows on the tab at
+  once, through the state the profile adopts; `myProfileProvider` is reset on
+  sign-in and sign-out, so the next account never sees this photo.
+- Help centre: `getting-started` and `app-map` list the new order and the photo
+  in all six languages, the `bottom-nav` diagram draws the order, and 0.4.0's
+  release notes say so. The Arabic list reads right to left, as the bar does.
+- Tests: `profile_tab_icon_test.dart` (fallbacks, box, ring, label alignment in
+  a real bar) and `app_shell_tabs_test.dart` (branch order, label order, the
+  photo reaching the tab, no profile read signed out).
+
+**Alternatives rejected.**
+- **Reordering only the bar's items over the old branches**: two orders to keep
+  in step, with an index map in `onTap` and `currentIndex` that a later tab
+  change could miss.
+- **`UserAvatar` as the tab icon**: its failed load draws an empty circle, not
+  the bar's icon, and it ignores the bar's colors.
+- **A bigger photo, or a ring outside the icon's box**: either moves the Profile
+  label below the others.
+- **Showing the open tab by the label alone, or fading the photo when another
+  tab is open** — offered; the owner chose the ring.

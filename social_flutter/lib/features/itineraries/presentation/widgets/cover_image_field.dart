@@ -32,7 +32,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:ntripi/core/api/api_endpoints.dart';
 import 'package:ntripi/core/cache/image_cache.dart';
 import 'package:ntripi/core/moderation/nsfw_precheck.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
@@ -674,7 +673,7 @@ class _ImagePreview extends StatelessWidget {
             Image.memory(pickedBytes!, fit: BoxFit.cover)
           else if (networkUrl != null)
             CachedNetworkImage(
-              imageUrl: _absoluteUrl(networkUrl!),
+              imageUrl: absoluteImageUrl(networkUrl!),
               cacheManager: NtripiImageCacheManager(),
               fit: BoxFit.cover,
               errorWidget: (ctx, __, ___) => _broken(ctx),
@@ -775,10 +774,4 @@ class _ImagePlaceholder extends StatelessWidget {
       ),
     );
   }
-}
-
-/// If url is relative (from filesystem storage), prepend the API base URL.
-String _absoluteUrl(String url) {
-  if (url.startsWith('/')) return '$kApiBaseUrl$url';
-  return url;
 }
