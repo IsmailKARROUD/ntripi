@@ -26,6 +26,15 @@ import 'package:ntripi/features/itineraries/providers/places_providers.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 
 class PlaceSearchBox extends ConsumerStatefulWidget {
+  // Test keys: the field, its two buttons, the two lists and the Google row.
+  static const fieldKey = Key('placeSearch.field');
+  static const submitKey = Key('placeSearch.submit');
+  static const clearKey = Key('placeSearch.clear');
+  static const osmListKey = Key('placeSearch.osmList');
+  static const googleListKey = Key('placeSearch.googleList');
+  static const askGoogleKey = Key('placeSearch.askGoogle');
+  static const noticeKey = Key('placeSearch.notice');
+
   final TextEditingController controller;
 
   /// The Google Maps segment: offer Google when OSM does not have the place.
@@ -139,6 +148,7 @@ class _PlaceSearchBoxState extends ConsumerState<PlaceSearchBox> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TextField(
+          key: PlaceSearchBox.fieldKey,
           controller: widget.controller,
           textInputAction: TextInputAction.search,
           onSubmitted: (_) => _submit(),
@@ -154,11 +164,13 @@ class _PlaceSearchBoxState extends ConsumerState<PlaceSearchBox> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
+                        key: PlaceSearchBox.clearKey,
                         icon: const Icon(Icons.close_rounded, size: 18),
                         tooltip: l10n.mapLinkClear,
                         onPressed: _clear,
                       ),
                       IconButton(
+                        key: PlaceSearchBox.submitKey,
                         icon: Icon(Icons.arrow_forward_rounded,
                             size: 20, color: nt.forest),
                         tooltip: l10n.placeSearchButton,
@@ -190,13 +202,24 @@ class _PlaceSearchBoxState extends ConsumerState<PlaceSearchBox> {
     final async = ref.watch(placeSearchProvider);
     final askGoogle = googleEnabled
         ? _ActionRow(
+            key: PlaceSearchBox.askGoogleKey,
             icon: Icons.travel_explore_rounded,
             label: l10n.searchOnGoogleMaps,
             onTap: _switchToGoogle,
           )
         : null;
     if (async.isLoading) return const _Progress();
-    if (async.hasError) return askGoogle ?? const SizedBox.shrink();
+    if (async.hasError) {
+      // A search the user submitted must answer: say it failed, and offer
+      // Google where it is the fallback.
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _Notice(text: extractErrorMessage(async.error, l10n), error: true),
+          if (askGoogle != null) askGoogle,
+        ],
+      );
+    }
     final suggestions = async.value ?? const <PlaceSuggestion>[];
     if (suggestions.isEmpty) {
       final searchedThis = _submitted.isNotEmpty && _submitted == _text;
@@ -206,6 +229,7 @@ class _PlaceSearchBoxState extends ConsumerState<PlaceSearchBox> {
       return _Notice(text: l10n.placeSearchNoResults);
     }
     return _ResultsCard(
+      key: PlaceSearchBox.osmListKey,
       attribution: '© OpenStreetMap contributors',
       footer: askGoogle,
       tiles: [
@@ -236,6 +260,7 @@ class _PlaceSearchBoxState extends ConsumerState<PlaceSearchBox> {
           : _Notice(text: l10n.mapSearchNoResults);
     }
     final card = _ResultsCard(
+      key: PlaceSearchBox.googleListKey,
       // Google's policy for predictions shown without a Google map.
       attribution: 'Google Maps',
       tiles: [
@@ -261,8 +286,12 @@ class _ResultsCard extends StatelessWidget {
   final String attribution;
   final Widget? footer;
 
-  const _ResultsCard(
-      {required this.tiles, required this.attribution, this.footer});
+  const _ResultsCard({
+    super.key,
+    required this.tiles,
+    required this.attribution,
+    this.footer,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -350,8 +379,12 @@ class _ActionRow extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const _ActionRow(
-      {required this.icon, required this.label, required this.onTap});
+  const _ActionRow({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -392,6 +425,7 @@ class _Notice extends StatelessWidget {
   Widget build(BuildContext context) {
     final nt = context.nt;
     return Padding(
+      key: PlaceSearchBox.noticeKey,
       padding: const EdgeInsets.fromLTRB(4, 10, 4, 0),
       child: Text(
         text,

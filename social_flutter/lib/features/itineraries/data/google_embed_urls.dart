@@ -29,6 +29,14 @@ abstract final class GoogleEmbed {
   static Uri search(String query, String language) =>
       _page('search', {'q': query}, language);
 
+  /// [points] as a route can carry them: past [maxRoutePoints], the start of
+  /// the trip and its destination — the first stops and the last, as the route
+  /// link keeps them.
+  static List<MapPoint> capRoute(List<MapPoint> points) =>
+      points.length > maxRoutePoints
+          ? [...points.take(maxRoutePoints - 1), points.last]
+          : points;
+
   /// The route through [points] (2 to [maxRoutePoints]); Google picks the
   /// travel mode.
   static Uri directions(List<MapPoint> points, String language) {

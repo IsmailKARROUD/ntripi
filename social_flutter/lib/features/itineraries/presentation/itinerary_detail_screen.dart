@@ -108,6 +108,9 @@ import 'package:ntripi/shared/widgets/itinerary_cover_placeholder.dart';
 import 'package:ntripi/shared/widgets/visibility_badge.dart';
 
 class ItineraryDetailScreen extends ConsumerStatefulWidget {
+  // Test key: the Map view when no stop can be placed on it.
+  static const tripMapEmptyKey = Key('itineraryDetail.tripMapEmpty');
+
   final String itineraryId;
   // Set only when navigated here right after creation → auto-show the add-stop hint once.
   final bool justCreated;
@@ -2797,11 +2800,7 @@ class _TripRouteMap extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final language = GoogleEmbed.languageOf(context);
     final points = route.points;
-    // Origin + 20 waypoints + destination; past it, the start of the trip and
-    // its destination, as the route link keeps them.
-    final shown = points.length > GoogleEmbed.maxRoutePoints
-        ? [...points.take(GoogleEmbed.maxRoutePoints - 1), points.last]
-        : points;
+    final shown = GoogleEmbed.capRoute(points);
     final Uri? url = switch (shown.length) {
       0 => null,
       1 => GoogleEmbed.point(shown.single, language),
@@ -2821,6 +2820,7 @@ class _TripRouteMap extends StatelessWidget {
             borderRadius: BorderRadius.circular(NtripiRadius.card),
             child: url == null
                 ? Container(
+                    key: ItineraryDetailScreen.tripMapEmptyKey,
                     height: 120,
                     color: nt.mist,
                     alignment: Alignment.center,

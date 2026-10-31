@@ -9,6 +9,7 @@ import 'package:ntripi/features/itineraries/domain/search_bias.dart';
 import 'package:ntripi/features/itineraries/domain/stop.dart';
 import 'package:ntripi/features/itineraries/domain/track.dart';
 import 'package:ntripi/features/itineraries/domain/trip_route.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/google_map_embed.dart';
 
 const _placeId = 'ChIJLU7jZClu5kcR4PcOOO6p3I0';
 
@@ -176,6 +177,123 @@ void main() {
           'en');
       expect(route.path, '/embed/directions');
       expect(route.queryParameters['points'], '1.0,2.0|place_id:$_placeId|3.0,4.0');
+    });
+  });
+
+  group('edge cases', () {
+    test(
+        'Given a Google place with no search words and no name, When located, '
+        'Then the Maps URL text is empty, never null', () {
+      expect(mapPointOf(_stop('s', name: null, placeId: _placeId)),
+          const PlacePoint(_placeId, ''));
+    });
+
+    test('Given each kind of point, When written for Google, Then the tokens '
+        'are the ones the embed page and Maps URLs read', () {
+      const place = PlacePoint(_placeId, 'eiffel');
+      const coords = CoordPoint(48.85, -2.5);
+      expect([place.embedToken, place.urlText, place.placeId],
+          ['place_id:$_placeId', 'eiffel', _placeId]);
+      expect([coords.embedToken, coords.urlText, coords.placeId],
+          ['48.85,-2.5', '48.85,-2.5', null]);
+    });
+
+    test('Given a track with no stops, When routed, Then it is neither a point '
+        'nor counted as unplaced', () {
+      final route = tripRoute([
+        _track('t1', []),
+        _track('t2', [_stop('a', lat: 1, lng: 1)]),
+      ], const {});
+      expect(route.points, [const CoordPoint(1, 1)]);
+      expect(route.unmapped, 0);
+    });
+
+    test('Given an alternative index past the track, When routed, Then the '
+        'last alternative is taken', () {
+      final route = tripRoute([
+        _track('t1', [_stop('a', lat: 1, lng: 1), _stop('b', lat: 2, lng: 2)]),
+      ], {'t1': 9});
+      expect(route.points, [const CoordPoint(2, 2)]);
+    });
+
+    test('Given a track id the trip no longer has, When biased, Then the '
+        "trip's first stop with coordinates is the anchor", () {
+      final tracks = [
+        _track('t1', [_stop('a', placeId: _placeId)]),
+        _track('t2', [_stop('b', lat: 7, lng: 8)]),
+      ];
+      expect(searchBias(tracks: tracks, trackId: 'gone'), (lat: 7.0, lng: 8.0));
+    });
+
+    test('Given a device south and west of zero, When rounded, Then it rounds '
+        'to 0.1° like any other', () {
+      expect(searchBias(tracks: const [], deviceLat: -33.8567, deviceLng: -70.6483),
+          (lat: -33.9, lng: -70.6));
+    });
+  });
+
+  group('GoogleEmbed.capRoute', () {
+    List<MapPoint> points(int n) =>
+        [for (var i = 0; i < n; i++) CoordPoint(i.toDouble(), i.toDouble())];
+
+    test('Given 22 points, When capped, Then all of them stay', () {
+      expect(GoogleEmbed.capRoute(points(22)), points(22));
+    });
+
+    test(
+        'Given 30 points, When capped, Then the first 21 and the destination '
+        'stay', () {
+      final capped = GoogleEmbed.capRoute(points(30));
+      expect(capped.length, GoogleEmbed.maxRoutePoints);
+      expect(capped.take(21), points(21));
+      expect(capped.last, const CoordPoint(29, 29));
+    });
+  });
+
+  group('embedNavigationAllowed', () {
+    const api = 'ntripi.app';
+
+    test('Given one of our /embed pages, When it is the page, Then it loads', () {
+      expect(
+          embedNavigationAllowed('https://ntripi.app/embed/place?id=x',
+              isMainFrame: true, apiHost: api),
+          isTrue);
+    });
+
+    for (final url in [
+      'https://ntripi.app/app/',
+      'https://ntripi.app/share/i/x',
+      'https://www.google.com/maps/place/x',
+      'https://evil.example/embed/place',
+      'not a url at all %%',
+    ]) {
+      test('Given $url, When it would replace the page, Then it is refused', () {
+        expect(embedNavigationAllowed(url, isMainFrame: true, apiHost: api),
+            isFalse);
+      });
+    }
+
+    test("Given Google's map frame and its assets, When framed, Then they load",
+        () {
+      for (final url in [
+        'https://www.google.com/maps/embed/v1/place?q=x',
+        'https://maps.gstatic.com/tiles/x.png',
+        'about:blank',
+      ]) {
+        expect(embedNavigationAllowed(url, isMainFrame: false, apiHost: api),
+            isTrue, reason: url);
+      }
+    });
+
+    test('Given any other site, When framed, Then it is refused', () {
+      expect(
+          embedNavigationAllowed('https://ads.example/frame',
+              isMainFrame: false, apiHost: api),
+          isFalse);
+      expect(
+          embedNavigationAllowed('https://notgoogle.com/x',
+              isMainFrame: false, apiHost: api),
+          isFalse);
     });
   });
 }

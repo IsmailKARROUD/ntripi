@@ -867,6 +867,7 @@ class PlaceSearchNotifier extends AsyncNotifier<List<PlaceSuggestion>> {
   }
 
   void clear() {
+    if (!ref.mounted) return; // the picker clears from a microtask after dispose
     _epoch++;
     state = const AsyncData([]);
   }

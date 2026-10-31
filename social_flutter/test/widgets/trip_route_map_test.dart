@@ -98,7 +98,11 @@ void main() {
     await tester.tap(find.byIcon(Icons.map_rounded));
     await tester.pumpAndSettle();
 
-    expect(find.text(l10n.tripMapEmpty), findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byKey(ItineraryDetailScreen.tripMapEmptyKey),
+            matching: find.text(l10n.tripMapEmpty)),
+        findsOneWidget);
     expect(find.text(l10n.tripMapStopsNotShown(2)), findsOneWidget);
     // Two unplaced stops are no route: nothing to open.
     expect(find.byTooltip(l10n.openRouteInMaps), findsNothing);

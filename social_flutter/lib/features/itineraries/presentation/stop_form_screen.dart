@@ -60,6 +60,14 @@ import 'package:ntripi/shared/widgets/offline_gate.dart';
 import 'package:ntripi/shared/widgets/saving_overlay.dart';
 
 class StopFormScreen extends ConsumerStatefulWidget {
+  // Test keys for the Google Maps segment.
+  static const googlePlaceCardKey = Key('stopForm.googlePlaceCard');
+  static const googlePlacePointKey = Key('stopForm.googlePlacePoint');
+  static const shortLinkHintKey = Key('stopForm.shortLinkHint');
+  static const mapLinkFieldKey = Key('stopForm.mapLinkField');
+  static const latFieldKey = Key('stopForm.lat');
+  static const lngFieldKey = Key('stopForm.lng');
+
   final String itineraryId;
 
   /// Null in create mode; the stop ID in edit mode.
@@ -635,6 +643,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     required NtripiColors nt,
   }) {
     return TextFormField(
+      key: isLat ? StopFormScreen.latFieldKey : StopFormScreen.lngFieldKey,
       controller: controller,
       focusNode: focusNode,
       readOnly: readOnly,
@@ -1094,6 +1103,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     final pick = _googlePick;
     if (pick != null) {
       return Padding(
+        key: StopFormScreen.googlePlaceCardKey,
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
         child: Container(
           decoration: BoxDecoration(
@@ -1163,6 +1173,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
         _lat != null &&
         _lng != null) {
       return Padding(
+        key: StopFormScreen.googlePlacePointKey,
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(NtripiRadius.tile),
@@ -1552,6 +1563,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                               label: l10n.mapLinkLabel.toUpperCase(),
                               childBuilder:
                                   (focusNode) => TextFormField(
+                                    key: StopFormScreen.mapLinkFieldKey,
                                     controller: _mapUrlController,
                                     focusNode: focusNode,
                                     readOnly: readOnly,
@@ -1790,6 +1802,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       if (_locationMode == _LocationMode.google &&
                           _isUnplaceableLink)
                         Padding(
+                          key: StopFormScreen.shortLinkHintKey,
                           padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,

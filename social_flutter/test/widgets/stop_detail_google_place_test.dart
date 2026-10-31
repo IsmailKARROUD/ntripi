@@ -15,6 +15,7 @@ import 'package:ntripi/features/itineraries/domain/itinerary.dart';
 import 'package:ntripi/features/itineraries/domain/stop.dart';
 import 'package:ntripi/features/itineraries/domain/track.dart';
 import 'package:ntripi/features/itineraries/presentation/stop_detail_screen.dart';
+import 'package:ntripi/features/itineraries/providers/edit_lock_provider.dart';
 import 'package:ntripi/features/itineraries/providers/places_providers.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/features/translation/domain/translation.dart';
@@ -22,10 +23,13 @@ import 'package:ntripi/features/translation/providers/translation_providers.dart
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/models/user.dart';
 
+import '../support/held_claim.dart';
 import '../support/url_launches.dart';
 
 const _owner = 'user-1';
 const _placeId = 'ChIJLU7jZClu5kcR4PcOOO6p3I0';
+// Stands in for the stop's edit form, which stop_form_google_segment_test pins.
+const _editForm = 'edit form';
 
 class _OneStopRepo extends ItineraryRepository {
   _OneStopRepo(this.stop) : super(Dio());
@@ -102,7 +106,7 @@ Stop _stop({
     );
 
 Future<AppLocalizations> _pump(WidgetTester tester, Stop stop,
-    {String viewerId = _owner}) async {
+    {String viewerId = _owner, bool claimHeld = false}) async {
   tester.view.physicalSize = const Size(1200, 3200);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
@@ -115,6 +119,10 @@ Future<AppLocalizations> _pump(WidgetTester tester, Stop stop,
           itineraryId: s.pathParameters['id']!,
           stopId: s.pathParameters['stopId']!,
         ),
+      ),
+      GoRoute(
+        path: '/itineraries/:id/stops/:stopId/edit',
+        builder: (_, _) => const Scaffold(body: Text(_editForm)),
       ),
     ],
   );
@@ -130,6 +138,7 @@ Future<AppLocalizations> _pump(WidgetTester tester, Stop stop,
       placesConfigProvider.overrideWith((ref) async =>
           const PlacesConfig(googleSearch: true, googleMaps: false)),
       linkPreviewServiceProvider.overrideWithValue(_NoPreview()),
+      if (claimHeld) editLockProvider.overrideWith2(HeldClaim.new),
     ],
     child: MaterialApp.router(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -141,6 +150,15 @@ Future<AppLocalizations> _pump(WidgetTester tester, Stop stop,
   return AppLocalizations.of(tester.element(find.byType(StopDetailScreen)))!;
 }
 
+/// The credit line under the location, or null when the page shows none.
+String? _credit(WidgetTester tester) {
+  final line = find.byKey(StopDetailScreen.placeCreditKey);
+  if (line.evaluate().isEmpty) return null;
+  return tester
+      .widget<Text>(find.descendant(of: line, matching: find.byType(Text)))
+      .data;
+}
+
 void main() {
   setUp(() => FlutterSecureStorage.setMockInitialValues({}));
 
@@ -150,7 +168,7 @@ void main() {
     final l10n = await _pump(tester,
         _stop(source: PlaceSource.google, placeId: _placeId, query: 'chez marcel'));
 
-    expect(find.text('Google Maps'), findsOneWidget); // the credit line
+    expect(_credit(tester), 'Google Maps');
     await tester.tap(find.text(l10n.linkPreviewOpensInMaps));
     await tester.pumpAndSettle();
 
@@ -166,16 +184,29 @@ void main() {
     final l10n = await _pump(tester,
         _stop(source: PlaceSource.osm, lat: 48.86, lng: 2.34, address: 'Paris'));
 
-    expect(find.text(l10n.placeCreditOpenStreetMap), findsOneWidget);
-    expect(find.text('Google Maps'), findsNothing);
+    expect(_credit(tester), l10n.placeCreditOpenStreetMap);
   });
 
   testWidgets('a stop saved before sources existed carries no credit',
       (tester) async {
-    final l10n = await _pump(tester, _stop(lat: 48.86, lng: 2.34));
+    await _pump(tester, _stop(lat: 48.86, lng: 2.34));
 
-    expect(find.text(l10n.placeCreditOpenStreetMap), findsNothing);
-    expect(find.text('Google Maps'), findsNothing);
+    expect(_credit(tester), isNull);
+  });
+
+  testWidgets(
+      'Given a pasted link stop, When its page opens, Then it credits Google '
+      'Maps and opens the link as it was typed', (tester) async {
+    final launches = recordUrlLaunches();
+    const link = 'https://maps.app.goo.gl/abc123';
+    final l10n =
+        await _pump(tester, _stop(source: PlaceSource.link, mapUrl: link));
+
+    expect(_credit(tester), 'Google Maps');
+    await tester.tap(find.byTooltip(l10n.openInMaps));
+    await tester.pumpAndSettle();
+
+    expect(launches.single.url, Uri.parse(link));
   });
 
   group('a place Google lost', () {
@@ -188,8 +219,25 @@ void main() {
     testWidgets('its editor is asked to find it again', (tester) async {
       final l10n = await _pump(tester, lost);
 
-      expect(find.text(l10n.googlePlaceMissing), findsOneWidget);
-      expect(find.text(l10n.googlePlaceSearchAgain), findsOneWidget);
+      final notice = find.byKey(StopDetailScreen.placeLostNoticeKey);
+      expect(
+          find.descendant(of: notice, matching: find.text(l10n.googlePlaceMissing)),
+          findsOneWidget);
+      expect(
+          find.descendant(
+              of: notice, matching: find.text(l10n.googlePlaceSearchAgain)),
+          findsOneWidget);
+    });
+
+    testWidgets(
+        'Given its editor holds the claim, When Search again is tapped, Then '
+        "the stop's form opens", (tester) async {
+      final l10n = await _pump(tester, lost, claimHeld: true);
+
+      await tester.tap(find.text(l10n.googlePlaceSearchAgain));
+      await tester.pumpAndSettle();
+
+      expect(find.text(_editForm), findsOneWidget);
     });
 
     testWidgets('a reader has no map and searches its words instead',
@@ -197,7 +245,7 @@ void main() {
       final launches = recordUrlLaunches();
       final l10n = await _pump(tester, lost, viewerId: 'someone-else');
 
-      expect(find.text(l10n.googlePlaceMissing), findsNothing);
+      expect(find.byKey(StopDetailScreen.placeLostNoticeKey), findsNothing);
       expect(find.text(l10n.linkPreviewOpensInMaps), findsNothing);
       await tester.tap(find.byTooltip(l10n.openInMaps));
       await tester.pumpAndSettle();

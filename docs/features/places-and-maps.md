@@ -27,6 +27,12 @@ Google's route through the stops on screen.
   comes back empty. Once on Google, suggestions follow the typing after a 500 ms
   pause, from 3 characters (`GooglePlaceSearchNotifier`); clearing the field
   goes back to OSM. The Coordinates segment never asks Google.
+- **A submitted OSM search always answers**, in all three boxes: its places,
+  "No places found", or why it failed (offline, Nominatim down) — never
+  nothing, and in the map picker never just the pin instructions. In the
+  Google Maps segment the **Search on Google Maps** row stays under a failure.
+  A failure never asks Google by itself — only an empty answer does, so a
+  Nominatim outage cannot spend paid requests.
 - **Each list carries its source's attribution**: "© OpenStreetMap
   contributors" under OSM's results, "Google Maps" under Google's (Google's
   policy for predictions shown without a Google map).

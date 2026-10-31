@@ -16,6 +16,25 @@ import 'package:ntripi/features/itineraries/presentation/widgets/map_embed_web_v
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+/// The map WebView's navigation lock. The page itself may only be one of our
+/// /embed pages; inside it, only Google's map frame and its assets. "View
+/// larger map" and the like must not turn the box into a browser.
+@visibleForTesting
+bool embedNavigationAllowed(
+  String url, {
+  required bool isMainFrame,
+  required String apiHost,
+}) {
+  final uri = Uri.tryParse(url);
+  if (uri == null) return false;
+  if (isMainFrame) return uri.host == apiHost && uri.path.startsWith('/embed/');
+  final host = uri.host;
+  return host.isEmpty || // about:blank, Google's own placeholder frames
+      host == 'google.com' ||
+      host.endsWith('.google.com') ||
+      host.endsWith('.gstatic.com');
+}
+
 class GoogleMapEmbed extends StatelessWidget {
   final Uri url;
   final double height;
@@ -70,21 +89,10 @@ class _MapEmbedViewState extends State<_MapEmbedView> {
       ..loadRequest(widget.url);
   }
 
-  // The page itself may only be one of our /embed pages; inside it, only
-  // Google's map frame and its assets. "View larger map" and the like must not
-  // turn the box into a browser.
-  bool _allowed(NavigationRequest request) {
-    final uri = Uri.tryParse(request.url);
-    if (uri == null) return false;
-    if (request.isMainFrame) {
-      return uri.host == _apiHost && uri.path.startsWith('/embed/');
-    }
-    final host = uri.host;
-    return host.isEmpty || // about:blank, Google's own placeholder frames
-        host == 'google.com' ||
-        host.endsWith('.google.com') ||
-        host.endsWith('.gstatic.com');
-  }
+  bool _allowed(NavigationRequest request) => embedNavigationAllowed(
+      request.url,
+      isMainFrame: request.isMainFrame,
+      apiHost: _apiHost);
 
   @override
   void didUpdateWidget(covariant _MapEmbedView old) {

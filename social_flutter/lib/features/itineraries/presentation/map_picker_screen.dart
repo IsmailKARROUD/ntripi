@@ -15,6 +15,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/providers/locale_provider.dart';
 import 'package:ntripi/core/services/geocoding_service.dart';
 import 'package:ntripi/core/services/location_service.dart';
@@ -25,6 +26,10 @@ import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/location_error.dart';
 
 class MapPickerScreen extends ConsumerStatefulWidget {
+  // Test keys: the search field, and the line that answers a submitted search.
+  static const searchFieldKey = Key('mapPicker.searchField');
+  static const searchNoticeKey = Key('mapPicker.searchNotice');
+
   /// Optional initial coordinates to center the map on.
   final double? initialLat;
   final double? initialLng;
@@ -205,7 +210,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
     setState(() {
       _showSearchArea = false;
       _listVisible = true;
-      // The field may hold newer text than the last debounce fire — trust it.
+      // The field may hold text never submitted — search what it says.
       _submittedQuery = _searchController.text.trim();
     });
     _runAreaSearch();
@@ -367,6 +372,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         TextField(
+          key: MapPickerScreen.searchFieldKey,
           controller: _searchController,
           decoration: InputDecoration(
             hintText: l10n.searchPlaceHintText,
@@ -380,6 +386,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
                       children: [
                         IconButton(
                           icon: const Icon(Icons.close_rounded, size: 18),
+                          tooltip: l10n.mapLinkClear,
                           onPressed: _clearSearch,
                         ),
                         IconButton(
@@ -423,37 +430,20 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
                 padding: EdgeInsets.symmetric(vertical: 8),
                 child: LinearProgressIndicator(),
               ),
-          error: (_, _) => _buildInstructionBanner(context),
+          // A submitted search always answers: its failure is said, not
+          // replaced by the pin instructions.
+          error: (error, _) => _searchNoticeOr(
+            context,
+            extractErrorMessage(error, l10n),
+            color: nt.danger,
+          ),
           data: (suggestions) {
             if (suggestions.isNotEmpty) {
               return _listVisible
                   ? _buildSuggestionsCard(suggestions, nt)
                   : const SizedBox.shrink();
             }
-            // Only claim "no results" for the query we actually searched —
-            // while a newer keystroke's debounce is pending, stay quiet.
-            if (_submittedQuery.isNotEmpty &&
-                _submittedQuery == _searchController.text.trim()) {
-              return Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Card(
-                  // A map overlay, like its neighbours — not a page card.
-                  shape: _overlayShape(context),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Text(
-                      l10n.mapSearchNoResults,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                ),
-              );
-            }
-            if (_searchController.text.trim().isEmpty) {
-              return _buildInstructionBanner(context);
-            }
-            return const SizedBox.shrink();
+            return _searchNoticeOr(context, l10n.mapSearchNoResults);
           },
         ),
         ),
@@ -502,6 +492,33 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
         borderRadius: BorderRadius.circular(NtripiRadius.tile),
         side: BorderSide(color: context.nt.border),
       );
+
+  /// [text] answers the search the field still holds. Once the user types
+  /// something else it is no longer about their words: an empty field gets
+  /// the pin instructions back, and new text nothing until it is submitted.
+  Widget _searchNoticeOr(BuildContext context, String text, {Color? color}) {
+    final typed = _searchController.text.trim();
+    if (_submittedQuery.isNotEmpty && _submittedQuery == typed) {
+      return Padding(
+        key: MapPickerScreen.searchNoticeKey,
+        padding: const EdgeInsets.only(top: 4),
+        child: Card(
+          // A map overlay, like its neighbours — not a page card.
+          shape: _overlayShape(context),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(
+              text,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
+            ),
+          ),
+        ),
+      );
+    }
+    if (typed.isEmpty) return _buildInstructionBanner(context);
+    return const SizedBox.shrink();
+  }
 
   Widget _buildInstructionBanner(BuildContext context) {
     return Card(

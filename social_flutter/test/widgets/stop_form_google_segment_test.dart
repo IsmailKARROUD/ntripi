@@ -23,6 +23,7 @@ import 'package:ntripi/features/itineraries/data/places_repository.dart';
 import 'package:ntripi/features/itineraries/presentation/stop_form_screen.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/place_search_box.dart';
 import 'package:ntripi/features/itineraries/providers/edit_lock_provider.dart';
+import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
 import 'package:ntripi/features/itineraries/providers/places_providers.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
@@ -93,24 +94,44 @@ class _Harness {
 
   _Harness(this.api, this.geocoding, this.previews, this.l10n);
 
-  /// The POST /stops body the save sent.
+  /// The stop body the save sent: a create's POST or an edit's PATCH.
   Map<String, dynamic> get savedStop => api.sent
       .lastWhere((o) =>
-          o.method == 'POST' && o.path == itineraryStopsEndpoint(kTripId))
+          (o.method == 'POST' && o.path == itineraryStopsEndpoint(kTripId)) ||
+          (o.method == 'PATCH' && o.path.startsWith('${itineraryStopsEndpoint(kTripId)}/')))
       .data as Map<String, dynamic>;
 }
+
+/// A stop placed by a Google pick, as the server answers it.
+Map<String, dynamic> _googleStopJson(String id,
+        {String name = 'Lunch', bool missing = false}) =>
+    {
+      ...stopJson(id, placeName: name),
+      'place_source': 'google',
+      'google_place_id': _placeId,
+      'google_place_query': 'chez marcel',
+      'google_place_missing': missing,
+    };
 
 Future<_Harness> _pumpForm(
   WidgetTester tester, {
   List<PlaceSuggestion> osmResults = const [],
+  // Edit mode: the stop the form opens, already in the trip.
+  Map<String, dynamic>? editing,
+  // Other stops already in the trip.
+  List<Map<String, dynamic>> others = const [],
 }) async {
   tester.view.physicalSize = const Size(400, 1400);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
 
   final api = RecordingDio();
+  final trip = tripJson(tracks: [
+    if (editing != null || others.isNotEmpty)
+      trackJson('t1', [if (editing != null) editing, ...others]),
+  ]);
   api.adapter
-    ..onGet(itineraryEndpoint(kTripId), (s) => s.reply(200, tripJson()))
+    ..onGet(itineraryEndpoint(kTripId), (s) => s.reply(200, trip))
     ..onPost(
       kGooglePlaceAutocompleteEndpoint,
       (s) => s.reply(200, {
@@ -132,6 +153,14 @@ Future<_Harness> _pumpForm(
       data: Matchers.any,
       queryParameters: {'return': 'itinerary'},
     );
+  if (editing != null) {
+    api.adapter.onPatch(
+      itineraryStopEndpoint(kTripId, editing['id'] as String),
+      (s) => s.reply(200, tripAnswer(trip)),
+      data: Matchers.any,
+      queryParameters: {'return': 'itinerary'},
+    );
+  }
   final geocoding = _RecordingGeocoding(osmResults);
   final previews = _RecordingPreviews();
 
@@ -141,6 +170,13 @@ Future<_Harness> _pumpForm(
       path: '/itineraries/:id/stops/new',
       builder: (_, state) =>
           StopFormScreen(itineraryId: state.pathParameters['id']!),
+    ),
+    GoRoute(
+      path: '/itineraries/:id/stops/:stopId/edit',
+      builder: (_, state) => StopFormScreen(
+        itineraryId: state.pathParameters['id']!,
+        stopId: state.pathParameters['stopId']!,
+      ),
     ),
   ]);
   addTearDown(router.dispose);
@@ -166,7 +202,16 @@ Future<_Harness> _pumpForm(
       routerConfig: router,
     ),
   ));
-  router.push('/itineraries/$kTripId/stops/new');
+  if (editing != null) {
+    // The form is always opened from the trip it edits, already loaded: it
+    // fills itself in from that trip once, after its first frame.
+    ProviderScope.containerOf(tester.element(find.byType(Scaffold)))
+        .read(itineraryDetailProvider(kTripId));
+    await tester.pumpAndSettle();
+  }
+  router.push(editing == null
+      ? '/itineraries/$kTripId/stops/new'
+      : '/itineraries/$kTripId/stops/${editing['id']}/edit');
   await tester.pumpAndSettle();
   final l10n = AppLocalizations.of(tester.element(find.byType(StopFormScreen)))!;
   return _Harness(api, geocoding, previews, l10n);
@@ -339,5 +384,103 @@ void main() {
 
     expect([h.savedStop['lat'], h.savedStop['lng']], [null, null]);
     expect(h.previews.fetched, isEmpty);
+  });
+
+  group('editing a stop', () {
+    testWidgets(
+        'Given a Google stop, When only its name changes, Then the save leaves '
+        'its place to the server', (tester) async {
+      final h = await _pumpForm(tester, editing: _googleStopJson('g1'));
+      expect(find.byKey(StopFormScreen.googlePlaceCardKey), findsOneWidget);
+
+      await tester.enterText(_nameField, 'Long lunch');
+      await tester.tap(find.text(h.l10n.save));
+      await tester.pumpAndSettle();
+
+      final body = h.savedStop;
+      expect(body['place_name'], 'Long lunch');
+      // An ID the yearly refresh may have replaced is never written back.
+      for (final key in ['place_source', 'google_place_id', 'google_place_query']) {
+        expect(body.containsKey(key), isFalse, reason: key);
+      }
+      expect([body['lat'], body['lng'], body['map_url']], [null, null, null]);
+    });
+
+    testWidgets(
+        'Given a Google stop Google lost, When the form opens, Then it says so '
+        'and the search starts from the old words', (tester) async {
+      final h = await _pumpForm(tester,
+          editing: _googleStopJson('g1', missing: true));
+
+      expect(find.text(h.l10n.googlePlaceMissing), findsOneWidget);
+      expect(find.text(h.l10n.googlePlaceSearchAgain), findsOneWidget);
+      final field = tester.widget<TextField>(find.byKey(PlaceSearchBox.fieldKey));
+      expect(field.controller!.text, 'chez marcel');
+    });
+
+    testWidgets(
+        'Given a Google stop, When it is saved from the Coordinates segment '
+        'with no coordinates, Then its Google place is cleared', (tester) async {
+      final h = await _pumpForm(tester, editing: _googleStopJson('g1'));
+
+      await tester.tap(find.text(h.l10n.locationModeCoordinates));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(h.l10n.save));
+      await tester.pumpAndSettle();
+
+      final body = h.savedStop;
+      expect(body.containsKey('google_place_id'), isTrue);
+      expect([body['google_place_id'], body['google_place_query'], body['map_url']],
+          [null, null, null]);
+    });
+  });
+
+  testWidgets(
+      'Given a picked Google place, When Change is tapped, Then the card goes '
+      'and the search holds its words', (tester) async {
+    final h = await _pumpForm(tester);
+    await _openGoogleSegment(tester, h);
+    await _search(tester, 'chez marcel');
+    await tester.tap(find.text(_googleName));
+    await tester.pumpAndSettle();
+    expect(find.byKey(StopFormScreen.googlePlaceCardKey), findsOneWidget);
+
+    await tester.tap(find.text(h.l10n.googlePlaceChange));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(StopFormScreen.googlePlaceCardKey), findsNothing);
+    final field = tester.widget<TextField>(find.byKey(PlaceSearchBox.fieldKey));
+    expect(field.controller!.text, 'chez marcel');
+  });
+
+  testWidgets('Given typed coordinates, When saved, Then the source is typed',
+      (tester) async {
+    final h = await _pumpForm(tester);
+    await tester.enterText(_nameField, 'Viewpoint');
+    await tester.enterText(find.byKey(StopFormScreen.latFieldKey), '45.8326');
+    await tester.enterText(find.byKey(StopFormScreen.lngFieldKey), '6.8652');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(h.l10n.save));
+    await tester.pumpAndSettle();
+
+    final body = h.savedStop;
+    expect(body['place_source'], 'typed');
+    expect([body['lat'], body['lng']], [45.8326, 6.8652]);
+    expect(body['map_url'], isNull);
+  });
+
+  testWidgets(
+      'Given the trip already has a Google place, When the same place is '
+      'picked, Then the form warns it is already in the trip', (tester) async {
+    final h = await _pumpForm(tester, others: [_googleStopJson('g1')]);
+    await _openGoogleSegment(tester, h);
+    await tester.enterText(_nameField, 'Second lunch');
+
+    await _search(tester, 'chez marcel');
+    await tester.tap(find.text(_googleName));
+    await tester.pumpAndSettle();
+
+    expect(find.text(h.l10n.alreadyInItinerary('Lunch')), findsOneWidget);
   });
 }

@@ -44,6 +44,10 @@ import 'package:ntripi/shared/utils/duration_format.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 
 class StopDetailScreen extends ConsumerStatefulWidget {
+  // Test keys: the location's credit line, and an editor's lost-place notice.
+  static const placeCreditKey = Key('stopDetail.placeCredit');
+  static const placeLostNoticeKey = Key('stopDetail.placeLostNotice');
+
   final String itineraryId;
   final String stopId;
 
@@ -423,6 +427,7 @@ class _StopDetailView extends ConsumerWidget {
           if (placeLost && mayEdit)
             SliverToBoxAdapter(
               child: Padding(
+                key: StopDetailScreen.placeLostNoticeKey,
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: Row(
                   children: [
@@ -769,6 +774,7 @@ class _StopHero extends StatelessWidget {
                           if (_creditText(AppLocalizations.of(context)!)
                               case final credit?)
                             Padding(
+                              key: StopDetailScreen.placeCreditKey,
                               padding: const EdgeInsets.only(top: 2),
                               child: Text(
                                 credit,
