@@ -2685,3 +2685,38 @@ user through the re-acceptance gate once.
 **Alternatives rejected.**
 - **Adding the clause without a version bump**: nobody interrupted, but no
   record of which users accepted it.
+
+### 2026-10-31 — A pick folds the place search list away instead of deleting it
+
+**Context.** A Google pick left Google's list on screen under an emptied field.
+The form emptied the search box's field from outside, a change the box never
+hears, so the box stayed on Google and kept drawing the answer — and the next
+search typed went to Google, billed, instead of OpenStreetMap first. An OSM
+pick deleted its results, so choosing again meant searching again, and OSM
+results left without a pick lived in a keep-alive provider: the next stop form
+opened on them.
+
+**Decision.** `PlaceSearchBox` owns what a pick does, for both of its lists:
+the list folds away, the field keeps the words, the answer stays in memory, and
+the list comes back when the user is in the field again — a tap, or focus,
+since a screen reader's activation and Tab focus the field without calling
+`onTap`. The map picker's list already collapsed on a pick; it now comes back
+on focus too. The form no longer touches the box on a pick; only the map
+picker's pin, which did not come from the list, empties it. The form's OSM
+results become `autoDispose` (`placeSearchProvider`), like Google's.
+
+**Consequences.**
+- Choosing another place from the same search sends no request — to Google
+  (billed) or to Nominatim (one a second for the whole app).
+- Both answers go with the form, Google's with the Google Maps segment too.
+  Google's lives only in that provider, as the list on screen does, and is
+  never written to the HTTP cache (a POST answered `no-store`), a log or
+  storage.
+- Regression tests: `place_search_box_test.dart` ("after a pick"),
+  `map_picker_search_test.dart`, `stop_form_google_segment_test.dart`.
+
+**Alternatives rejected.**
+- **Deleting the answer on a pick** (what OSM picks did): a second choice cost
+  a new search, billed on Google.
+- **Showing the list only while the field has focus**: the keyboard's Search
+  key takes the focus away, so a submitted search would hide its own answer.

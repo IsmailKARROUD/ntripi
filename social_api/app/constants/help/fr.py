@@ -505,7 +505,7 @@ Pour un avertissement qui doit être difficile à manquer plutôt que lu en pass
                 kind=KIND_STEP,
                 body="""Dans la position de l’étape, ouvrez l’onglet **Google Maps**, saisissez le lieu et appuyez sur **Rechercher**. Ntripi cherche d’abord dans OpenStreetMap. Quand OpenStreetMap ne trouve rien, Ntripi interroge Google Maps de lui-même ; vous pouvez aussi toucher **Rechercher dans Google Maps** sous les résultats d’OpenStreetMap. Les suggestions de Google suivent alors votre saisie.
 
-Choisissez une suggestion et le lieu apparaît sur la carte de Google. **Saisissez vous-même le nom de l’étape** : de Google, Ntripi ne garde que l’identifiant du lieu et les mots que vous avez cherchés — jamais le nom ni l’adresse de Google.""",
+Choisissez une suggestion et le lieu apparaît sur la carte de Google. Pour en choisir une autre, touchez le champ de recherche : la liste revient. **Saisissez vous-même le nom de l’étape** : de Google, Ntripi ne garde que l’identifiant du lieu et les mots que vous avez cherchés — jamais le nom ni l’adresse de Google.""",
             ),
             Block(
                 anchor="paste-a-link",

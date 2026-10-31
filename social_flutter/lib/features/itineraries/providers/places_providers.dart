@@ -4,8 +4,10 @@
 //   signed out, or when it cannot be read: no Google row, no Google map.
 //   Keep-alive and listed in auth_provider's _userScopedProviders.
 // googlePlaceSearchProvider — the stop form's Google suggestions. autoDispose:
-//   they belong to the form that asked and go with it; Google's answer is
-//   never kept beyond the choosing.
+//   they belong to the form that asked and go with it. A pick only folds them
+//   away (PlaceSearchBox), so the user can choose again without a new billed
+//   request; Google's answer never outlives the form and is never written
+//   anywhere.
 
 import 'dart:async';
 

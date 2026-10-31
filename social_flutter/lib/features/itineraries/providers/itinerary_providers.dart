@@ -873,8 +873,10 @@ class PlaceSearchNotifier extends AsyncNotifier<List<PlaceSuggestion>> {
   }
 }
 
+/// autoDispose: a pick keeps the results (PlaceSearchBox folds them away), so
+/// they must go with the form, or the next one opens on the last search.
 final placeSearchProvider =
-    AsyncNotifierProvider<PlaceSearchNotifier, List<PlaceSuggestion>>(
+    AsyncNotifierProvider.autoDispose<PlaceSearchNotifier, List<PlaceSuggestion>>(
       () => PlaceSearchNotifier(),
     );
 

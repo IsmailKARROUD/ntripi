@@ -36,6 +36,14 @@ Google's route through the stops on screen.
 - **Each list carries its source's attribution**: "© OpenStreetMap
   contributors" under OSM's results, "Google Maps" under Google's (Google's
   policy for predictions shown without a Google map).
+- **A pick folds the list away, it does not delete it**, in all three boxes:
+  the field keeps the words, the answer stays in memory, and the list comes
+  back when the user is in the field again — a tap, or focus, since a screen
+  reader's activation and Tab never call `onTap`. Choosing another place from
+  the same search sends no request. The form's two answers live in
+  `autoDispose` providers and go with the form — Google's with the Google Maps
+  segment too — so the next form never opens on the last search. Only the map
+  picker's pin, which did not come from the list, empties the form's box.
 
 ### What a stop may store
 
@@ -173,7 +181,7 @@ beside every existing link, `NOT VALID` checks, the table) and `87528b459c5b`
 ## Flutter surface
 
 - `presentation/widgets/place_search_box.dart` — the one search box (OSM on
-  submit, Google fallback, attributions).
+  submit, Google fallback, attributions; a pick folds its list).
 - `presentation/stop_form_screen.dart` — `_LocationMode { coordinates, google }`;
   `_locationPayload()` sends `place_source` and the Google fields only when the
   location changed this session, so an ID the refresh replaced meanwhile is

@@ -419,9 +419,6 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       if (_locationMode == _LocationMode.google) _mapUrlController.clear();
     });
     _recenterPreview();
-    _searchController.clear();
-    ref.read(placeSearchProvider.notifier).clear();
-    FocusScope.of(context).unfocus();
   }
 
   /// A Google pick keeps Google's place ID and the text the user typed —
@@ -439,9 +436,6 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       _lngController.clear();
       _coordsSource = null;
     });
-    _searchController.clear();
-    ref.read(placeSearchProvider.notifier).clear();
-    FocusScope.of(context).unfocus();
   }
 
   /// "Change" on the picked Google place: back to the search, starting from
@@ -452,7 +446,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       _googlePick = null;
       _googlePlaceMissing = false;
       _locationTouched = true;
-      _searchController.text = query;
+      // Words typed since the pick are a search of their own: keep them.
+      if (_searchController.text.trim().isEmpty) {
+        _searchController.text = query;
+      }
     });
   }
 
@@ -708,13 +705,16 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
         'deviceLng': _deviceLocation?.longitude,
       },
     );
-    if (result != null) {
-      // Confirming the pre-placed pin untouched must not overwrite a possibly
-      // hand-edited name/address with Nominatim's — the picker keeps exact
-      // coords, so unchanged ones mean the user never moved the pin.
-      if (result.lat == _lat && result.lng == _lng) return;
-      _applySuggestion(result);
-    }
+    if (result == null || !mounted) return;
+    // Confirming the pre-placed pin untouched must not overwrite a possibly
+    // hand-edited name/address with Nominatim's — the picker keeps exact
+    // coords, so unchanged ones mean the user never moved the pin.
+    if (result.lat == _lat && result.lng == _lng) return;
+    _applySuggestion(result);
+    // The pin placed the stop, not the search box's list: the box starts over.
+    _searchController.clear();
+    ref.read(placeSearchProvider.notifier).clear();
+    FocusScope.of(context).unfocus();
   }
 
   Stop? _findDuplicate() {

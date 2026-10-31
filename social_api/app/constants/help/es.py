@@ -503,7 +503,7 @@ Para un aviso que deba costar pasar por alto en vez de leerse de refilón, usa m
                 kind=KIND_STEP,
                 body="""En la ubicación de la parada, abre la pestaña **Google Maps**, escribe el lugar y pulsa **Buscar**. Ntripi busca primero en OpenStreetMap. Cuando OpenStreetMap no encuentra nada, Ntripi pregunta a Google Maps por sí mismo; también puedes tocar **Buscar en Google Maps** bajo los resultados de OpenStreetMap. Las sugerencias de Google siguen entonces lo que escribes.
 
-Elige una sugerencia y el lugar aparece en el mapa de Google. **Escribe tú el nombre de la parada**: de Google, Ntripi solo guarda el identificador del lugar y las palabras que buscaste — nunca el nombre ni la dirección de Google.""",
+Elige una sugerencia y el lugar aparece en el mapa de Google. Para elegir otra, toca el campo de búsqueda y la lista vuelve a aparecer. **Escribe tú el nombre de la parada**: de Google, Ntripi solo guarda el identificador del lugar y las palabras que buscaste — nunca el nombre ni la dirección de Google.""",
             ),
             Block(
                 anchor="paste-a-link",

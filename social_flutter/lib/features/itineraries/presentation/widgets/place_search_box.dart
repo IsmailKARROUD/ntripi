@@ -12,6 +12,11 @@
 // request billed); clearing the field goes back to OSM. Each list carries its
 // source's attribution, and Google's never sits on an OSM map — the form shows
 // Google places only through Google's own embed.
+//
+// A pick folds the list away without forgetting it: the field keeps the words,
+// the answer stays in its provider, and the list comes back when the user is in
+// the field again — a tap, a screen reader, Tab. Choosing another place sends
+// no new request.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -73,7 +78,39 @@ class _PlaceSearchBoxState extends ConsumerState<PlaceSearchBox> {
   // about it, not about text typed since.
   String _submitted = '';
 
+  // False from a pick until the user is back in the field.
+  bool _listOpen = true;
+
+  final _focus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    // Focus, not only a tap: a screen reader's activation and Tab focus the
+    // field without calling onTap.
+    _focus.addListener(() {
+      if (_focus.hasFocus) _openList();
+    });
+  }
+
+  @override
+  void dispose() {
+    _focus.dispose();
+    super.dispose();
+  }
+
   String get _text => widget.controller.text.trim();
+
+  void _openList() {
+    if (!_listOpen) setState(() => _listOpen = true);
+  }
+
+  /// A pick ends the search: the list folds away and the keyboard goes.
+  void _picked(VoidCallback report) {
+    setState(() => _listOpen = false);
+    FocusScope.of(context).unfocus();
+    report();
+  }
 
   LatLng? _near() {
     final bias = widget.bias();
@@ -82,6 +119,7 @@ class _PlaceSearchBoxState extends ConsumerState<PlaceSearchBox> {
 
   void _submit() {
     if (_text.isEmpty) return;
+    _openList(); // the arrow can be tapped with the list folded
     if (_onGoogle) {
       ref.read(googlePlaceSearchProvider.notifier).searchNow(_text,
           language: widget.language, bias: widget.bias());
@@ -106,13 +144,15 @@ class _PlaceSearchBoxState extends ConsumerState<PlaceSearchBox> {
       ref.read(googlePlaceSearchProvider.notifier).typed(value,
           language: widget.language, bias: widget.bias());
     }
-    setState(() {}); // the clear and search buttons follow the text
+    // The clear and search buttons follow the text; typing is searching again.
+    setState(() => _listOpen = true);
   }
 
   void _reset() {
     setState(() {
       _onGoogle = false;
       _submitted = '';
+      _listOpen = true;
     });
     ref.read(placeSearchProvider.notifier).clear();
     if (widget.googleFallback) {
@@ -150,9 +190,12 @@ class _PlaceSearchBoxState extends ConsumerState<PlaceSearchBox> {
         TextField(
           key: PlaceSearchBox.fieldKey,
           controller: widget.controller,
+          focusNode: _focus,
           textInputAction: TextInputAction.search,
           onSubmitted: (_) => _submit(),
           onChanged: _onChanged,
+          // A tap on the field while it still has focus.
+          onTap: _openList,
           decoration: InputDecoration(
             hintText: l10n.searchPlaceHintText,
             filled: true,
@@ -183,10 +226,10 @@ class _PlaceSearchBoxState extends ConsumerState<PlaceSearchBox> {
             focusedBorder: _border(nt.forest, width: 1.5),
           ),
         ),
-        if (_onGoogle)
-          _googleResults(nt, l10n)
-        else
-          _osmResults(nt, l10n, googleEnabled),
+        if (_listOpen)
+          _onGoogle
+              ? _googleResults(nt, l10n)
+              : _osmResults(nt, l10n, googleEnabled),
       ],
     );
   }
@@ -239,7 +282,7 @@ class _PlaceSearchBoxState extends ConsumerState<PlaceSearchBox> {
             // Full address, unabbreviated — it's what disambiguates
             // same-named places.
             subtitle: suggestion.address,
-            onTap: () => widget.onOsmPick(suggestion),
+            onTap: () => _picked(() => widget.onOsmPick(suggestion)),
           ),
       ],
     );
@@ -268,7 +311,7 @@ class _PlaceSearchBoxState extends ConsumerState<PlaceSearchBox> {
           _ResultTile(
             title: suggestion.mainText,
             subtitle: suggestion.secondaryText,
-            onTap: () => widget.onGooglePick(suggestion, _text),
+            onTap: () => _picked(() => widget.onGooglePick(suggestion, _text)),
           ),
       ],
     );

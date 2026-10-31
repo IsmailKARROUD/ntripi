@@ -453,6 +453,71 @@ void main() {
     expect(field.controller!.text, 'chez marcel');
   });
 
+  testWidgets(
+      'Given a Google pick, When the search field is tapped again, Then the '
+      'same suggestions come back without asking Google again', (tester) async {
+    final h = await _pumpForm(tester);
+    await _openGoogleSegment(tester, h);
+    await _search(tester, 'chez marcel');
+    await tester.tap(find.text(_googleName));
+    await tester.pumpAndSettle();
+
+    // The pick folds the list away; the words stay in the field.
+    expect(find.text(_googleName), findsNothing);
+    expect(tester.widget<TextField>(_searchField).controller!.text,
+        'chez marcel');
+    int asked() => h.api.lines
+        .where((l) => l == 'POST $kGooglePlaceAutocompleteEndpoint')
+        .length;
+    final before = asked();
+
+    await tester.tap(_searchField);
+    await tester.pumpAndSettle();
+
+    expect(find.text(_googleName), findsOneWidget);
+    expect(asked(), before);
+    // The picked place stands until another is chosen.
+    expect(find.byKey(StopFormScreen.googlePlaceCardKey), findsOneWidget);
+  });
+
+  testWidgets(
+      'Given a pick in one stop form, When the next stop form opens, Then its '
+      'search starts empty', (tester) async {
+    final h = await _pumpForm(tester, osmResults: [_louvre]);
+    await _search(tester, 'louvre');
+    await tester.tap(find.text('Louvre'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(h.l10n.save));
+    await tester.pumpAndSettle();
+    expect(find.byType(StopFormScreen), findsNothing);
+
+    GoRouter.of(tester.element(find.byType(Scaffold).first))
+        .push('/itineraries/$kTripId/stops/new');
+    await tester.pumpAndSettle();
+
+    // The last form's results went with it.
+    expect(find.byKey(PlaceSearchBox.osmListKey), findsNothing);
+    expect(find.text('Louvre'), findsNothing);
+  });
+
+  testWidgets(
+      'Given words typed after a Google pick, When Change is tapped, Then the '
+      'field keeps them', (tester) async {
+    final h = await _pumpForm(tester);
+    await _openGoogleSegment(tester, h);
+    await _search(tester, 'chez marcel');
+    await tester.tap(find.text(_googleName));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(_searchField, 'chez marcel montmartre');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(h.l10n.googlePlaceChange));
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<TextField>(_searchField).controller!.text,
+        'chez marcel montmartre');
+  });
+
   testWidgets('Given typed coordinates, When saved, Then the source is typed',
       (tester) async {
     final h = await _pumpForm(tester);

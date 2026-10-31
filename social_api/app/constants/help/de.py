@@ -503,7 +503,7 @@ Für eine Warnung, die schwer zu übersehen sein soll statt nebenbei gelesen zu 
                 kind=KIND_STEP,
                 body="""Öffnen Sie in der Position des Stopps den Tab **Google Maps**, geben Sie den Ort ein und tippen Sie auf **Suchen**. Ntripi sucht zuerst in OpenStreetMap. Findet OpenStreetMap nichts, fragt Ntripi von selbst Google Maps; Sie können auch unter den Ergebnissen von OpenStreetMap auf **In Google Maps suchen** tippen. Die Vorschläge von Google folgen dann Ihrer Eingabe.
 
-Wählen Sie einen Vorschlag, und der Ort erscheint auf der Karte von Google. **Geben Sie den Namen des Stopps selbst ein**: Von Google behält Ntripi nur die Kennung des Orts und die Wörter, nach denen Sie gesucht haben — niemals den Namen oder die Adresse von Google.""",
+Wählen Sie einen Vorschlag, und der Ort erscheint auf der Karte von Google. Um einen anderen zu wählen, tippen Sie auf das Suchfeld: Die Liste erscheint wieder. **Geben Sie den Namen des Stopps selbst ein**: Von Google behält Ntripi nur die Kennung des Orts und die Wörter, nach denen Sie gesucht haben — niemals den Namen oder die Adresse von Google.""",
             ),
             Block(
                 anchor="paste-a-link",

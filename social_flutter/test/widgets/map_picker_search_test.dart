@@ -1,11 +1,13 @@
 // The map picker searches OpenStreetMap when the search is submitted — never
 // as the user types: Nominatim's policy forbids search-as-you-type, and its one
 // request a second is for the whole app. A submitted search always answers:
-// its places, "no places found", or why it failed.
+// its places, "no places found", or why it failed. A pick collapses the list,
+// and it comes back when the user is in the field again.
 import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -94,6 +96,16 @@ Finder _notice(String text) => find.descendant(
 Future<void> _submit(WidgetTester tester, String text) async {
   await tester.enterText(_field, text);
   await tester.testTextInput.receiveAction(TextInputAction.search);
+  await tester.pump();
+}
+
+Finder get _list => find.byKey(MapPickerScreen.suggestionsKey);
+
+/// Searches the Louvre and picks it from the list.
+Future<void> _pickLouvre(WidgetTester tester) async {
+  await _submit(tester, 'louvre');
+  await tester.pump(const Duration(milliseconds: 100));
+  await tester.tap(find.descendant(of: _list, matching: find.text('Louvre')));
   await tester.pump();
 }
 
@@ -201,5 +213,35 @@ void main() {
 
     expect(find.text('Louvre'), findsNothing);
     expect(tester.widget<TextField>(_field).controller!.text, isEmpty);
+  });
+
+  testWidgets(
+      'Given a picked result, When the field is tapped, Then the list comes '
+      'back without a new search', (tester) async {
+    final geocoding = await _pump(tester);
+    await _pickLouvre(tester);
+    expect(_list, findsNothing);
+
+    await tester.tap(_field);
+    await tester.pump();
+
+    expect(_list, findsOneWidget);
+    expect(geocoding.queries, ['louvre']);
+  });
+
+  testWidgets(
+      'Given a picked result, When a screen reader activates the field, Then '
+      'the list comes back', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await _pump(tester);
+    await _pickLouvre(tester);
+    expect(_list, findsNothing);
+
+    // Focuses the field without a tap: onTap is never called.
+    tester.semantics.tap(find.semantics.byFlag(SemanticsFlag.isTextField));
+    await tester.pump();
+
+    expect(_list, findsOneWidget);
+    semantics.dispose();
   });
 }

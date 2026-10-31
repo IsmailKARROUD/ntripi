@@ -501,7 +501,7 @@ ARTICLES: tuple[Article, ...] = (
                 kind=KIND_STEP,
                 body="""在停靠点的位置中打开 **Google 地图** 标签，输入地点并点按 **搜索**。Ntripi 会先在 OpenStreetMap 中搜索。OpenStreetMap 什么都找不到时，Ntripi 会自动询问 Google 地图；你也可以点按 OpenStreetMap 结果下方的 **在 Google 地图中搜索**。之后 Google 的建议会随你的输入更新。
 
-选择一个建议，地点就会出现在 Google 的地图上。**请自己输入停靠点的名称**：对于 Google 地点，Ntripi 只保存它的标识符和你搜索时用的词——绝不保存 Google 的名称或地址。""",
+选择一个建议，地点就会出现在 Google 的地图上。想换一个，点按搜索栏，列表就会重新出现。**请自己输入停靠点的名称**：对于 Google 地点，Ntripi 只保存它的标识符和你搜索时用的词——绝不保存 Google 的名称或地址。""",
             ),
             Block(
                 anchor="paste-a-link",

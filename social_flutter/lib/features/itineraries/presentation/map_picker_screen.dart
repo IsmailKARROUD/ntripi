@@ -26,8 +26,10 @@ import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/location_error.dart';
 
 class MapPickerScreen extends ConsumerStatefulWidget {
-  // Test keys: the search field, and the line that answers a submitted search.
+  // Test keys: the search field, its results, and the line that answers a
+  // submitted search.
   static const searchFieldKey = Key('mapPicker.searchField');
+  static const suggestionsKey = Key('mapPicker.suggestions');
   static const searchNoticeKey = Key('mapPicker.searchNotice');
 
   /// Optional initial coordinates to center the map on.
@@ -54,6 +56,7 @@ class MapPickerScreen extends ConsumerStatefulWidget {
 class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
   final _mapController = MapController();
   final _searchController = TextEditingController();
+  final _searchFocus = FocusNode();
   // Last query actually sent to Nominatim — gates the "no results" card so it
   // can't flash while a newer keystroke's debounce is still pending.
   String _submittedQuery = '';
@@ -90,6 +93,13 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
   void initState() {
     super.initState();
     _searchNotifier = ref.read(mapPlaceSearchProvider.notifier);
+    // Back in the field, the collapsed list returns — by focus too, since a
+    // screen reader's activation and Tab focus the field without onTap.
+    _searchFocus.addListener(() {
+      if (_searchFocus.hasFocus && !_listVisible) {
+        setState(() => _listVisible = true);
+      }
+    });
     if (widget.deviceLat != null && widget.deviceLng != null) {
       _deviceLocation = LatLng(widget.deviceLat!, widget.deviceLng!);
     }
@@ -106,6 +116,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
   void dispose() {
     _resolveDebounce?.cancel();
     _searchController.dispose();
+    _searchFocus.dispose();
     // Reset so a reopened picker doesn't show stale results — deferred to a
     // microtask because this screen's provider subscriptions are still open
     // during dispose; a synchronous state change would notify a defunct element.
@@ -374,6 +385,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
         TextField(
           key: MapPickerScreen.searchFieldKey,
           controller: _searchController,
+          focusNode: _searchFocus,
           decoration: InputDecoration(
             hintText: l10n.searchPlaceHintText,
             filled: true,
@@ -541,6 +553,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
     NtripiColors nt,
   ) {
     return Padding(
+      key: MapPickerScreen.suggestionsKey,
       padding: const EdgeInsets.only(top: 4),
       // Tiles live in a Material (not a color-decorated Container) so ListTile
       // background/ink paint on it — a colored intermediate box would hide

@@ -1,10 +1,12 @@
 // PlaceSearchBox on its own: the states between a submitted search and a pick
 // — waiting, OpenStreetMap failing, Google refusing, Google finding nothing —
-// and the way back from Google to OpenStreetMap.
+// the way back from Google to OpenStreetMap, and what a pick leaves: the list
+// folded away, back when the user is in the field again, at no new request.
 import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -58,9 +60,24 @@ class _Box {
   final _Geocoding geocoding;
   final TextEditingController controller;
   final AppLocalizations l10n;
+  final List<String> osmPicks;
   final List<String> googlePicks;
 
-  _Box(this.api, this.geocoding, this.controller, this.l10n, this.googlePicks);
+  _Box(this.api, this.geocoding, this.controller, this.l10n, this.osmPicks,
+      this.googlePicks);
+
+  /// Google answers every question with Chez Marcel.
+  void googleFinds() => api.adapter.onPost(
+        kGooglePlaceAutocompleteEndpoint,
+        (s) => s.reply(200, {
+          'suggestions': [
+            {'place_id': 'ChIJx', 'main_text': 'Chez Marcel', 'secondary_text': 'Paris'},
+          ],
+        }),
+        data: Matchers.any,
+      );
+
+  int get googleAsked => api.sent.length;
 }
 
 Future<_Box> _pump(
@@ -76,6 +93,7 @@ Future<_Box> _pump(
   final api = RecordingDio();
   final controller = TextEditingController();
   addTearDown(controller.dispose);
+  final osmPicks = <String>[];
   final picks = <String>[];
 
   await tester.pumpWidget(ProviderScope(
@@ -101,7 +119,7 @@ Future<_Box> _pump(
               googleFallback: googleFallback,
               language: 'en',
               bias: () => null,
-              onOsmPick: (_) {},
+              onOsmPick: (suggestion) => osmPicks.add(suggestion.displayName),
               onGooglePick: (suggestion, text) =>
                   picks.add('${suggestion.placeId} $text'),
             ),
@@ -112,7 +130,17 @@ Future<_Box> _pump(
   ));
   await tester.pumpAndSettle();
   final l10n = AppLocalizations.of(tester.element(find.byType(PlaceSearchBox)))!;
-  return _Box(api, geocoding, controller, l10n, picks);
+  return _Box(api, geocoding, controller, l10n, osmPicks, picks);
+}
+
+/// Searches [text] until Google's list shows, and picks Chez Marcel from it.
+Future<void> _pickOnGoogle(WidgetTester tester, _Box box, String text) async {
+  box.googleFinds();
+  await _submit(tester, text);
+  await tester.pumpAndSettle();
+  expect(find.byKey(PlaceSearchBox.googleListKey), findsOneWidget);
+  await tester.tap(find.text('Chez Marcel'));
+  await tester.pumpAndSettle();
 }
 
 Future<void> _submit(WidgetTester tester, String text) async {
@@ -284,5 +312,88 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text(box.l10n.searchOnGoogleMaps), findsOneWidget);
+  });
+
+  group('after a pick', () {
+    testWidgets(
+        'Given Google suggestions, When one is picked, Then the list folds '
+        'away and the field keeps the words', (tester) async {
+      final box = await _pump(tester, geocoding: _Geocoding((_) => const []));
+
+      await _pickOnGoogle(tester, box, 'chez marcel');
+
+      expect(box.googlePicks, ['ChIJx chez marcel']);
+      expect(find.byKey(PlaceSearchBox.googleListKey), findsNothing);
+      expect(box.controller.text, 'chez marcel');
+    });
+
+    testWidgets(
+        'Given a pick folded the Google list, When the field is tapped, Then '
+        'the same suggestions come back and Google is not asked again',
+        (tester) async {
+      final box = await _pump(tester, geocoding: _Geocoding((_) => const []));
+      await _pickOnGoogle(tester, box, 'chez marcel');
+      final asked = box.googleAsked;
+
+      await tester.tap(find.byKey(PlaceSearchBox.fieldKey));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(PlaceSearchBox.googleListKey), findsOneWidget);
+      expect(box.googleAsked, asked);
+    });
+
+    testWidgets(
+        'Given a pick folded the list, When a screen reader activates the '
+        'field, Then the list comes back', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final box = await _pump(tester, geocoding: _Geocoding((_) => const []));
+      await _pickOnGoogle(tester, box, 'chez marcel');
+
+      // Focuses the field without a tap: onTap is never called.
+      tester.semantics.tap(find.semantics.byFlag(SemanticsFlag.isTextField));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(PlaceSearchBox.googleListKey), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets(
+        'Given a pick folded the Google list, When the user types more, Then '
+        'Google answers the new words', (tester) async {
+      final box = await _pump(tester, geocoding: _Geocoding((_) => const []));
+      await _pickOnGoogle(tester, box, 'chez marcel');
+      final asked = box.googleAsked;
+
+      await tester.enterText(
+          find.byKey(PlaceSearchBox.fieldKey), 'chez marcel montmartre');
+      await tester.pump(GooglePlaceSearchNotifier.typingPause);
+      await tester.pumpAndSettle();
+
+      // The field still holds Google's words, so the box is still on Google.
+      expect(box.googleAsked, asked + 1);
+      expect(box.geocoding.queries, ['chez marcel']);
+      expect(find.byKey(PlaceSearchBox.googleListKey), findsOneWidget);
+    });
+
+    testWidgets(
+        'Given OpenStreetMap results, When one is picked, Then the list folds '
+        'away, and a tap on the field brings it back without a new search',
+        (tester) async {
+      final box = await _pump(tester, geocoding: _Geocoding((_) => [_louvre]));
+      await _submit(tester, 'louvre');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Louvre'));
+      await tester.pumpAndSettle();
+      expect(box.osmPicks, ['Louvre']);
+      expect(find.byKey(PlaceSearchBox.osmListKey), findsNothing);
+      expect(box.controller.text, 'louvre');
+
+      await tester.tap(find.byKey(PlaceSearchBox.fieldKey));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(PlaceSearchBox.osmListKey), findsOneWidget);
+      expect(box.geocoding.queries, ['louvre']);
+    });
   });
 }
