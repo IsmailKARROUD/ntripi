@@ -119,7 +119,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _errorFromSocial = true;
     });
     try {
-      final idToken = await GoogleSignInService.instance.obtainIdToken();
+      final idToken = await ref.read(googleSignInServiceProvider).obtainIdToken();
       if (idToken == null) return; // user canceled the picker
       await _completeGoogleSignIn(idToken);
     } on DioException catch (e) {
@@ -182,7 +182,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (apiErrorCode(e) != kTosRequiredCode || !mounted) rethrow;
 
       final accessToken =
-          await GoogleSignInService.instance.obtainBirthdayAccessToken();
+          await ref.read(googleSignInServiceProvider).obtainBirthdayAccessToken();
       // Only a hint for the sheet — the server re-reads the People API with
       // this same token and its answer is the one that gets stored.
       final prefill = accessToken == null

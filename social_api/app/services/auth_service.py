@@ -278,17 +278,19 @@ def login_or_register_google(
         return existing, create_access_token(subject=str(existing.id))
 
     # 3. Brand-new account from the Google profile.
+    # A blocked address (an erased suspended account's) is refused first. Ahead
+    # of the ToS gate, because the client's first post never carries
+    # tos_accepted: checked after it, this person would be walked through the
+    # consent sheet and the birthday scope only to be refused at the end.
+    if account_service.is_signup_blocked(db, email):
+        raise AuthError(EMAIL_UNAVAILABLE, http_status=400, code="email_unavailable")
+
     if not tos_accepted:
         raise AuthError(
             "You must accept the Terms of Service to register.",
             http_status=400,
             code="tos_required",  # same code as the password path — clients key off it
         )
-
-    # Before the People API and the paid name scan: a blocked address (an erased
-    # suspended account's) never opens a new account, by either path.
-    if account_service.is_signup_blocked(db, email):
-        raise AuthError(EMAIL_UNAVAILABLE, http_status=400, code="email_unavailable")
 
     # Google first, the user's own answer second. The People API result is the
     # more reliable of the two — it is Google's own record rather than a number

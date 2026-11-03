@@ -18,7 +18,7 @@ templates and older tests are unaffected — `code` is purely additive. A plain
 
 Two service layers raise their own exception types that routers convert to
 `ApiError`, each with its own `http_status` field:
-`AuthError` (`services/auth_service.py:45`) and `AppealError`
+`AuthError` (`services/auth_service.py:46`) and `AppealError`
 (`services/appeal_service.py:52`, default status **400**).
 
 **Client resolution order** (`lib/core/api/api_client.dart:313`,
@@ -49,8 +49,8 @@ shows English to every user regardless of app language. See
 | Code | Status | Raised at | Client |
 |---|---|---|---|
 | `not_authenticated` | 403 | `dependencies.py:90` | localized |
-| `account_deactivated` | 403 | `dependencies.py:68`, `auth_service.py:91,225,242` | localized |
-| `login_invalid` | 401 | `auth_service.py:84` | localized |
+| `account_deactivated` | 403 | `dependencies.py:68`, `auth_service.py:92,235,252` | localized |
+| `login_invalid` | 401 | `auth_service.py:85` | localized |
 | `invalid_grant` | 401 | `auth.py:258` | localized |
 | `email_unverified` | 403 | `dependencies.py:122` | localized |
 | `incorrect_password` | 401 | `users.py:243` | localized |
@@ -78,10 +78,10 @@ refreshes or logs out on *codeless* 401s.
 | `email_taken` | 409 | `auth_service.py:170` | localized |
 | `username_invalid` | 422 | `auth_service.py:139` | — |
 | `display_name_invalid` | 422 | `auth_service.py:151` | — |
-| `tos_required` | 400 | `auth.py:90`, `auth_service.py:122,285` | localized |
-| `underage` | 400 | `auth.py:99,444`, `auth_service.py:132,314` | localized |
-| `dob_required` | 400 | `auth.py:435`, `auth_service.py:308` | localized |
-| `email_unavailable` | 400 | `auth.py:108`, `auth_service.py:146,291` | localized |
+| `tos_required` | 400 | `auth.py:90`, `auth_service.py:122,292` | localized |
+| `underage` | 400 | `auth.py:99,444`, `auth_service.py:132,316` | localized |
+| `dob_required` | 400 | `auth.py:435`, `auth_service.py:310` | localized |
+| `email_unavailable` | 400 | `auth.py:108`, `auth_service.py:146,286` | localized |
 
 **Shape errors are 422; policy refusals are 400.** A future or >120-year date
 fails the Pydantic validator (422); a real date under 16 answers 400 `underage`

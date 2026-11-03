@@ -33,9 +33,9 @@ single-use opaque tokens; none of them ever stores a raw token.
 - **`POST /auth/forgot-password` always answers 200** with
   `"If an account exists…"` — enumeration-safe. It is a silent no-op for a
   Google-only account (no password to reset) and for an inactive one
-  (`auth_service.py:388`).
+  (`auth_service.py:403`).
 - Completing a reset **revokes every refresh token** for that user
-  (`auth_service.py:423`) and records the new hash in `password_history`.
+  (`auth_service.py:440`) and records the new hash in `password_history`.
 - **A reset or an in-app change retires every other outstanding reset link**
   (`email_token_service.retire_unused`). Each forgot-password request mints its
   own; until 2026-09-28 one left in an old email could reset the password again
@@ -44,10 +44,10 @@ single-use opaque tokens; none of them ever stores a raw token.
 
 ### In-app change
 
-`POST /auth/change-password` runs in this order (`auth_service.py:520`):
+`POST /auth/change-password` runs in this order (`auth_service.py:519`):
 
 1. Verify the current password → **403**, deliberately not 401
-   (`auth_service.py:523`): a 401 would trip the Flutter `AuthInterceptor` into a
+   (`auth_service.py:544`): a 401 would trip the Flutter `AuthInterceptor` into a
    login redirect.
 2. Reject reuse of any of the last **5** hashes (`_PASSWORD_HISTORY_KEEP`).
 3. Reject a password found in the **Have I Been Pwned** breach corpus.
@@ -67,9 +67,9 @@ changing your password does not sign you out of the device you did it on.
 ### Email verification
 
 - `POST /auth/resend-verification` is a no-op if already verified
-  (`auth_service.py:555`); rate-limited 3/hour.
+  (`auth_service.py:576`); rate-limited 3/hour.
 - `GET /verify-email?token=` consumes the token, sets `email_verified = True`
-  (`auth_service.py:589`), and renders `email_verified.html` or
+  (`auth_service.py:610`), and renders `email_verified.html` or
   `token_invalid.html` — **always HTTP 200**, so a bad link is a page, not an
   error.
 
@@ -138,7 +138,7 @@ Change-password errors all arrive as 403/400 with the generic
 ## Known gaps / TODOs
 
 - **The web reset path skips the breached-password (HIBP) and reuse checks**
-  that `change_password` runs (`auth_service.py:533`). It does enforce the shared
+  that `change_password` runs (`auth_service.py:546`, `:551`). It does enforce the shared
   `validate_password_strength` policy since 2026-09-26 — before that it
   validated inline, so a password over bcrypt's 72-byte cap reached `hashpw`,
   which bcrypt 5 answers with a `ValueError` (a 500 page), and Arabic-Indic

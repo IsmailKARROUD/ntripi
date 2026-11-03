@@ -7,9 +7,12 @@
 // "DioException [connection error]..." text. Because it's a pure function,
 // it's worth pinning down so future regressions show up here.
 
+import 'dart:ui' show Locale;
+
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 void main() {
   // A request the DioException needs as scaffolding — value doesn't matter,
@@ -17,6 +20,45 @@ void main() {
   final requestOptions = RequestOptions(path: '/whatever');
 
   group('extractErrorMessage', () {
+    group('a blocked sign-up address', () {
+      const serverDetail =
+          "This email address can't be used to create an account.";
+
+      DioException refusal() => DioException(
+            requestOptions: requestOptions,
+            type: DioExceptionType.badResponse,
+            response: Response(
+              requestOptions: requestOptions,
+              statusCode: 400,
+              data: {'detail': serverDetail, 'code': 'email_unavailable'},
+            ),
+          );
+
+      test(
+          'Given the code and an English detail, '
+          'When extracted for a French reader, '
+          'Then they get the French string, not the detail', () {
+        final fr = lookupAppLocalizations(const Locale('fr'));
+
+        expect(extractErrorMessage(refusal(), fr), fr.apiErrorEmailUnavailable);
+        expect(extractErrorMessage(refusal(), fr), isNot(serverDetail));
+      });
+
+      test(
+          'Given no localizations (an installed build older than the code), '
+          'When extracted, '
+          "Then the server's own wording still says something true", () {
+        expect(extractErrorMessage(refusal()), serverDetail);
+      });
+
+      test(
+          'Given the refusal, When its code is read, '
+          'Then it is the code the screens compare against', () {
+        expect(apiErrorCode(refusal()), 'email_unavailable');
+        expect(apiErrorCode(refusal()), isNot(kTosRequiredCode));
+      });
+    });
+
     group('connection errors', () {
       const offlineMessage =
           'No internet connection. Please check your network and try again.';

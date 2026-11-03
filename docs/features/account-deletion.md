@@ -163,8 +163,10 @@ POST /web/delete-account              consume → defer, or erase
 - **Both sign-up paths refuse it with 400 `email_unavailable`** — `/auth/register`
   after the ToS and age gates and **before `moderate_or_422`** (no paid scan for
   a refusal), `create_user` again (it commits), and the Google new-account
-  branch before the People API and the name scan. Sign-in and account linking
-  never consult it. The message never says why.
+  branch **first of all, ahead of its ToS gate**, because the app's first Google
+  post never carries `tos_accepted`: behind that gate the person would get the
+  consent sheet and the birthday scope only to be refused at the end. Sign-in
+  and account linking never consult it. The message never says why.
 - **Kept until an operator lifts it** — no expiry, as a ban has none.
   `POST /admin/signup-blocks/lift`, from a form on `/admin/suspended`, hashes the
   address typed in and deletes the row (the remedy for a disputed block, or an
@@ -231,7 +233,9 @@ the entry. None of the eight in-app FAQ answers covers deletion.
   storage outage left behind is not retried.
 - Tests: `test_account_service.py` (the function), `test_account_deletion_web.py`
   (the flow, the block, the deferral, the admin lanes), and the unchanged
-  `test_account_deletion.py`. **The suite runs on SQLite, which has no row
+  `test_account_deletion.py`; in the app,
+  `test/widgets/signup_blocked_address_test.dart` drives the real Register and
+  Login screens against the refusal. **The suite runs on SQLite, which has no row
   locks**, so the `FOR UPDATE` in step 1 is not exercised by it. It was checked
   by hand on PostgreSQL 14 on 2026-11-03, with the migration up, down and up:
   two links for one account at once and one link double-clicked, six rounds

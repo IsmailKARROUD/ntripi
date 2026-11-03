@@ -38,7 +38,7 @@ see [google-sign-in.md](google-sign-in.md).
 
 ### Login
 
-- **Timing-safe.** `_DUMMY_HASH` (`auth_service.py:42`) means bcrypt is called
+- **Timing-safe.** `_DUMMY_HASH` (`auth_service.py:43`) means bcrypt is called
   even when the identifier is unknown or the account is Google-only, so response
   time cannot reveal whether an account exists.
 - The identifier is lowercased and matched against `email` **OR**

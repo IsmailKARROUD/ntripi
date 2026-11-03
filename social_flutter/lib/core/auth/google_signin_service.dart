@@ -6,6 +6,7 @@
 // supportsAuthenticate()/authentication, and authenticate() replacing signIn().
 
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:ntripi/core/api/api_endpoints.dart';
@@ -16,6 +17,12 @@ import 'package:ntripi/core/api/api_endpoints.dart';
 /// what collects the date.
 const String kGoogleBirthdayScope =
     'https://www.googleapis.com/auth/user.birthday.read';
+
+/// The login screen's way to the service. A provider because the Google plugin
+/// cannot run under test: this is how a widget test drives the Google flow.
+final googleSignInServiceProvider = Provider<GoogleSignInService>(
+  (ref) => GoogleSignInService.instance,
+);
 
 class GoogleSignInService {
   GoogleSignInService._();

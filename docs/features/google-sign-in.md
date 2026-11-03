@@ -46,19 +46,22 @@ account the moment the owner signed in. The owner can set a new password through
 forgot-password. See [decisions.md](../decisions.md).
 
 **3 — New account** (`auth_service.py:280`):
-- Requires `tos_accepted` → **400 `tos_required`** otherwise.
 - Refuses the address of an erased suspended account → **400
-  `email_unavailable`** (`auth_service.py:291`), before the People API and the
-  name scan — the only branch that consults it, since signing in and linking
-  need an existing account. See [account-deletion.md](account-deletion.md#the-sign-up-block).
+  `email_unavailable`** (`auth_service.py:286`), **first of all, ahead of the
+  ToS gate**: the client's first post never carries `tos_accepted`, so a check
+  behind that gate would walk the person through the consent sheet and the
+  birthday scope only to refuse them at the end. It is the only branch that
+  consults the block, since signing in and linking need an existing account.
+  See [account-deletion.md](account-deletion.md#the-sign-up-block).
+- Requires `tos_accepted` → **400 `tos_required`** otherwise.
 - **Date of birth**: the People API result **wins over** the client-posted date
-  (`auth_service.py:298`), and `dob_source` records which stood behind the
+  (`auth_service.py:300`), and `dob_source` records which stood behind the
   account (`"google"` or `"self"`). No date at all → 400 `dob_required`; under
   16 → 400 `underage`.
 - Username is synthesised by `generate_username_from`
   (`validators/username.py:74`).
 - **A moderation reject on the Google display name drops the name instead of
-  failing signup** (`auth_service.py:344`) and resets the status to `approved`.
+  failing signup** (`auth_service.py:346`) and resets the status to `approved`.
   The name is Google's, not something the user typed, so a 422 would lock a real
   person out with no recourse — and nothing offensive was persisted.
 
@@ -74,7 +77,8 @@ The client's move is: post the token; on **400 `tos_required`**, show the consen
 sheet and **re-post the same ID token** with `tos_accepted: true`. Google ID
 tokens live about an hour and verification is stateless, so re-posting is free.
 Asking before the picker would re-prompt every returning Google user at every
-sign-in.
+sign-in. Only `tos_required` opens the sheet: any other refusal, such as
+`email_unavailable` or `account_deactivated`, shows on the login screen at once.
 
 ### The People API birthday read
 
@@ -119,7 +123,11 @@ sign-in: `DELETE /users/me` (account deletion) answers 401
 
 ## Flutter surface
 
-- `core/auth/google_signin_service.dart` — the plugin wrapper.
+- `core/auth/google_signin_service.dart` — the plugin wrapper. The login screen
+  reaches it through `googleSignInServiceProvider`, because the plugin cannot run
+  under test: `test/widgets/signup_blocked_address_test.dart` drives the Google
+  flow with a fake. The web button (`kIsWeb`) shares `_completeGoogleSignIn` with
+  that path but cannot be driven there.
 - `core/auth/google_web_button.dart` with `_stub` / `_web` conditional imports —
   the web flow needs Google's own rendered button.
 - `core/auth/google_people_client.dart` — the client-side prefill read.

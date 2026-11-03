@@ -269,6 +269,10 @@ class TestSuspended:
         assert scans == []  # refused before the paid scan
 
         patch_google_verifier(monkeypatch, sub="g-banned", email="banned@x.com")
+        # The client's first post carries no acceptance: refused there, not
+        # after the consent sheet and the birthday scope have been shown.
+        r = client.post("/auth/google", json={"id_token": "fake"})
+        assert (r.status_code, r.json()["code"]) == (400, "email_unavailable")
         r = client.post("/auth/google", json={
             "id_token": "fake", "tos_accepted": True, "date_of_birth": "2000-01-01",
         })

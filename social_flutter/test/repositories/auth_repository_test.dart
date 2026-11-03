@@ -11,6 +11,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http_mock_adapter/http_mock_adapter.dart';
+import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/api/api_endpoints.dart';
 import 'package:ntripi/features/auth/data/auth_repository.dart';
 
@@ -166,6 +167,67 @@ void main() {
         ),
         throwsA(isA<DioException>()),
       );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // A blocked sign-up address: the refusal reaches the screen, no session stays
+  // ---------------------------------------------------------------------------
+
+  group('AuthRepository, an address that may not sign up', () {
+    const refusal = {
+      'detail': "This email address can't be used to create an account.",
+      'code': 'email_unavailable',
+    };
+    final isTheRefusal = isA<DioException>().having(
+      apiErrorCode, 'code', 'email_unavailable',
+    );
+
+    Future<void> expectNoSession() async {
+      const storage = FlutterSecureStorage();
+      expect(await storage.read(key: 'ntripi_access_token'), isNull);
+      expect(await storage.read(key: 'ntripi_refresh_token'), isNull);
+      expect(await storage.read(key: 'ntripi_refresh_expires_at'), isNull);
+    }
+
+    test(
+        'Given the blocked address, When register is called, '
+        'Then the code reaches the caller and no session is saved', () async {
+      final (dio, bareDio, adapter, _) = _makeDios();
+      adapter.onPost(
+        kRegisterEndpoint,
+        (server) => server.reply(400, refusal),
+        data: Matchers.any,
+      );
+
+      await expectLater(
+        AuthRepository(dio, bareDio).register(
+          username: 'alice1',
+          email: 'blocked@test.com',
+          password: 'secret123',
+          tosAccepted: true,
+          dateOfBirth: DateTime(2000, 1, 1),
+        ),
+        throwsA(isTheRefusal),
+      );
+      await expectNoSession();
+    });
+
+    test(
+        'Given the blocked address, When loginWithGoogle is called, '
+        'Then the code reaches the caller and no session is saved', () async {
+      final (dio, bareDio, adapter, _) = _makeDios();
+      adapter.onPost(
+        kGoogleAuthEndpoint,
+        (server) => server.reply(400, refusal),
+        data: Matchers.any,
+      );
+
+      await expectLater(
+        AuthRepository(dio, bareDio).loginWithGoogle(idToken: 'id-token'),
+        throwsA(isTheRefusal),
+      );
+      await expectNoSession();
     });
   });
 

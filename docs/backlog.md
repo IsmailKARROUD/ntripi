@@ -312,6 +312,20 @@ shown when a new stop duplicates one already in the trip
 margin, while the widgets around it pad themselves 16 in — so it likely runs to
 both edges of the form.
 
+### idea — the Register header overflows at very large text
+
+Found on 2026-11-03 by a widget test, and older than the change that found it.
+`register_screen.dart:130` lays the back button, logo, theme picker and language
+picker in one `Row` with nothing flexible, and the app does not limit text size.
+Measured with DM Sans (the flag taken at its usual 1.25 em), the row needs about
+266 px at normal text, which every phone has. It overflows past about 1.95× on a
+390 px phone, 1.58× on 360 and 1.07× on 320, and the language pill runs off the
+edge. iOS's accessibility sizes and Android's largest font size reach those
+scales. `accept_terms_screen.dart:92` has the same row without the back button,
+so 48 px more room. The login screen avoids it by giving the pickers their own
+row. Under test the row overflows on anything narrower than 393 px at normal
+text, because the test font draws "Tripi" at 102 px rather than 44.
+
 ---
 
 ## Dead and unread code

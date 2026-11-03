@@ -2864,3 +2864,35 @@ never purged).
 - **A link that erases on GET** (a mail scanner would delete the account), and
   **a request route that looks the address up before answering** (the timing
   difference `/auth/forgot-password` has).
+
+### 2026-11-03 — A blocked address is refused ahead of Google's consent sheet
+
+**Context.** The account-deletion entry above blocks the address of an erased
+suspended account, and `POST /auth/google` checked that block behind its ToS gate.
+The app's first Google post never carries `tos_accepted`, so a blocked person was
+answered `tos_required` first. The app then asked Google for the birthday scope
+and showed the consent sheet, and only the second post said the address could not
+be used. Nothing failed, so the suite did not notice; writing the app's tests for
+that path did.
+
+**Decision.** On the new-account branch the block is the first check, ahead of
+`tos_required`. The password form keeps its order (ToS, age, block), because it
+sends the acceptance and the date with its first post and nobody is walked through
+anything.
+
+**Consequences.**
+- A blocked person sees the refusal at once, with no sheet, no birthday prompt and
+  no second post. The People API is never called for them.
+- Every brand-new Google post costs one primary-key lookup on `signup_blocks`.
+  Sign-in and linking never reach it.
+- It discloses nothing new: the post carries an ID token Google signed for that
+  address, so the only person who can get this answer is the one who holds it.
+- The login screen reaches the plugin through `googleSignInServiceProvider`, which
+  is how `test/widgets/signup_blocked_address_test.dart` drives this flow. The
+  other callers of `GoogleSignInService.instance` are unchanged.
+
+**Alternatives rejected.**
+- **Leaving the check behind the gate**: it asks someone who cannot sign up for a
+  date of birth, an agreement and a sensitive Google scope, then refuses them.
+- **Having the app ask first**: only the server knows whether a token means sign-in
+  or sign-up, the same reason the consent sheet waits for `tos_required`.
