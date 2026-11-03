@@ -19,19 +19,25 @@ Routes:
   POST /web/appeal
   GET  /appeal               → Request an appeal link by email (suspended users)
   POST /web/appeal-request
+  GET  /delete-account       → Delete an account without the app (Play's deletion URL)
+  POST /web/delete-account-request
+  GET  /delete-account/confirm → What the emailed link will delete; never deletes
+  POST /web/delete-account
 
 /app/ is served by the StaticFiles mount in main.py (Flutter web build).
 All sign-in/sign-up happens inside the Flutter app — the server renders no
 auth forms and sets no session cookie. The appeal pages are the one exception:
 a suspended user cannot authenticate at all, so their appeal path must be a
-server-rendered form authorized by a signed link instead of a session.
+server-rendered form authorized by a signed link instead of a session. The
+deletion pages are the other: someone without the app proves the account is
+theirs with a single-use link emailed to its address.
 """
 
 from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, Form, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Form, Request, status
 from fastapi.responses import (
     HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response,
 )
@@ -39,6 +45,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import Settings, get_settings
+from app.constants import help as help_content
 from app.constants.guidelines import (
     GUIDELINES_DATE,
     GUIDELINES_VERSION,
@@ -48,14 +55,15 @@ from app.constants.privacy import PRIVACY_DATE, PRIVACY_VERSION, get_privacy
 from app.constants.tos import TOS_DATE, TOS_VERSION, get_tos
 from app.database import get_db
 from app.errors import ApiError
-from app.i18n import resolve_lang
-from app.limiter import limiter
+from app.i18n import resolve_lang, translator
+from app.limiter import limiter, retry_after
 from app.models.moderation_log import ModerationLog
 from app.models.user import User
 from app.services import (
-    app_links, appeal_service, appeal_token, auth_service, email_service,
-    help_service, seo,
+    account_service, app_links, appeal_service, appeal_token, auth_service,
+    email_service, email_token_service, help_service, seo,
 )
+from app.services.help_render import render_markdown
 from app.templating import templates
 from app.validators.password import validate_password_strength
 
@@ -460,15 +468,13 @@ def web_appeal_request(
                 .order_by(ModerationLog.created_at.desc())
             ).scalars().first()
             if action is not None:
-                from app.services.auth_service import _email_html
-
                 link = appeal_token.appeal_link(
                     appeal_token.mint_appeal_token(user.id, "user", user.id, action.id)
                 )
                 email_service.send_email(
                     to=user.email,
                     subject="Ntripi — Appeal a moderation decision",
-                    html=_email_html(
+                    html=email_service.branded_email_html(
                         "Appeal a moderation decision",
                         "Use the link below to explain why you believe the decision "
                         "against your account was incorrect. A moderator will review it.",
@@ -481,3 +487,153 @@ def web_appeal_request(
         "page_title": "Check your email — Ntripi",
         "check_email": True,
     })
+
+
+# ---------------------------------------------------------------------------
+# Account deletion without the app (public — Google Play's deletion URL)
+#
+# Request → an emailed single-use link (email_tokens, purpose account_delete)
+# → a page that says what will go → its button erases. The erasure is
+# account_service.erase_account, the same as the app's DELETE /users/me.
+# ---------------------------------------------------------------------------
+
+_DELETE_PURPOSE = email_token_service.PURPOSE_ACCOUNT_DELETE
+
+# Answered with a page when rate-limited, in the reader's language (main.py).
+DELETION_FORM_PATHS = ("/web/delete-account-request", "/web/delete-account")
+
+
+def _deletion_form(request: Request, error_message: str | None = None) -> HTMLResponse:
+    lang = resolve_lang(request)
+    t = translator(lang)
+    # What deletion keeps is the help block, rendered here: one text in six
+    # languages, so the page and the help centre cannot disagree.
+    keeps = next(
+        block
+        for block in help_content.article(lang, "your-data-and-privacy").blocks
+        if block.anchor == "what-deletion-keeps"
+    )
+    return templates.TemplateResponse(request, "delete_account_request.html", {
+        "page_title": f"{t('delete_heading')} — Ntripi",
+        "page_description": t("delete_description"),
+        "keeps_heading": keeps.heading,
+        "keeps_html": render_markdown(keeps.body),
+        "error_message": error_message,
+    })
+
+
+def _deletion_message(
+    request: Request, heading: str, body: str, **response_kwargs,
+) -> HTMLResponse:
+    """Every answer in this flow that is only words."""
+    return templates.TemplateResponse(request, "delete_account_message.html", {
+        "page_title": f"{heading} — Ntripi",
+        "heading": heading,
+        "body": body,
+    }, **response_kwargs)
+
+
+def deletion_rate_limited_page(request: Request, exc) -> HTMLResponse:
+    """A person can reach this limit, retrying while the email is slow or from a
+    shared address, and slowapi's JSON would be a screen of raw English. Registered
+    in main.py."""
+    t = _t(request)
+    return _deletion_message(
+        request, t("share_rate_limited_heading"), t("delete_rate_limited_body"),
+        status_code=429, headers={"Retry-After": retry_after(exc)},
+    )
+
+
+def _deletion_link_invalid(request: Request) -> HTMLResponse:
+    t = _t(request)
+    return templates.TemplateResponse(request, "token_invalid.html", {
+        "page_title": f"{t('token_invalid_heading')} — Ntripi",
+        "message": t("delete_link_invalid"),
+    }, status_code=200)
+
+
+@router.get("/delete-account", response_class=HTMLResponse)
+def delete_account_page(request: Request) -> HTMLResponse:
+    return _deletion_form(request)
+
+
+@router.post("/web/delete-account-request", response_class=HTMLResponse)
+@limiter.limit(lambda: get_settings().ACCOUNT_DELETION_RATE_LIMIT)
+def web_delete_account_request(
+    request: Request,  # required first positional for slowapi rate limiting
+    background_tasks: BackgroundTasks,
+    email: str = Form(""),
+) -> HTMLResponse:
+    """Email a deletion link to the account at `email`, if there is one.
+
+    No database session, on purpose: the lookup, the token and the email all
+    happen in account_service.send_deletion_link after this response is sent,
+    so the page — and the time it takes — is the same for every address.
+    """
+    address = (email or "").strip()[:254]
+    if not address:
+        return _deletion_form(request, error_message=_t(request)("delete_email_required"))
+    background_tasks.add_task(
+        account_service.send_deletion_link, address, resolve_lang(request),
+    )
+    # The same page for every address, known or not: never branch on the account.
+    t = _t(request)
+    return _deletion_message(request, t("delete_sent_heading"), t("delete_sent_body"))
+
+
+@router.get("/delete-account/confirm", response_class=HTMLResponse)
+def delete_account_confirm_page(
+    request: Request,
+    token: str = "",
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """What the link will delete, and the button that does it.
+
+    Reads the token without spending it: mail scanners open every link in an
+    email, so a GET that consumed — or erased — would act before the owner did.
+    """
+    try:
+        user_id = email_token_service.peek(db, token, _DELETE_PURPOSE)
+    except email_token_service.InvalidTokenError:
+        return _deletion_link_invalid(request)
+    user = db.get(User, user_id)
+    if user is None:
+        return _deletion_link_invalid(request)
+    t = _t(request)
+    return templates.TemplateResponse(request, "delete_account_confirm.html", {
+        "page_title": f"{t('delete_confirm_heading')} — Ntripi",
+        "token": token,
+        "username": user.username,
+        # Their address will be blocked from signing up again — say so first.
+        "suspended": not user.is_active,
+    })
+
+
+@router.post("/web/delete-account", response_class=HTMLResponse)
+@limiter.limit("10/hour")
+def web_delete_account(
+    request: Request,  # required first positional for slowapi rate limiting
+    token: str = Form(""),
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> HTMLResponse:
+    try:
+        user_id = email_token_service.consume(db, token, _DELETE_PURPOSE)
+    except email_token_service.InvalidTokenError:
+        return _deletion_link_invalid(request)
+    user = db.get(User, user_id)
+    if user is None:
+        return _deletion_link_invalid(request)
+
+    t = _t(request)
+    if account_service.erasure_blocked(db, user):
+        # Evidence under an open legal escalation: recorded, and erased by the
+        # sweep once it closes. The page says nothing about why.
+        account_service.defer_erasure(db, user, resolve_lang(request))
+        return _deletion_message(
+            request, t("delete_deferred_heading"),
+            t("delete_deferred_body", email=settings.PRIVACY_CONTACT_EMAIL),
+        )
+
+    account_service.erase_account(db, user)
+    return _deletion_message(request, t("delete_done_heading"), t("delete_done_body"))

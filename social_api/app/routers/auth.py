@@ -48,7 +48,7 @@ from app.schemas.auth import (
     TokenPair,
 )
 from app.schemas.user import UserPrivateProfile
-from app.services import auth_service, refresh_token_service
+from app.services import account_service, auth_service, refresh_token_service
 from app.services.age_service import MINIMUM_AGE, is_old_enough
 from app.services.auth import create_access_token, verify_google_id_token
 from app.services.moderation_actions import escalate_if_flagged
@@ -98,6 +98,15 @@ def register(
             status_code=400,
             code="underage",
             detail=f"You must be at least {MINIMUM_AGE} years old to use Ntripi.",
+        )
+
+    # The address of an erased suspended account — refused before the paid scan
+    # too. The message never says why: anyone can type any address here.
+    if account_service.is_signup_blocked(db, payload.email):
+        raise ApiError(
+            status_code=400,
+            code="email_unavailable",
+            detail=auth_service.EMAIL_UNAVAILABLE,
         )
 
     # Scanned BEFORE create_user, never after: create_user commits, so a

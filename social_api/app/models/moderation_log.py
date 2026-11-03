@@ -16,7 +16,7 @@ Two flavours of row:
              addresses, or display names.
 
 target_id is polymorphic (itinerary or user) with NO foreign key on purpose —
-a hard user delete (delete_my_account) must NOT cascade away the evidence, and
+a hard user delete (account_service.erase_account) must NOT cascade away the evidence, and
 a report whose itinerary FK was already SET-NULLed still needs a loggable row
 (hence target_id is nullable). admin_user_id IS a real FK (SET NULL) so the row
 outlives the admin's own account.

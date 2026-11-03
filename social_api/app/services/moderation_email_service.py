@@ -102,8 +102,6 @@ def send_auto_action_email(
     so echoing it back is appropriate here (unlike the audit row or the operator
     alert, which hold no raw content).
     """
-    from app.services.auth_service import _email_html  # lazy: auth stack is heavy
-
     trigger = _TRIGGER_SENTENCES.get(action, _TRIGGER_SENTENCES["auto_reject"])
     body = (
         f"“{html.escape(item_label)}” is no longer visible to other people on Ntripi. "
@@ -121,7 +119,7 @@ def send_auto_action_email(
     email_service.send_email(
         to=user.email,
         subject="Ntripi — your content was hidden pending review",
-        html=_email_html(
+        html=email_service.branded_email_html(
             "Your content was hidden pending review",
             body,
             "Ask us to review this",

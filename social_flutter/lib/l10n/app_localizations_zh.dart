@@ -2476,6 +2476,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get apiErrorEmailTaken => '使用此邮箱的账号已存在。';
 
   @override
+  String get apiErrorEmailUnavailable => '此邮箱无法用于注册账号。';
+
+  @override
   String get reportItineraryTitle => '举报此行程';
 
   @override

@@ -8,7 +8,8 @@
 
 The user's own account: profile fields, avatar and cover image, travel identity
 (passport countries, residence, languages), the visited-locations map, privacy
-toggle, notification preferences, and GDPR account deletion.
+toggle, notification preferences, and GDPR account deletion (in the app; the
+web route and the erasure itself are [account-deletion.md](account-deletion.md)).
 
 ## Rules
 
@@ -82,45 +83,20 @@ sign-out — see [authentication.md](authentication.md#flutter-surface). Before
 
 ### Account deletion (GDPR)
 
-`DELETE /users/me` order is load-bearing (`users.py:208`):
+`DELETE /users/me` re-authenticates in the route — the branch is chosen by
+**what the client sent**, not by account precedence (`users.py:246`):
 
-1. **Re-authenticate.** The branch is chosen by **what the client sent**, not by
-   account precedence (`users.py:237`):
-   | Sent | Checked against | Failure |
-   |---|---|---|
-   | `password` + account has one | bcrypt | 401 `incorrect_password` |
-   | `google_id_token` + account has `google_sub` | Google, then `sub` match | 401 `google_token_invalid` / 401 `google_account_mismatch` |
-   | neither | account type decides | 401 `incorrect_password` / `google_reauth_required` / `reauth_required` |
-   A dual-method account can therefore delete itself with **either** credential.
-2. **Decrement other users' counters before the cascade**, via bulk `UPDATE`
-   (`users.py:286`), clamped at 0 with the same `case()` as
-   `bump_follow_counters`. This is the one documented exception to
-   "`bump_follow_counters` is the only way to touch the counters".
-3. **Null `ItineraryRating.user_id` explicitly** (`users.py:318`) — belt and
-   braces over the `ON DELETE SET NULL`.
-4. `db.delete(user)`; the cascade removes itineraries, stops, annotations,
-   allowlist and editor rows, locks, follows, blocks, notifications, device
-   tokens, saves, appeals, refresh and email tokens, password history, the
-   security audit log, the cached translations of every owned itinerary (they
-   hang off `content_translations.itinerary_id`) and the hourly translation
-   counter. A review the account wrote elsewhere survives anonymised, with its
-   note and that note's translations — see
-   [ratings.md](ratings.md#open-questions).
-5. **Erase the images, after the commit, best-effort.** The keys are collected
-   before the delete (`_erasable_image_keys`): the avatar, the profile cover, and
-   every owned itinerary's cover — **except** while the account is under an open
-   legal escalation (nothing is erased), and except the cover of any itinerary
-   that was taken down (`deleted_at` / `hidden_at`, `hidden` / `rejected`) or is
-   escalated in its own right. Until 2026-09-28 every image stayed publicly
-   reachable at its stable URL after a "permanent" deletion. A storage failure is
-   logged, never raised.
+| Sent | Checked against | Failure |
+|---|---|---|
+| `password` + account has one | bcrypt | 401 `incorrect_password` |
+| `google_id_token` + account has `google_sub` | Google, then `sub` match | 401 `google_token_invalid` / 401 `google_account_mismatch` |
+| neither | account type decides | 401 `incorrect_password` / `google_reauth_required` / `reauth_required` |
 
-**Rows that survive with a NULL user, because they are evidence:**
-`content_reports.reporter_user_id`, `moderation_log.admin_user_id`,
-`image_moderation_logs.uploader_user_id`,
-`text_moderation_decisions.author_user_id`, `bug_reports.user_id` and
-`.closed_by_admin_id`, `legal_escalations.closed_by`, `notifications.actor_id`,
-`itinerary_editors.granted_by`, and `itinerary_ratings.user_id`.
+A dual-method account can therefore delete itself with **either** credential.
+The erasure itself — counters, anonymised ratings, the cascade, the images,
+what survives as evidence — is `account_service.erase_account`, shared with the
+web flow at `/delete-account` for people without the app and with the sweep.
+All of it is in **[account-deletion.md](account-deletion.md)**.
 
 ## Data model
 
@@ -238,4 +214,5 @@ itinerary_id, stop_id}]}` — derived from the user's stops, filtered by
 - [admin-and-appeals.md](admin-and-appeals.md) — `is_active`, `moderation_status`
 - [app-links.md](app-links.md) — a shared profile link opening the profile in the app
 - [translations.md](translations.md) — account deletion cascades a user's trips' translations
+- [account-deletion.md](account-deletion.md) — the erasure, the web route without the app, the deferral and the sign-up block
 - [reference/data-model.md](../reference/data-model.md)

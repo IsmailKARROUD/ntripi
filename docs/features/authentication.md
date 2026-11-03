@@ -51,17 +51,20 @@ see [google-sign-in.md](google-sign-in.md).
 
 ### Registration
 
-Order is load-bearing (`auth.py:87`–`111`), and each step exists to avoid paying
+Order is load-bearing (`auth.py:87`–`123`), and each step exists to avoid paying
 for the next:
 
 1. `tos_accepted` false → **400 `tos_required`**.
-2. Age check → **400 `underage`**. Both of these run **before** the paid
-   moderation call.
-3. `moderate_or_422` on username + display_name, **in one dict so it is one
+2. Age check → **400 `underage`**.
+3. The address of an erased suspended account → **400 `email_unavailable`**
+   (`account_service.is_signup_blocked`; the message never says why — see
+   [account-deletion.md](account-deletion.md#the-sign-up-block)). All three run
+   **before** the paid moderation call.
+4. `moderate_or_422` on username + display_name, **in one dict so it is one
    provider call**, and **before** `create_user` — which commits, so a rejection
    found afterwards could not undo the account.
-4. `create_user`, which **re-checks the age** as defence in depth
-   (`auth_service.py:122`).
+5. `create_user`, which **re-checks the age and the block** as defence in depth
+   (`auth_service.py:128`, `:146`).
 
 - **Username policy** (`validators/username.py`): pattern
   `^[a-zA-Z][a-zA-Z0-9_.]{2,28}[a-zA-Z0-9]$` — must start with a letter, end
@@ -110,7 +113,7 @@ Full columns:
 
 | Method | Path | Auth | Rate | Request | Response | Errors |
 |---|---|---|---|---|---|---|
-| POST | `/auth/register` | none | 5/h | `RegisterRequest` | `TokenPair` 201 | 400 `tos_required`, 400 `underage`, 422 `username_invalid` / `display_name_invalid` / `text_moderation_rejected`, 409 `username_taken` / `email_taken`, 429 |
+| POST | `/auth/register` | none | 5/h | `RegisterRequest` | `TokenPair` 201 | 400 `tos_required`, 400 `underage`, 400 `email_unavailable`, 422 `username_invalid` / `display_name_invalid` / `text_moderation_rejected`, 409 `username_taken` / `email_taken`, 429 |
 | POST | `/auth/login` | none | 10/min | `LoginRequest{identifier, password}` | `TokenPair` | 401 `login_invalid`, 403 `account_deactivated` |
 | POST | `/auth/refresh` | none | 60/min | `RefreshRequest{refresh_token}` | `TokenPair` | 401 `invalid_grant` |
 | POST | `/auth/logout` | none | — | `RefreshRequest` | **204 always** | — |
@@ -197,6 +200,7 @@ username, refresh_expires_at}`.
 - [sharing.md](sharing.md) — the share pages whose way in is this sign-in
 - [reference/error-codes.md](../reference/error-codes.md#authentication-and-session)
 - [reference/data-model.md](../reference/data-model.md)
+- [account-deletion.md](account-deletion.md) — the sign-up block on `/auth/register`, and erasure
 
 ## OPEN QUESTIONS
 

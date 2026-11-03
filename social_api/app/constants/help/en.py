@@ -181,6 +181,11 @@ RELEASES: tuple[Release, ...] = (
             "**Updated Terms and Privacy Policy.** They now cover Google Maps, "
             "which draws some of Ntripi's maps and its place search. You'll be "
             "asked to accept them once.",
+            "**Delete your account without the app.** "
+            "[ntripi.app/delete-account](/delete-account) emails a link to your "
+            "account's address; open it and confirm. The updated Terms and Privacy "
+            "Policy say what stays afterwards — reviews keep their text, without "
+            "your name — and you'll be asked to accept them once more.",
         ),
     ),
     Release(
@@ -2127,15 +2132,17 @@ ARTICLES: tuple[Article, ...] = (
         slug="your-data-and-privacy",
         title="What data Ntripi stores, and how to delete it",
         summary=(
-            "A plain-language summary of what is kept, who can see it, and how to "
-            "remove your account for good."
+            "What Ntripi keeps, who can see it, and how to delete your account for "
+            "good — in the app, or on the web without it."
         ),
         category="account",
         schema=SCHEMA_FAQ,
-        updated="2026-10-31",
+        updated="2026-11-03",
         keywords=(
-            "privacy", "data", "gdpr", "delete account", "remove", "export",
-            "personal data", "tracking", "ads", "advertising", "who can see",
+            "privacy", "data", "gdpr", "delete account",
+            "delete account without app", "request deletion", "erase my data",
+            "remove", "export", "personal data", "tracking", "ads", "advertising",
+            "who can see",
         ),
         related=(
             "permissions", "sign-in-and-account-security",
@@ -2202,12 +2209,50 @@ ARTICLES: tuple[Article, ...] = (
                 heading="How do I delete my account?",
                 kind=KIND_FAQ,
                 body=(
-                    "Your profile's edit screen, under Security ▸ **Delete "
-                    "account**. You confirm with your password, or with Google if "
-                    "that is how you sign in.\n\n"
-                    "Deletion is permanent and takes your trips with it. Trips "
-                    "other people saved stop working, since a bookmark is a pointer "
+                    "**In the app:** your profile's edit screen, under Security ▸ "
+                    "**Delete account**. You confirm with your password, or with "
+                    "Google if that is how you sign in.\n\n"
+                    "**Without the app:** go to "
+                    "[ntripi.app/delete-account](/delete-account) and enter the "
+                    "email address of your account. A link arrives at that "
+                    "address; open it within an hour and confirm. If you can no "
+                    "longer receive email there, write to "
+                    "**[privacy@ntripi.app](mailto:privacy@ntripi.app)**.\n\n"
+                    "Deletion is permanent and takes your trips with it, along "
+                    "with your profile photo, cover and trip covers. Trips other "
+                    "people saved stop working, since a bookmark is a pointer "
                     "rather than a copy."
+                ),
+            ),
+            Block(
+                anchor="what-deletion-keeps",
+                heading="What is kept after I delete my account?",
+                kind=KIND_FAQ,
+                body=(
+                    "Deletion removes your profile, your email address and date of "
+                    "birth, your trips with their photos, your follows, blocks and "
+                    "saved trips, your notifications and any appeal you had open. "
+                    "A few things stay, because other people rely on them or "
+                    "because they are evidence:\n\n"
+                    "- **Your ratings and reviews** stay on the trips you rated — "
+                    "the score and the text — without your name or any link to "
+                    "you, so those trips keep their ratings.\n"
+                    "- **Moderation records** — reports you filed or that were "
+                    "filed about your content, and decisions taken about your "
+                    "account or content — are kept without a time limit. A "
+                    "decision a moderator took keeps a copy of what it was about, "
+                    "which for an account is its email address and username.\n"
+                    "- **Photos a moderator removed** are kept as evidence.\n"
+                    "- **Bug reports** you sent stay until they are closed and "
+                    "have aged out, no longer linked to you.\n\n"
+                    "If your account is **suspended** when it is deleted, a "
+                    "one-way code made from its email address is kept, so that "
+                    "address cannot be used to sign up again until we lift the "
+                    "block.\n\n"
+                    "If part of your account is **under legal review**, deletion "
+                    "waits until the review is closed, then happens on its own, "
+                    "and we email you when it is done. The [privacy "
+                    "policy](/privacy) has the full detail."
                 ),
             ),
             Block(
@@ -2234,11 +2279,11 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="account",
         schema=SCHEMA_FAQ,
-        updated="2026-09-28",
+        updated="2026-11-03",
         keywords=(
             "login", "log in", "sign in", "password", "forgot password", "reset",
             "google", "apple", "verify", "verification", "email", "locked out",
-            "delete account", "age", "16",
+            "delete account", "age", "16", "delete account without app",
         ),
         related=("your-data-and-privacy", "troubleshooting"),
         intro=(
@@ -2312,7 +2357,10 @@ ARTICLES: tuple[Article, ...] = (
                     "appeal. Appeals are read by a person.\n\n"
                     "If you no longer have the email, the appeal form can send you "
                     "a fresh link. See [hidden content and "
-                    "appeals](/help/hidden-content-and-appeals)."
+                    "appeals](/help/hidden-content-and-appeals).\n\n"
+                    "You can still delete a suspended account, at "
+                    "[ntripi.app/delete-account](/delete-account). Its email "
+                    "address then can't be used to sign up again."
                 ),
             ),
             Block(
@@ -2320,13 +2368,17 @@ ARTICLES: tuple[Article, ...] = (
                 heading="How do I delete my account?",
                 kind=KIND_FAQ,
                 body=(
-                    "Profile ▸ edit ▸ **Security ▸ Delete account**, confirmed with "
-                    "your password or with Google.\n\n"
+                    "Profile ▸ edit ▸ **Security ▸ Delete account**, confirmed "
+                    "with your password or with Google.\n\n"
+                    "No longer have the app? "
+                    "[ntripi.app/delete-account](/delete-account) emails a link to "
+                    "your account's address instead — see [what deletion "
+                    "keeps](/help/your-data-and-privacy#what-deletion-keeps).\n\n"
                     "It is permanent, and it takes your trips — and your profile "
-                    "photo, cover and trip covers — with it. If you only "
-                    "want to disappear from view, setting your trips to [only "
-                    "me](/help/share-an-itinerary-privately) and making your account "
-                    "private is reversible where deletion is not."
+                    "photo, cover and trip covers — with it. If you only want to "
+                    "disappear from view, setting your trips to [only "
+                    "me](/help/share-an-itinerary-privately) and making your "
+                    "account private is reversible where deletion is not."
                 ),
             ),
         ),

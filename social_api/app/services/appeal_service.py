@@ -442,12 +442,10 @@ def _mark_decisions_reviewed(db: Session, target_type: str, target_id) -> None:
 
 def _send_decision_email(user: User, heading: str, body: str) -> None:
     from app.config import get_settings
-    from app.services.auth_service import _email_html
-
     email_service.send_email(
         to=user.email,
         subject=f"Ntripi — {heading}",
-        html=_email_html(
+        html=email_service.branded_email_html(
             heading, body, "Open Ntripi", f"{get_settings().share_base_url}/app/",
         ),
     )

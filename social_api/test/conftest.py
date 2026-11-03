@@ -122,6 +122,19 @@ def reset_operator_alerts():
 
 
 @pytest.fixture(autouse=True)
+def account_deletion_uses_the_test_db(monkeypatch):
+    """Hand account_service's background job the test database.
+
+    send_deletion_link opens its own session (the request's is gone by the time
+    it runs). Unpatched, that would be SessionLocal — the developer's real
+    database — from any test that posts the /delete-account form.
+    """
+    from app.services import account_service
+    monkeypatch.setattr(account_service, "_session_factory", TestingSessionLocal)
+    yield
+
+
+@pytest.fixture(autouse=True)
 def no_outbound_email(monkeypatch):
     """Stub the email backend for every test.
 

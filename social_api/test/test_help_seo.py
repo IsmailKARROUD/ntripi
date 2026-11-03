@@ -47,7 +47,10 @@ class TestSitemap:
         root = ET.fromstring(client.get("/sitemap.xml").text)
         locs = [el.text for el in root.findall(".//sm:loc", SITEMAP_NS)]
         paths = {"/" + loc.split("/", 3)[3] if loc.count("/") > 2 else "/" for loc in locs}
-        expected = {"/", "/help", "/privacy", "/terms", "/guidelines"} | {
+        # /delete-account: the same page for everyone, and what someone without
+        # the app searches for (Google Play's deletion URL). Its confirm page,
+        # which needs an emailed token, is not listed.
+        expected = {"/", "/help", "/privacy", "/terms", "/guidelines", "/delete-account"} | {
             f"/help/{s}" for s in SLUGS
         }
         assert paths == expected
@@ -55,7 +58,7 @@ class TestSitemap:
     def test_excludes_private_and_unbounded_routes(self, client: TestClient):
         text = client.get("/sitemap.xml").text
         for path in ("/admin", "/appeal", "/reset-password", "/verify-email",
-                     "/help/search", "/share/"):
+                     "/help/search", "/share/", "/delete-account/confirm"):
             assert path not in text, path
 
     @pytest.mark.parametrize("slug", SLUGS)

@@ -168,7 +168,9 @@ class TestNoTypedRadius:
 
 class TestEmailButton:
     def test_the_email_button_has_the_button_radius(self):
-        source = (API / "app" / "services" / "auth_service.py").read_text()
+        # Every email is built by email_service.branded_email_html (it moved
+        # there from auth_service when the emails became translatable).
+        source = (API / "app" / "services" / "email_service.py").read_text()
         radii = {float(r) for r in re.findall(r"border-radius:\s*(\d+)px", source)}
         # Email clients drop CSS variables, so the email types the number —
         # this is what keeps it the button's.

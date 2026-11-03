@@ -189,12 +189,7 @@ def _send_moderation_email(
 
     `body` is HTML: callers escape every interpolated value (titles are
     user-written, reasons operator-written).
-
-    Imported lazily: auth_service pulls in the whole auth stack, and admin_service
-    is imported by the admin router at startup.
     """
-    from app.services.auth_service import _email_html
-
     token = appeal_token.mint_appeal_token(
         user.id, target_type, target_id, log.id if log else None
     )
@@ -202,7 +197,7 @@ def _send_moderation_email(
     email_service.send_email(
         to=user.email,
         subject=f"Ntripi — {heading}",
-        html=_email_html(heading, body, "Appeal this decision", link),
+        html=email_service.branded_email_html(heading, body, "Appeal this decision", link),
     )
 
 

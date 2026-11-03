@@ -1,0 +1,43 @@
+{% extends "_base.html" %}
+{% block head %}
+<style>
+  .del-note { font-size: 13px; color: var(--text2); }
+  .del-keeps p { margin: 0 0 10px; color: var(--text2); }
+  .del-keeps ul { padding-inline-start: 20px; margin: 0 0 12px; color: var(--text2); }
+  .del-keeps li { margin-bottom: 6px; }
+</style>
+{% endblock %}
+{% block content %}
+
+<section class="card" style="max-width:520px;margin:0 auto">
+  <h1 style="font-size:1.5rem;font-weight:800;margin-bottom:8px;text-align:center">{{ _('delete_heading') }}</h1>
+  <p style="color:var(--text2);margin-bottom:20px">{{ _('delete_intro') }}</p>
+
+  {% if error_message %}
+  <div class="error-banner">{{ error_message }}</div>
+  {% endif %}
+
+  {# ?lang= keeps the answer, the email and the link in the language read here. #}
+  <form method="POST" action="/web/delete-account-request?lang={{ lang }}">
+    <div class="form-group">
+      <label class="form-label" for="email">{{ _('delete_email_label') }}</label>
+      <input class="form-input" type="email" id="email" name="email"
+             required autofocus autocomplete="email" placeholder="you@example.com">
+    </div>
+
+    <button type="submit" class="btn-primary" style="width:100%;text-align:center;margin-top:8px">
+      {{ _('delete_submit') }}
+    </button>
+  </form>
+
+  <p class="del-note" style="margin-top:16px">{{ _('delete_in_app') }}</p>
+</section>
+
+{# The help centre's own block, so this list and the help page cannot disagree. #}
+<section class="card del-keeps" id="what-deletion-keeps" style="max-width:520px;margin:20px auto 0">
+  <h2 style="font-size:1.1rem;font-weight:800;margin-bottom:10px">{{ keeps_heading }}</h2>
+  {{ keeps_html }}
+  <p class="del-note"><a href="/help/your-data-and-privacy?lang={{ lang }}">{{ _('delete_more') }}</a></p>
+</section>
+
+{% endblock %}

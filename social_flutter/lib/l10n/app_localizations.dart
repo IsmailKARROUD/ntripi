@@ -4630,6 +4630,12 @@ abstract class AppLocalizations {
   /// **'An account with this email already exists.'**
   String get apiErrorEmailTaken;
 
+  /// No description provided for @apiErrorEmailUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This email address can\'t be used to create an account.'**
+  String get apiErrorEmailUnavailable;
+
   /// No description provided for @reportItineraryTitle.
   ///
   /// In en, this message translates to:

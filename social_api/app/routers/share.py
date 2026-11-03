@@ -31,7 +31,7 @@ from sqlalchemy.orm import Session
 from app.config import Settings, get_settings
 from app.database import get_db
 from app.errors import ApiError
-from app.limiter import limiter
+from app.limiter import limiter, retry_after
 from app.models.itinerary import Itinerary
 from app.models.user import User
 from app.services import user_service
@@ -63,16 +63,12 @@ def _not_found(
 def rate_limited_page(request: Request, exc: RateLimitExceeded) -> HTMLResponse:
     """The /share 429 as a page: these are read in browsers, where slowapi's
     JSON body would be a screen of raw text. Registered in main.py."""
-    try:
-        retry_after = str(exc.limit.limit.get_expiry())
-    except AttributeError:  # a slowapi without the window on the exception
-        retry_after = "60"
     return templates.TemplateResponse(
         request,
         "share_rate_limited.html",
         {"app_cta": store_links(get_settings())},
         status_code=429,
-        headers={"Retry-After": retry_after},
+        headers={"Retry-After": retry_after(exc)},
     )
 
 

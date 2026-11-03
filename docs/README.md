@@ -73,8 +73,8 @@ last month's behaviour is worse than none, because the reader follows it.**
 
 | Document | What it is |
 |---|---|
-| [reference/data-model.md](reference/data-model.md) | All **34 tables**: columns, keys, FK on-delete behaviour, indexes, plus the **migration-only objects** the test suite cannot see |
-| [reference/error-codes.md](reference/error-codes.md) | All **67 error codes**: HTTP status, raise site, and whether the client localizes it |
+| [reference/data-model.md](reference/data-model.md) | All **35 tables**: columns, keys, FK on-delete behaviour, indexes, plus the **migration-only objects** the test suite cannot see |
+| [reference/error-codes.md](reference/error-codes.md) | All **68 error codes**: HTTP status, raise site, and whether the client localizes it |
 
 ### Features
 
@@ -85,8 +85,9 @@ last month's behaviour is worse than none, because the reader follows it.**
 | [authentication.md](features/authentication.md) | Register, login, JWT HS256, rotating refresh tokens, logout, timing-safe login, the auth dependencies |
 | [google-sign-in.md](features/google-sign-in.md) | `/auth/google`, ID-token verification, the three branches, account linking, the People API birthday read |
 | [passwords-and-email.md](features/passwords-and-email.md) | Reset, in-app change, HIBP, password history, security audit log, email verification |
-| [accounts-and-profiles.md](features/accounts-and-profiles.md) | Profile CRUD, avatar and cover, travel identity, visited locations, privacy toggle, GDPR deletion |
+| [accounts-and-profiles.md](features/accounts-and-profiles.md) | Profile CRUD, avatar and cover, travel identity, visited locations, privacy toggle, the in-app delete screen |
 | [legal-and-age-gate.md](features/legal-and-age-gate.md) | ToS / Privacy / Guidelines in six languages, acceptance on both signup paths, the re-acceptance gate, the 16+ gate |
+| [account-deletion.md](features/account-deletion.md) | GDPR erasure in the app and without it (`/delete-account`, Play's deletion URL): one erase function, the emailed link, deferral under a legal escalation, the sign-up block for an erased suspended account |
 
 #### Social graph
 
@@ -180,10 +181,10 @@ Measured from the code, not estimated.
 
 | | |
 |---|---|
-| Backend | 308 Python files · **34 tables** · 18 routers · **157 routes** · **67 error codes** · 58 migrations (2026-10-31) |
+| Backend | 313 Python files · **35 tables** · 18 routers · **162 routes** · **68 error codes** · 59 migrations (2026-11-03) |
 | Frontend | 217 Dart files · 10 feature directories · **58 providers** · **36 live screens** · 5 shell branches |
 | Localization | 6 languages · 956 keys, complete in all six |
-| Help centre | 26 articles · 8 categories · 6 languages |
+| Help centre | 27 articles · 8 categories · 6 languages |
 | History | 438 commits, 2026-03-12 → 2026-09-02 |
 
 `docs/` is tracked by git and listed in `.dockerignore`, so it never enters the

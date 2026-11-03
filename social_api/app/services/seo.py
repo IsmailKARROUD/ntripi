@@ -98,6 +98,9 @@ def sitemap_paths() -> list[tuple[str, str, str]]:
     /help/search is deliberately absent: a search-results URL burns crawl budget
     and the page carries noindex anyway. So are /admin, /appeal, /reset-password,
     /verify-email, /app and /share/* — private, per-user, or unbounded.
+    /delete-account is listed: the same page for everyone, translated, and the
+    one people search for when they no longer have the app (Play's deletion
+    URL). Its confirm page needs an emailed token and is not.
     """
     pages = [
         ("/", "weekly", "1.0"),
@@ -105,6 +108,7 @@ def sitemap_paths() -> list[tuple[str, str, str]]:
         ("/privacy", "yearly", "0.3"),
         ("/terms", "yearly", "0.3"),
         ("/guidelines", "yearly", "0.3"),
+        ("/delete-account", "yearly", "0.3"),
     ]
     pages += [(article_path(a.slug), "monthly", "0.8") for a in articles("en")]
     return pages

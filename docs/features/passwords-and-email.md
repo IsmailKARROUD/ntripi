@@ -17,11 +17,16 @@ single-use opaque tokens; none of them ever stores a raw token.
 - **Only the SHA-256 hash is stored** (`email_tokens.token_hash`, UNIQUE), via
   the shared `token_util` helpers (`hash_token` / `as_aware_utc` /
   `new_raw_token`) that every opaque-token service in the project uses.
-- **Single-use** (`used_at`), **purpose-scoped** (`password_reset` vs
-  `email_verify`), and expiry-checked (`email_token_service.py:369`). Presenting
+- **Single-use** (`used_at`), **purpose-scoped** (`password_reset`,
+  `email_verify`, and since 2026-11-03 `account_delete` — the
+  [account-deletion.md](account-deletion.md) link), and expiry-checked. Presenting
   a reset token to the verify route is reported as an *unknown token*, not a
   wrong-purpose error.
-- TTLs: **password reset 30 minutes**, **email verification 24 hours**.
+- **`peek` validates without spending** (`email_token_service.peek`): the
+  deletion link's confirm page reads it on GET, because mail scanners open every
+  link in an email; only the page's POST calls `consume`.
+- TTLs: **password reset 30 minutes**, **email verification 24 hours**,
+  **account deletion 1 hour**.
 
 ### Forgotten password
 
@@ -77,6 +82,17 @@ changing your password does not sign you out of the device you did it on.
   user's write. This is the opposite of the Jira hand-off, which fails closed —
   see [bug-reports.md](bug-reports.md).
 - Every emailed link is built from `SHARE_BASE_URL`.
+- **One builder for every email's HTML: `email_service.branded_email_html`**
+  (heading, paragraph, one button, the link printed beneath it). It moved there
+  from `auth_service._email_html`, which six modules had imported privately, and
+  takes `lang=`: Arabic reads right to left, and the line under the button is
+  translated (`email_button_fallback`). **It escapes the link**, because a raw
+  `&lang=` is the entity `&lang;` to some mail clients, which breaks the URL;
+  `heading` and `body` are HTML, escaped by their callers. English output is
+  unchanged byte for byte (`test_account_deletion_web.py::TestEmailBuilder`),
+  and the existing emails still pass no language — only the account-deletion
+  emails are translated so far. Its button radius is a typed 14, held to the app's token by
+  `test_radius_scale.py`.
 - **`noreply@` must stay a real routed address** — users reply to password
   resets.
 
@@ -144,6 +160,7 @@ Change-password errors all arrive as 403/400 with the generic
 - [google-sign-in.md](google-sign-in.md) — the other verification path
 - [accounts-and-profiles.md](accounts-and-profiles.md) — `has_password` / `has_google`
 - [admin-and-appeals.md](admin-and-appeals.md) — the public appeal form shares this email plumbing
+- [account-deletion.md](account-deletion.md) — the `account_delete` link and the translated deletion emails
 - [web-and-platform.md](web-and-platform.md) — the server-rendered pages
 - [reference/data-model.md](../reference/data-model.md)
 

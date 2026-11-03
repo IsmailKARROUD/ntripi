@@ -761,6 +761,7 @@
   "apiErrorTosRequired": "Debes aceptar los Términos del servicio para registrarte.",
   "apiErrorUsernameTaken": "Este nombre de usuario ya está en uso.",
   "apiErrorEmailTaken": "Ya existe una cuenta con este correo.",
+  "apiErrorEmailUnavailable": "Esta dirección de correo no puede usarse para crear una cuenta.",
   "reportItineraryTitle": "Denunciar este itinerario",
   "reportItineraryTooltip": "Denunciar",
   "reportReasonSpam": "Spam",

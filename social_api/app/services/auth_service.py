@@ -19,6 +19,7 @@ from app.models.user import User
 from app.models.password_history import PasswordHistory
 from app.models.security_audit_log import SecurityAuditLog
 from app.services import (
+    account_service,
     email_service,
     email_token_service,
     google_people,
@@ -95,6 +96,11 @@ def authenticate_user(identifier: str, password: str, db: Session) -> tuple[User
     return user, token
 
 
+# The refusal for an address blocked after a suspended account was erased.
+# Deliberately says nothing about why: anyone can type any address at sign-up.
+EMAIL_UNAVAILABLE = "This email address can't be used to create an account."
+
+
 def create_user(
     username: str,
     email: str,
@@ -134,6 +140,10 @@ def create_user(
 
     username_lower = normalize_username(username)
     email = email.strip().lower()
+
+    # Re-checked here, like the age gate above: this function commits.
+    if account_service.is_signup_blocked(db, email):
+        raise AuthError(EMAIL_UNAVAILABLE, http_status=400, code="email_unavailable")
 
     try:
         display_name = validate_display_name(display_name)
@@ -275,6 +285,11 @@ def login_or_register_google(
             code="tos_required",  # same code as the password path — clients key off it
         )
 
+    # Before the People API and the paid name scan: a blocked address (an erased
+    # suspended account's) never opens a new account, by either path.
+    if account_service.is_signup_blocked(db, email):
+        raise AuthError(EMAIL_UNAVAILABLE, http_status=400, code="email_unavailable")
+
     # Google first, the user's own answer second. The People API result is the
     # more reliable of the two — it is Google's own record rather than a number
     # typed into our form — so it wins whenever it is usable, and the client's
@@ -374,21 +389,6 @@ _EMAIL_VERIFY_TTL = timedelta(hours=24)
 _PASSWORD_HISTORY_KEEP = 5
 
 
-def _email_html(heading: str, body: str, button_label: str, link: str) -> str:
-    """Minimal branded HTML email body shared by both flows."""
-    return f"""\
-<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#1b2a22">
-  <h2 style="color:#1F5E3A;margin:0 0 12px">Ntripi</h2>
-  <h3 style="margin:0 0 8px">{heading}</h3>
-  <p style="color:#52615a;font-size:14px;margin:0 0 20px">{body}</p>
-  <a href="{link}" style="display:inline-block;background:#1F5E3A;color:#fff;
-     text-decoration:none;font-weight:700;padding:12px 22px;border-radius:14px">{button_label}</a>
-  <p style="color:#8a9690;font-size:12px;margin:24px 0 0">
-    If the button doesn't work, paste this link into your browser:<br>{link}
-  </p>
-</div>"""
-
-
 def send_password_reset(db: Session, email: str) -> None:
     """
     Email a password-reset link if a password account exists for `email`.
@@ -410,7 +410,7 @@ def send_password_reset(db: Session, email: str) -> None:
     email_service.send_email(
         to=user.email,
         subject="Reset your Ntripi password",
-        html=_email_html(
+        html=email_service.branded_email_html(
             "Reset your password",
             "We received a request to reset your password. This link expires in 30 minutes.",
             "Reset password",
@@ -503,7 +503,7 @@ def _send_password_changed_email(user: User) -> None:
     email_service.send_email(
         to=user.email,
         subject="Your Ntripi password was changed",
-        html=_email_html(
+        html=email_service.branded_email_html(
             "Your password was changed",
             "Your Ntripi password was just changed and every other device was "
             "signed out. If this wasn't you, secure your account now by resetting "
@@ -582,7 +582,7 @@ def send_email_verification(db: Session, user: User) -> None:
     email_service.send_email(
         to=user.email,
         subject="Verify your email — Ntripi",
-        html=_email_html(
+        html=email_service.branded_email_html(
             "Verify your email",
             "Confirm your email address to unlock creating trips, rating, and following people.",
             "Verify email",

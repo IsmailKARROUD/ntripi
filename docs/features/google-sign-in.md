@@ -30,11 +30,11 @@ gates the nine `require_verified_email` endpoints.
 
 ### The three branches
 
-**1 — Existing Google account** (`auth_service.py:214`): matched on `google_sub`.
+**1 — Existing Google account** (`auth_service.py:224`): matched on `google_sub`.
 Flips `email_verified = True` if Google says the address is verified. 403
 `account_deactivated` if banned.
 
-**2 — Link to an existing account** (`auth_service.py:233`): matched on email,
+**2 — Link to an existing account** (`auth_service.py:243`): matched on email,
 **and only if Google reports `email_verified`** — otherwise anyone could claim
 an address they do not control. A **verified** account keeps `password_hash`,
 producing a dual-method account that can then delete itself with either
@@ -45,16 +45,20 @@ squatted the owner's address first, and linking used to hand that person the
 account the moment the owner signed in. The owner can set a new password through
 forgot-password. See [decisions.md](../decisions.md).
 
-**3 — New account** (`auth_service.py:257`):
+**3 — New account** (`auth_service.py:280`):
 - Requires `tos_accepted` → **400 `tos_required`** otherwise.
+- Refuses the address of an erased suspended account → **400
+  `email_unavailable`** (`auth_service.py:291`), before the People API and the
+  name scan — the only branch that consults it, since signing in and linking
+  need an existing account. See [account-deletion.md](account-deletion.md#the-sign-up-block).
 - **Date of birth**: the People API result **wins over** the client-posted date
-  (`auth_service.py:270`), and `dob_source` records which stood behind the
+  (`auth_service.py:298`), and `dob_source` records which stood behind the
   account (`"google"` or `"self"`). No date at all → 400 `dob_required`; under
   16 → 400 `underage`.
 - Username is synthesised by `generate_username_from`
   (`validators/username.py:74`).
 - **A moderation reject on the Google display name drops the name instead of
-  failing signup** (`auth_service.py:308`) and resets the status to `approved`.
+  failing signup** (`auth_service.py:344`) and resets the status to `approved`.
   The name is Google's, not something the user typed, so a 422 would lock a real
   person out with no recourse — and nothing offensive was persisted.
 
@@ -102,7 +106,7 @@ nullable. `users.dob_source` VARCHAR(16). Migration `0a2c5b2f918e` added
 
 | Method | Path | Auth | Rate | Request | Response | Errors |
 |---|---|---|---|---|---|---|
-| POST | `/auth/google` | none | 10/min | `GoogleAuthRequest` | `TokenPair` | 401 `google_token_invalid`, 403 `account_deactivated`, 400 `tos_required` / `dob_required` / `underage`, 409 (uncoded) email already registered |
+| POST | `/auth/google` | none | 10/min | `GoogleAuthRequest` | `TokenPair` | 401 `google_token_invalid`, 403 `account_deactivated`, 400 `tos_required` / `dob_required` / `underage` / `email_unavailable`, 409 (uncoded) email already registered |
 
 `GoogleAuthRequest` = `{id_token, tos_accepted=false, date_of_birth=null,
 google_access_token=null}`. **`tos_accepted` defaults `false`** — never `true`,
@@ -152,3 +156,4 @@ sign-in: `DELETE /users/me` (account deletion) answers 401
 - [passwords-and-email.md](passwords-and-email.md) — the other verification path
 - [web-and-platform.md](web-and-platform.md) — the SPA meta-tag injection
 - [reference/error-codes.md](../reference/error-codes.md#google-sign-in)
+- [account-deletion.md](account-deletion.md) — the sign-up block on the new-account branch

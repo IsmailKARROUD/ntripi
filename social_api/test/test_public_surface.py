@@ -79,6 +79,13 @@ PUBLIC_ROUTES = {
     ("POST", "/web/reset-password"): TOKEN_FORM,
     ("POST", "/web/appeal"): TOKEN_FORM,
     ("POST", "/web/appeal-request"): TOKEN_FORM,
+    # Account deletion without the app: the request page and form hand out
+    # nothing (the same answer for every address); the confirm page and its
+    # POST need the emailed token.
+    ("GET", "/delete-account"): TOKEN_FORM,
+    ("POST", "/web/delete-account-request"): TOKEN_FORM,
+    ("GET", "/delete-account/confirm"): TOKEN_FORM,
+    ("POST", "/web/delete-account"): TOKEN_FORM,
     ("GET", "/robots.txt"): MACHINE,
     ("GET", "/sitemap.xml"): MACHINE,
     ("GET", "/llms.txt"): MACHINE,

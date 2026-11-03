@@ -28,6 +28,16 @@ void main() {
     expect(fr.errorUnderage, isNot(en.errorUnderage));
   });
 
+  test('a blocked sign-up address is localized, in every locale', () {
+    // email_unavailable: the address of a suspended account that was erased.
+    expect(localizedApiError('email_unavailable', en),
+        en.apiErrorEmailUnavailable);
+    final fr = AppLocalizationsFr();
+    expect(localizedApiError('email_unavailable', fr),
+        fr.apiErrorEmailUnavailable);
+    expect(fr.apiErrorEmailUnavailable, isNot(en.apiErrorEmailUnavailable));
+  });
+
   test('an unknown code still returns null so the caller can fall back', () {
     expect(localizedApiError('no_such_code', en), isNull);
   });

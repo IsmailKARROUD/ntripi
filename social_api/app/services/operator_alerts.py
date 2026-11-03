@@ -6,8 +6,9 @@ Text moderation's degradation notices and image moderation's outage alerts
 both come through here. An alert is about the tier, not about one piece of
 content, so it is sent at most once an hour per key: an outage during a busy
 hour would otherwise send one email per write. A per-event email (a flagged
-image, a report, a bug report) is an item someone has to act on and is never
-throttled — those do not come through here.
+image, a report, a bug report, a deferred account deletion) is an item someone
+has to act on and is never throttled — email_operator sends those, without the
+cooldown (the report, bug-report and image-flag emails still inline its guard).
 
 In-memory is sufficient for the same reason slowapi's store is: the app runs
 as one uvicorn process (Dockerfile CMD). A restart or deploy re-arms every key.
@@ -63,3 +64,22 @@ def notify_operator(
         send_email(settings.OPERATOR_EMAIL, subject=subject, html=body)
     except Exception:
         logger.exception("operator alert email failed (%s)", key)
+
+
+def email_operator(
+    settings: "Settings", *, subject: str, html: str, unset_log: str
+) -> None:
+    """Email ONE item to OPERATOR_EMAIL — the per-event sibling of
+    notify_operator, and never throttled: each email is something to act on.
+
+    Unset, `unset_log` is logged at WARNING ("<unset_log> but OPERATOR_EMAIL is
+    unset — email skipped"), the only level Railway shows. Blocking and
+    best-effort, like notify_operator: a mail failure is logged, never raised.
+    """
+    if not settings.OPERATOR_EMAIL:
+        logger.warning("%s but OPERATOR_EMAIL is unset — email skipped", unset_log)
+        return
+    try:
+        send_email(settings.OPERATOR_EMAIL, subject=subject, html=html)
+    except Exception:
+        logger.exception("operator email failed (%s)", subject)

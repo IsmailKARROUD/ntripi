@@ -2657,6 +2657,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get apiErrorEmailTaken => 'Un compte existe déjà avec cet e-mail.';
 
   @override
+  String get apiErrorEmailUnavailable =>
+      'Cette adresse e-mail ne peut pas servir à créer un compte.';
+
+  @override
   String get reportItineraryTitle => 'Signaler cet itinéraire';
 
   @override

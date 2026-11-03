@@ -59,7 +59,7 @@ Nous pouvons vous envoyer dans l'application des notifications concernant l'acti
 
 Nous pouvons supprimer ou masquer un contenu, vous avertir, restreindre votre compte ou le résilier en cas de manquement aux présentes conditions ou aux Règles de la communauté. Les manquements graves peuvent entraîner une résiliation immédiate sans avertissement.
 
-Lorsque nous prenons une mesure à votre encontre, nous vous indiquons ce que nous avons fait et pourquoi. Vous pouvez supprimer votre compte vous-même à tout moment depuis l'application.
+Lorsque nous prenons une mesure à votre encontre, nous vous indiquons ce que nous avons fait et pourquoi. Vous pouvez supprimer votre compte vous-même à tout moment : dans l'application ou, sans elle, sur ntripi.app/delete-account. Si vous supprimez un compte alors qu'il est suspendu, son adresse e-mail ne peut plus servir à créer un nouveau compte.
 
 
 8. RECOURS
@@ -73,7 +73,7 @@ Les contenus impliquant des mineurs constituent la seule exception : ils ne sont
 
 1. Vos données personnelles (nom, e-mail, profil) seront supprimées lorsque vous supprimerez votre compte.
 
-2. Les évaluations que vous soumettez sur les itinéraires seront conservées sous forme anonymisée (note seule, sans information identifiante) après la suppression du compte. Cela préserve l'intégrité des scores communautaires pour les autres utilisateurs.
+2. Les évaluations et les avis que vous soumettez sur les itinéraires seront conservés après la suppression du compte, sans votre nom ni aucun lien avec votre compte : les notes et le texte que vous avez écrit restent avec l'itinéraire. Cela préserve l'intégrité des scores communautaires pour les autres utilisateurs.
 
 3. Vos itinéraires et leur contenu seront définitivement supprimés lorsque vous supprimerez votre compte.
 
@@ -189,7 +189,7 @@ Pour vérifier que vous avez l'âge minimum requis et empêcher les comptes de m
 
 Pour assurer la sécurité de Ntripi : examen automatique et humain des contenus, traitement des signalements, application des Règles de la communauté et gestion des recours.
 
-Pour vous envoyer des e-mails concernant votre compte — vérification, réinitialisation du mot de passe et notifications de modération. Nous n'envoyons pas d'e-mails marketing.
+Pour vous envoyer des e-mails concernant votre compte — vérification, réinitialisation du mot de passe, suppression du compte et notifications de modération. Nous n'envoyons pas d'e-mails marketing.
 
 Pour corriger les problèmes que vous nous signalez.
 
@@ -245,6 +245,10 @@ Atlassian (Jira) — lorsque nous transmettons un rapport de bogue que vous avez
 
 Google (Firebase Cloud Messaging) — les notifications push sur iOS et Android, si vous les autorisez. Un jeton d'enregistrement est attribué à votre appareil et identifie cette installation ; nous le conservons afin de pouvoir adresser une notification à votre appareil, et nous le supprimons lorsque vous vous déconnectez. Le texte de la notification transite par Google pour atteindre votre téléphone : il indique ce qui s'est passé et, le cas échéant, nomme la personne à l'origine de l'action ou le titre de votre propre itinéraire. Les avis concernant la modération de vos contenus ne nomment jamais la personne qui les a signalés. Si vous n'accordez pas l'autorisation de notification, aucun jeton n'est créé et rien n'est envoyé.
 
+Resend — l'envoi des e-mails que Ntripi vous adresse : vérification, réinitialisation du mot de passe, suppression du compte et notifications de modération. Resend reçoit votre adresse e-mail et le message.
+
+Google (Google Workspace) — nos propres boîtes aux lettres. Les e-mails que vous envoyez à l'une de nos adresses, comme privacy@ntripi.app, y sont reçus et conservés.
+
 Nous divulguons également des données lorsque la loi nous y oblige et lorsque cela est nécessaire pour répondre à un risque imminent pour la sécurité d'une personne.
 
 
@@ -286,13 +290,19 @@ Nous n'utilisons ni cookies de mesure d'audience, ni cookies publicitaires, ni a
 
 Les données de votre compte et votre contenu sont conservés jusqu'à ce que vous les supprimiez, ou jusqu'à ce que vous supprimiez votre compte.
 
-Vous pouvez supprimer votre compte à tout moment depuis les paramètres de l'application. La suppression du compte efface définitivement votre profil, vos itinéraires et vos informations identifiantes.
+Vous pouvez supprimer votre compte à tout moment : dans l'application, sur l'écran de modification de votre profil, sous Sécurité, Supprimer le compte ; ou sans l'application sur ntripi.app/delete-account, qui envoie un lien à usage unique à l'adresse du compte. La suppression efface définitivement votre profil, vos itinéraires et vos informations identifiantes, hormis ce que cette section indique comme conservé.
 
 Votre date de naissance est conservée aussi longtemps que le compte existe et est supprimée avec lui. Nous la conservons plutôt que la seule réponse qu'elle nous a donnée, car l'âge minimum évolue avec le temps et un simple oui ou non enregistré deviendrait silencieusement obsolète.
 
-Les évaluations que vous avez soumises sont conservées sous forme anonymisée (note seule, sans lien avec l'utilisateur) afin de préserver l'intégrité des scores communautaires. Vous y consentez lors de la création de votre compte, comme indiqué dans nos Conditions d'utilisation.
+Les évaluations et les avis que vous avez rédigés sont conservés après la suppression de votre compte, sans aucun lien avec vous : les notes et le texte restent avec l'itinéraire, afin de préserver l'intégrité des scores communautaires. Vous y consentez lors de la création de votre compte, comme indiqué dans nos Conditions d'utilisation.
 
-Les enregistrements de modération sont supprimés au bout de 90 jours une fois l'affaire close, à une exception près : lorsqu'une image a correspondu à une base d'images illégales connues, l'enregistrement de cette correspondance et l'empreinte de l'image sont conservés indéfiniment. L'image elle-même est supprimée ; l'enregistrement est la seule preuve que le retrait a eu lieu, et sa conservation est une obligation légale à laquelle nous ne pouvons renoncer à votre demande.
+Si un compte, l'un de ses itinéraires ou l'un de ses avis fait l'objet d'un examen juridique lorsque sa suppression est demandée, la suppression attend la clôture de cet examen, puis a lieu automatiquement ; nous écrivons à l'adresse du compte une fois que c'est fait.
+
+Si un compte est suspendu au moment de sa suppression, nous conservons un code à sens unique tiré de son adresse e-mail — une empreinte à clé qui ne permet pas de retrouver l'adresse — afin que cette adresse ne puisse pas servir à créer un nouveau compte. Il est conservé jusqu'à ce que nous levions ce blocage.
+
+Les enregistrements de nos vérifications automatiques des textes et des images sont supprimés 90 jours après leur création — plus tard si l'un d'eux attend encore l'examen d'une personne —, à une exception près : lorsqu'une image a correspondu à une base d'images illégales connues, l'enregistrement de cette correspondance et l'empreinte de l'image sont conservés indéfiniment. L'image elle-même est supprimée ; l'enregistrement est la seule preuve que le retrait a eu lieu, et sa conservation est une obligation légale à laquelle nous ne pouvons renoncer à votre demande.
+
+Les décisions de modération — ce qui a été décidé au sujet d'un compte ou d'un contenu, et pourquoi — sont conservées sans limite de durée, y compris après la suppression du compte, avec les signalements qui les ont motivées et, lorsqu'un modérateur a décidé, une copie de ce que la décision concernait : le texte du contenu, ou l'adresse e-mail et le nom d'utilisateur du compte. Elles sont la preuve de décisions qui peuvent être contestées ou réexaminées. Lorsqu'un compte est supprimé, les photos des contenus retirés par un modérateur, et toutes ses photos tant que le compte fait l'objet d'un examen juridique, sont également conservées comme preuves.
 
 Les notifications dans l'application sont supprimées 90 jours après leur lecture. Celles qui n'ont pas été lues sont conservées.
 
@@ -305,7 +315,7 @@ L'identifiant Google d'un lieu que vous avez choisi, et les mots de recherche co
 
 11. VOS DROITS
 
-Vous pouvez consulter, corriger, exporter ou supprimer la plupart de vos données directement dans l'application : votre profil est modifiable, votre contenu est modifiable et supprimable, et Paramètres, Supprimer le compte efface le compte.
+Vous pouvez consulter, corriger, exporter ou supprimer la plupart de vos données directement dans l'application : votre profil est modifiable, votre contenu est modifiable et supprimable, et Supprimer le compte, sur l'écran de modification de votre profil sous Sécurité, efface le compte. Sans l'application, ntripi.app/delete-account fait de même.
 
 Selon votre lieu de résidence, vous pouvez également avoir le droit de nous demander une copie de vos données, de les faire rectifier ou effacer, de limiter ou de vous opposer à leur utilisation, et d'introduire une réclamation auprès de votre autorité nationale de protection des données. Écrivez à privacy@ntripi.app et nous vous répondrons.
 

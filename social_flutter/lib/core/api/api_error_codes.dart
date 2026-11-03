@@ -44,6 +44,8 @@ String? localizedApiError(String code, AppLocalizations l10n) {
       'tos_required' => l10n.apiErrorTosRequired,
       'username_taken' => l10n.apiErrorUsernameTaken,
       'email_taken' => l10n.apiErrorEmailTaken,
+      // An erased suspended account's address; never says why.
+      'email_unavailable' => l10n.apiErrorEmailUnavailable,
       'report_own_content' => l10n.apiErrorReportOwnContent,
       'report_rate_limited' => l10n.apiErrorReportRateLimited,
       'place_search_rate_limited' => l10n.apiErrorPlaceSearchRateLimited,

@@ -927,6 +927,7 @@
   "apiErrorTosRequired": "Vous devez accepter les Conditions d'utilisation pour vous inscrire.",
   "apiErrorUsernameTaken": "Cet identifiant est déjà pris.",
   "apiErrorEmailTaken": "Un compte existe déjà avec cet e-mail.",
+  "apiErrorEmailUnavailable": "Cette adresse e-mail ne peut pas servir à créer un compte.",
   "reportItineraryTitle": "Signaler cet itinéraire",
   "reportItineraryTooltip": "Signaler",
   "reportReasonSpam": "Spam",

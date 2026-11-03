@@ -761,6 +761,7 @@
   "apiErrorTosRequired": "注册前必须接受服务条款。",
   "apiErrorUsernameTaken": "该用户名已被占用。",
   "apiErrorEmailTaken": "使用此邮箱的账号已存在。",
+  "apiErrorEmailUnavailable": "此邮箱无法用于注册账号。",
   "reportItineraryTitle": "举报此行程",
   "reportItineraryTooltip": "举报",
   "reportReasonSpam": "垃圾内容",

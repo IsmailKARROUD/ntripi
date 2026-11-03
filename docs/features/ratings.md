@@ -112,8 +112,11 @@ an individual review without the key order of the rest changing.
 
 `itinerary_ratings` — `user_id` is FK **SET NULL**, so a deleted account's rating
 survives anonymised: the trip keeps its score and the reviewer disappears. That
-is the GDPR trade-off, and `delete_my_account` nulls the column explicitly as
-well as relying on the constraint.
+is the GDPR trade-off, and `account_service.erase_account` (both deletion
+routes) nulls the column explicitly as well as relying on the constraint. The
+`note` and its translations stay too — Terms §9.2 and Privacy §10 say so since
+3.3 / 2.6, where they had promised "score only"
+([account-deletion.md](account-deletion.md)).
 
 Seven CHECK constraints: `ck_rating_stars BETWEEN 1 AND 5`, one
 `<dim> IS NULL OR BETWEEN 1 AND 5` per dimension, and
@@ -201,14 +204,6 @@ ratings: [RatingWithUser]}`.
 - [content-reports.md](content-reports.md) — a rating is a reportable target
 - [admin-and-appeals.md](admin-and-appeals.md) — `/admin/ratings/{id}/unhide`
 - [notifications.md](notifications.md) — `itinerary_rated`, first rating only
-- [accounts-and-profiles.md](accounts-and-profiles.md) — SET NULL on deletion
+- [account-deletion.md](account-deletion.md) — SET NULL on deletion; the score and the text stay
 - [translations.md](translations.md) — `note` carries `source_lang`; an anonymised review keeps its translations
 - [reference/data-model.md](../reference/data-model.md)
-
-## OPEN QUESTIONS
-
-- **An anonymised review keeps its text.** `delete_my_account` nulls
-  `user_id` and nothing else, so the `note` (and its cached translations)
-  survive, while the ToS and Privacy §10 say a deleted account's ratings are kept
-  as "score only". See
-  [legal-and-age-gate.md](legal-and-age-gate.md#open-questions).

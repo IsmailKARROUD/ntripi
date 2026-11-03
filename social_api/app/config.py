@@ -324,6 +324,11 @@ class Settings(BaseSettings):
     # IPs — it exists to stop one scraper hammering the origin.
     SHARE_RATE_LIMIT: str = "120/minute"
 
+    # slowapi limit string for POST /web/delete-account-request, per client IP.
+    # Each request can email a stranger's address a link, so it is held to the
+    # appeal-request limit; nobody needs more than a few.
+    ACCOUNT_DELETION_RATE_LIMIT: str = "5/hour"
+
     # Published abuse contact. Must match the app-store listing; use the domain
     # address, never a personal one.
     ABUSE_CONTACT_EMAIL: str = "abuse@ntripi.app"

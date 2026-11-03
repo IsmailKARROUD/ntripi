@@ -1,0 +1,11 @@
+{% extends "_base.html" %}
+{% block content %}
+
+{# Every answer in the /delete-account flow that is only words: check your email,
+   done, deferred, too many requests. web.py _deletion_message. #}
+<section class="card" style="max-width:460px;margin:0 auto;text-align:center">
+  <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:12px">{{ heading }}</h2>
+  <p style="color:var(--text2)">{{ body }}</p>
+</section>
+
+{% endblock %}

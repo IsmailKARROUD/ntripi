@@ -19,6 +19,9 @@ from app.services.token_util import as_aware_utc, hash_token, new_raw_token
 
 PURPOSE_PASSWORD_RESET = "password_reset"
 PURPOSE_EMAIL_VERIFY = "email_verify"
+# The /delete-account link. email_tokens.purpose is VARCHAR(20) with no CHECK,
+# so a new purpose needs no migration.
+PURPOSE_ACCOUNT_DELETE = "account_delete"
 
 
 class InvalidTokenError(Exception):
@@ -44,12 +47,7 @@ def issue(
     return raw
 
 
-def consume(db: Session, raw_token: str, purpose: str) -> uuid.UUID:
-    """
-    Validate and single-use-consume a token for the given purpose. Returns the
-    user_id. Raises InvalidTokenError on unknown / expired / used / wrong-purpose.
-    The caller commits.
-    """
+def _valid_row(db: Session, raw_token: str, purpose: str) -> EmailToken:
     row = db.execute(
         select(EmailToken).where(EmailToken.token_hash == hash_token(raw_token))
     ).scalar_one_or_none()
@@ -60,7 +58,26 @@ def consume(db: Session, raw_token: str, purpose: str) -> uuid.UUID:
         raise InvalidTokenError("token already used")
     if as_aware_utc(row.expires_at) <= datetime.now(timezone.utc):
         raise InvalidTokenError("token expired")
+    return row
 
+
+def peek(db: Session, raw_token: str, purpose: str) -> uuid.UUID:
+    """
+    The user_id a still-valid token names, WITHOUT spending it — for a page that
+    only shows what the link will do. A mail scanner opens every link it sees, so
+    a GET that consumed would spend the link before its owner clicked. Raises
+    InvalidTokenError exactly as consume() does.
+    """
+    return _valid_row(db, raw_token, purpose).user_id
+
+
+def consume(db: Session, raw_token: str, purpose: str) -> uuid.UUID:
+    """
+    Validate and single-use-consume a token for the given purpose. Returns the
+    user_id. Raises InvalidTokenError on unknown / expired / used / wrong-purpose.
+    The caller commits.
+    """
+    row = _valid_row(db, raw_token, purpose)
     row.used_at = datetime.now(timezone.utc)
     return row.user_id
 

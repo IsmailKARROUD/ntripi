@@ -69,6 +69,13 @@ hate_speech:2, harassment:2, other:3, spam:4
   `models/legal_escalation.py:13`: *"Deliberately NOT implemented here:
   automated reporting to authorities. The requirement is that this category
   cannot be silently closed, not that the app files reports on its own."*
+- **An open escalation holds a deletion asked for on the web** — on the
+  account, a trip it owns or a review it wrote. The request is recorded and
+  listed under the escalations on `/admin/legal`, and the sweep erases the
+  account only once every escalation on it is closed; closing one is therefore
+  also what lets a waiting deletion go ahead. The requester is never told why
+  ([account-deletion.md](account-deletion.md)). The in-app `DELETE /users/me`
+  does not wait — it keeps only the images.
 
 ### CSAM takedown
 
@@ -193,6 +200,7 @@ Admin-side lanes are documented in
 - [visibility-and-access.md](visibility-and-access.md) — what hiding does
 - [notifications.md](notifications.md) — `moderation_action`, with no actor
 - `../../social_api/docs/csam_response_runbook.md` · `../../social_api/docs/media_pipeline_spec.md`
+- [account-deletion.md](account-deletion.md) — an open escalation holds a web deletion until it closes
 
 ## OPEN QUESTIONS
 

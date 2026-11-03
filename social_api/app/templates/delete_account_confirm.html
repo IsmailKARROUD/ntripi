@@ -1,0 +1,45 @@
+{% extends "_base.html" %}
+{% block head %}
+<style>
+  .btn-danger {
+    background: var(--error-text);
+    color: #fff !important;
+    font-weight: 700;
+    padding: 12px 22px;
+    border-radius: var(--radius-button);
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    width: 100%;
+  }
+  .btn-danger:hover { filter: brightness(1.15); }
+</style>
+{% endblock %}
+{% block content %}
+
+<section class="card" style="max-width:480px;margin:0 auto">
+  <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:6px;text-align:center">{{ _('delete_confirm_heading') }}</h2>
+  <p style="text-align:center;font-weight:700;margin-bottom:16px"><bdi>@{{ username }}</bdi></p>
+
+  <p style="color:var(--text2);margin-bottom:10px">{{ _('delete_confirm_body') }}</p>
+  <p style="color:var(--text2);margin-bottom:16px">
+    {{ _('delete_confirm_keeps') }}
+    <a href="/delete-account?lang={{ lang }}#what-deletion-keeps">{{ _('delete_keeps_link') }}</a>
+  </p>
+
+  {% if suspended %}
+  <div class="error-banner">{{ _('delete_confirm_suspended') }}</div>
+  {% endif %}
+
+  {# A form, not a link: this page is what a mail scanner may open, so only the
+     button erases. #}
+  <form method="POST" action="/web/delete-account?lang={{ lang }}">
+    <input type="hidden" name="token" value="{{ token }}">
+    <button type="submit" class="btn-danger">{{ _('delete_confirm_button') }}</button>
+  </form>
+
+  <p style="text-align:center;margin-top:14px"><a href="/">{{ _('delete_confirm_cancel') }}</a></p>
+</section>
+
+{% endblock %}

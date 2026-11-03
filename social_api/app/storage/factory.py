@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from functools import lru_cache
 
@@ -72,3 +73,20 @@ def storage() -> Storage:
         settings.STORAGE_PUBLIC_URL_PREFIX,
     )
     return backend
+
+
+def delete_from_sync(key: str) -> bool:
+    """Best-effort delete of a stored object from sync code. True when it is gone.
+
+    For a sync caller on a worker thread: a sync route (FastAPI's threadpool) or
+    the sweep, which the in-process timer runs through asyncio.to_thread. No
+    event loop runs on either, so asyncio.run is safe — where
+    anyio.from_thread.run only works on anyio's own worker threads and raises on
+    asyncio.to_thread's. Never call this from an async def.
+    """
+    try:
+        asyncio.run(storage().delete(key))
+        return True
+    except Exception:
+        logger.exception("could not delete stored object %r", key)
+        return False

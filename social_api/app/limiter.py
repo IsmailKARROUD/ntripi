@@ -13,3 +13,11 @@ from slowapi.util import get_remote_address
 # If replicated horizontally, replace with a Redis-backed store to prevent
 # limits from resetting per-instance on each deploy or restart.
 limiter = Limiter(key_func=get_remote_address)
+
+
+def retry_after(exc) -> str:
+    """The Retry-After value for a RateLimitExceeded rendered as a page."""
+    try:
+        return str(exc.limit.limit.get_expiry())
+    except AttributeError:  # a slowapi without the window on the exception
+        return "60"

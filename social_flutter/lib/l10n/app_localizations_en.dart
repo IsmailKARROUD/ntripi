@@ -2611,6 +2611,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get apiErrorEmailTaken => 'An account with this email already exists.';
 
   @override
+  String get apiErrorEmailUnavailable =>
+      'This email address can\'t be used to create an account.';
+
+  @override
   String get reportItineraryTitle => 'Report this itinerary';
 
   @override

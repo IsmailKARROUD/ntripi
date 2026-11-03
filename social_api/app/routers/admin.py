@@ -46,7 +46,8 @@ from app.models.moderation_log import HIDE_FAMILY
 from app.models.text_moderation_decision import TextModerationDecision
 from app.models.user import User
 from app.services import (
-    admin_service, appeal_service, auth_service, jira_service, moderation_actions,
+    account_service, admin_service, appeal_service, auth_service, jira_service,
+    moderation_actions,
 )
 from app.services.share_service import build_share_url
 from app.storage.factory import storage
@@ -570,10 +571,21 @@ def admin_legal(
             "label": moderation_actions.target_label(escalation.target_type, target),
             "age": admin_service.humanize_age(escalation.created_at),
         })
+    # Deletions asked for on the web that an escalation holds: the sweep erases
+    # each once nothing holds it, so this is read-only.
+    erasures = [
+        {
+            "user": user,
+            "held": held,
+            "age": admin_service.humanize_age(user.erasure_requested_at),
+        }
+        for user, held in account_service.pending_erasures(db)
+    ]
     return _page(request, "legal.html", {
         "page_title": "Legal escalations",
         "admin": admin,
         "rows": rows,
+        "erasures": erasures,
         "error_message": error,
         "notice_message": notice,
     })
@@ -1113,3 +1125,24 @@ def admin_unban(
 
     admin_service.unban_user(db, admin, user, reason)
     return _redirect(back, notice="Account reinstated.")
+
+
+@router.post("/signup-blocks/lift")
+def admin_lift_signup_block(
+    email: str = Form(""),
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+):
+    """Let an address sign up again after a suspended account under it was
+    erased — a disputed block, or an address its provider gave someone new.
+
+    The block is a keyed hash, so the address typed here is hashed and looked
+    up; the list of blocked addresses cannot be read, only tested.
+    """
+    address = (email or "").strip()
+    if not address:
+        return _redirect("/admin/suspended", error="Enter an email address.")
+    if not account_service.lift_signup_block(db, address):
+        return _redirect("/admin/suspended", notice="That address was not blocked.")
+    db.commit()
+    return _redirect("/admin/suspended", notice="The address can sign up again.")

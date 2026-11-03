@@ -108,6 +108,7 @@ RELEASES: tuple[Release, ...] = (
             "**La carte du voyage, c’est son trajet.** La vue **Carte** montre désormais le trajet par les étapes affichées à l’écran, sur la carte de Google — lieux Google compris.",
             "**Le Fil et votre profil aux deux bouts de la barre.** La barre du bas se lit désormais Fil, Recherche, Itinéraires, Enregistrés, Profil, et l’onglet Profil affiche votre photo de profil une fois que vous en avez ajouté une.",
             "**Conditions et Politique de confidentialité mises à jour.** Elles couvrent désormais Google Maps, qui dessine une partie des cartes de Ntripi et sa recherche de lieux. Il vous sera demandé de les accepter une fois.",
+            "**Supprimer votre compte sans l’application.** [ntripi.app/delete-account](/delete-account) envoie un lien à l’adresse de votre compte ; ouvrez-le et confirmez. Les Conditions et la Politique de confidentialité mises à jour disent ce qui reste ensuite — les avis gardent leur texte, sans votre nom — et il vous sera demandé de les accepter une nouvelle fois.",
         ),
     ),
     Release(
@@ -1536,7 +1537,7 @@ Cela compte surtout pour les notifications, qu’iOS ne redemandera pas : une fo
     Article(
         slug="your-data-and-privacy",
         title="Quelles données Ntripi conserve, et comment les supprimer",
-        summary="Un résumé en langage clair de ce qui est conservé, de qui peut le voir, et de comment supprimer votre compte pour de bon.",
+        summary="Ce que Ntripi conserve, qui peut le voir, et comment supprimer votre compte pour de bon — dans l’application, ou sur le web sans elle.",
         category="account",
         schema=SCHEMA_FAQ,
         intro="Ntripi conserve ce que vous écrivez et ce que vous envoyez, plus ce qu’il faut pour vous connecter. Il n’y a pas de publicité, pas de pistage publicitaire tiers, et rien n’est vendu. La [politique de confidentialité](/privacy) est le texte qui fait foi ; ceci en est la version courte.",
@@ -1575,11 +1576,26 @@ Quand quelqu’un demande à lire votre voyage dans sa langue, son texte part de
                 anchor="deleting",
                 heading="Comment supprimer mon compte ?",
                 kind=KIND_FAQ,
-                body="""Sur l’écran de modification de votre profil, sous Sécurité ▸ **Supprimer le compte**. Vous confirmez avec votre mot de passe, ou avec Google si c’est ainsi que vous vous connectez.
+                body="""**Dans l’application :** sur l’écran de modification de votre profil, sous Sécurité ▸ **Supprimer le compte**. Vous confirmez avec votre mot de passe, ou avec Google si c’est ainsi que vous vous connectez.
 
-La suppression est définitive et emporte vos voyages avec elle. Les voyages que d’autres avaient enregistrés cessent de fonctionner, puisqu’un favori est un renvoi et non une copie.
+**Sans l’application :** rendez-vous sur [ntripi.app/delete-account](/delete-account) et saisissez l’adresse e-mail de votre compte. Un lien arrive à cette adresse ; ouvrez-le dans l’heure et confirmez. Si vous ne recevez plus d’e-mails à cette adresse, écrivez à **[privacy@ntripi.app](mailto:privacy@ntripi.app)**.
 
-Votre photo de profil, votre couverture et les photos de couverture de vos voyages sont effacées en même temps.""",
+La suppression est définitive et emporte vos voyages, votre photo de profil, votre couverture et les photos de couverture de vos voyages. Les voyages que d’autres avaient enregistrés cessent de fonctionner, puisqu’un favori est un renvoi et non une copie.""",
+            ),
+            Block(
+                anchor="what-deletion-keeps",
+                heading="Que reste-t-il après la suppression de mon compte ?",
+                kind=KIND_FAQ,
+                body="""La suppression efface votre profil, votre adresse e-mail et votre date de naissance, vos voyages et leurs photos, vos abonnements, vos blocages et vos voyages enregistrés, vos notifications et tout recours en cours. Quelques éléments restent, parce que d’autres personnes en dépendent ou parce qu’ils servent de preuve :
+
+- **Vos évaluations et vos avis** restent sur les voyages évalués — la note et le texte —, sans votre nom ni aucun lien avec vous, pour que ces voyages gardent leur évaluation.
+- **Les dossiers de modération** — les signalements que vous avez faits ou qui visaient vos contenus, et les décisions prises au sujet de votre compte ou de vos contenus — sont conservés sans limite de durée. Une décision prise par un modérateur garde une copie de ce qu’elle visait, c’est-à-dire, pour un compte, son adresse e-mail et son nom d’utilisateur.
+- **Les photos retirées par un modérateur** sont conservées comme preuves.
+- **Les rapports de bogue** que vous avez envoyés restent jusqu’à leur clôture et leur expiration, sans plus être liés à vous.
+
+Si votre compte est **suspendu** au moment de sa suppression, un code à sens unique tiré de son adresse e-mail est conservé, pour que cette adresse ne puisse pas servir à une nouvelle inscription tant que nous ne levons pas ce blocage.
+
+Si une partie de votre compte fait l’objet d’un **examen juridique**, la suppression attend la clôture de l’examen, puis se fait d’elle-même, et nous vous écrivons une fois qu’elle est faite. La [politique de confidentialité](/privacy) donne tous les détails.""",
             ),
             Block(
                 anchor="requests",
@@ -1596,7 +1612,9 @@ La même adresse couvre les demandes de rectification, de limitation et d’oppo
             "données",
             "rgpd",
             "supprimer mon compte",
-            "effacer",
+            "supprimer mon compte sans l’application",
+            "demande de suppression",
+            "effacer mes données",
             "exporter",
             "données personnelles",
             "pistage",
@@ -1607,7 +1625,7 @@ La même adresse couvre les demandes de rectification, de limitation et d’oppo
             "permissions", "sign-in-and-account-security",
             "share-an-itinerary-privately", "read-trips-in-another-language",
         ),
-        updated="2026-10-31",
+        updated="2026-11-03",
     ),
     Article(
         slug="sign-in-and-account-security",
@@ -1659,13 +1677,17 @@ Elle n’apparaît jamais sur votre profil et n’est jamais visible par un autr
                 kind=KIND_FAQ,
                 body="""Vous aurez reçu un e-mail expliquant pourquoi, avec un lien pour former un recours. Les recours sont lus par une personne.
 
-Si vous n’avez plus l’e-mail, le formulaire de recours peut vous envoyer un nouveau lien. Voir [contenus masqués et recours](/help/hidden-content-and-appeals).""",
+Si vous n’avez plus l’e-mail, le formulaire de recours peut vous envoyer un nouveau lien. Voir [contenus masqués et recours](/help/hidden-content-and-appeals).
+
+Vous pouvez quand même supprimer un compte suspendu, sur [ntripi.app/delete-account](/delete-account). Son adresse e-mail ne pourra alors plus servir à une nouvelle inscription.""",
             ),
             Block(
                 anchor="deleting",
                 heading="Comment supprimer mon compte ?",
                 kind=KIND_FAQ,
                 body="""Profil ▸ modifier ▸ **Sécurité ▸ Supprimer le compte**, confirmé par votre mot de passe ou par Google.
+
+Vous n’avez plus l’application ? [ntripi.app/delete-account](/delete-account) envoie un lien à l’adresse de votre compte à la place — voir [ce que la suppression conserve](/help/your-data-and-privacy#what-deletion-keeps).
 
 C’est définitif, et cela emporte vos voyages. Si vous voulez seulement disparaître de la vue, régler vos voyages sur [moi uniquement](/help/share-an-itinerary-privately) et passer votre compte en privé est réversible, là où la suppression ne l’est pas.""",
             ),
@@ -1686,9 +1708,10 @@ C’est définitif, et cela emporte vos voyages. Si vous voulez seulement dispar
             "supprimer le compte",
             "âge",
             "16 ans",
+            "supprimer mon compte sans l’application",
         ),
         related=("your-data-and-privacy", "troubleshooting"),
-        updated="2026-09-28",
+        updated="2026-11-03",
     ),
     Article(
         slug="report-and-block",

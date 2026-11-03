@@ -2773,3 +2773,94 @@ photo, with the person icon as the fallback.
   label below the others.
 - **Showing the open tab by the label alone, or fading the photo when another
   tab is open** — offered; the owner chose the ring.
+
+### 2026-11-03 — An account can be deleted without the app; one function erases it
+
+**Context.** Google Play's Data safety form needs a web URL where someone who
+no longer has the app can get their account deleted. The only erasure was
+`DELETE /users/me`, written inline in the router after re-authentication. A
+suspended account could not reach even that (every request from it answers
+403), and no admin route erased anything: Privacy §11 told people to write to
+privacy@, and an operator had nothing but SQL to act on it. While writing what
+such a page must say is kept, two promises in the documents turned out false:
+ratings kept "score only" (a review's text and its translations survive), and
+moderation records "deleted after 90 days" (only the scan records are; the
+moderation log, with an operator's copy of what it concerned, and reports are
+never purged).
+
+**Decision.**
+- **Self-service on the web, at `/delete-account`** — the owner's choice over
+  an operator action. An address goes in; a single-use link (`email_tokens`,
+  purpose `account_delete`, one hour) comes out; the page it opens says what
+  will go, and only its button erases. **The request route takes no database
+  session**: the lookup, the token and the email run in a background task after
+  the response, so the page and its timing are the same for every address. The
+  confirm GET reads the token with `peek` and never spends or erases it — mail
+  scanners open links.
+- **One erase function, `account_service.erase_account`** — steps 2–5 of
+  `delete_my_account` moved, not copied — plus a row lock, so two erasures of
+  one account never both decrement the counters, and the sign-up block.
+  `DELETE /users/me` keeps its re-authentication and answers byte for byte as
+  before.
+- **Under an open legal escalation** on the account, a trip it owns or a review
+  it wrote, **the web route defers** (the owner's choice):
+  `users.erasure_requested_at` / `erasure_request_lang`, a per-event email to
+  the operator, and a page that says only that the deletion will happen. The
+  sweep erases the account once every escalation on it is closed and emails the
+  address in its language; `/admin/legal` lists what waits.
+- **Suspended accounts may be erased this way** — it is their only route — and
+  **their address is then blocked from signing up again** (the owner's choice):
+  a keyed hash (HMAC on `SECRET_KEY`, the report IP-hash precedent) in
+  `signup_blocks`, kept until an operator lifts it at `/admin/suspended`, with
+  no expiry, as a ban has none. Both sign-up paths answer 400
+  `email_unavailable`, before any paid moderation call.
+- **Reviews keep their text, and the documents change, not the code** (the
+  owner's choice): Terms 3.3 and Privacy 2.6, in all six languages, which also
+  name the web page (ToS §7, Privacy §10–11, and §11's real in-app path), the
+  two email processors §5 never named (Resend, Google Workspace), the
+  moderation-record retention as it is, the sign-up block and the deferral.
+- **Storage deletes from sync code go through `storage.factory.delete_from_sync`**
+  (`asyncio.run`): `anyio.from_thread.run`, which `delete_my_account` used,
+  raises on the `asyncio.to_thread` thread the in-process sweep runs on, so
+  every deferred erasure would have kept every image.
+- The email body builder moved from `auth_service._email_html`, which six
+  modules imported privately, to `email_service.branded_email_html`, public and
+  translatable (`lang=`, right to left for Arabic); English output is byte for
+  byte what it was. It now escapes the link: the deletion link is the first to
+  carry a second parameter, and a raw `&lang=` is the entity `&lang;` to some
+  mail clients, which turn the URL into `…〈=en`.
+- **The deletion forms answer a rate limit with a page**, in the reader's
+  language, where every other form post keeps slowapi's JSON: a person can reach
+  5 requests an hour, retrying while the email is slow or from a shared address.
+
+**Consequences.**
+- Play Console's deletion URL is `https://ntripi.app/delete-account`; the page is
+  in the sitemap.
+- The Terms bump asks every user to accept once more, only days after 3.2.
+- Anyone who types an address at sign-up learns that it "can't be used" — a
+  weaker signal than "banned", and registration already says whether an
+  address has an account (`email_taken`).
+- Rotating `SECRET_KEY` lifts every block; aliases of one mailbox (`+tag`) are
+  not recognised.
+- The in-app path still erases under an escalation, keeping only the images, and
+  an operator still has no erase action for someone who lost the mailbox — both
+  in [backlog.md](backlog.md), with the counsel question of how long a deferral
+  may last.
+- Tests: `test_account_service.py` and `test_account_deletion_web.py` (new);
+  `test_legal_documents.py` re-pins the ratings clause and gains three
+  per-language checks; `test_radius_scale.py` reads the button radius from
+  `email_service.py`.
+
+**Alternatives rejected.**
+- **An operator action in `/admin`** (email privacy@ from the account's address,
+  the operator verifies and erases): every request manual and days long — the
+  web flow is the same proof of the mailbox, automated.
+- **Refusing under an escalation and handing it to a person**, or **erasing as
+  the app does** (rows gone, images kept) — the owner chose deferral.
+- **A plain-address block list** (keeps more than the block needs, and is a
+  readable roster of banned people's addresses), and **a fixed-term block**.
+- **Clearing the review text on deletion** so that "score only" became true —
+  the owner chose to keep the text and amend the documents.
+- **A link that erases on GET** (a mail scanner would delete the account), and
+  **a request route that looks the address up before answering** (the timing
+  difference `/auth/forgot-password` has).

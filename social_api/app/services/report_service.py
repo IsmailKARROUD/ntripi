@@ -13,8 +13,6 @@ the 24 h rate window and scrubbed to NULL afterwards (see scrub_expired_ip_hashe
 
 from __future__ import annotations
 
-import hashlib
-import hmac
 import html
 import logging
 import uuid
@@ -30,6 +28,7 @@ from app.services import moderation_actions, moderation_policy
 from app.services.email_service import send_email
 from app.services.moderation_email_service import build_reason
 from app.services.share_service import build_share_url
+from app.services.token_util import keyed_hash
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +54,7 @@ def normalize_reason(reason: str) -> str:
 
 def hash_ip(ip: str, secret: str) -> str:
     """HMAC-SHA256 of a client IP keyed on SECRET_KEY. Never store the raw IP."""
-    return hmac.new(secret.encode(), ip.encode(), hashlib.sha256).hexdigest()
+    return keyed_hash(ip, secret)
 
 
 def count_recent_user_reports(db: Session, user_id, cutoff: datetime) -> int:

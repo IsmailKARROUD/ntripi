@@ -1,6 +1,6 @@
 # API error codes
 
-Every machine-readable error code the backend raises. **67 codes.**
+Every machine-readable error code the backend raises. **68 codes.**
 
 ## How the mechanism works
 
@@ -29,7 +29,7 @@ Two service layers raise their own exception types that routers convert to
 3. `code == 'text_moderation_rejected'` → `moderationRejectionMessage()`, which
    turns the `categories` in `extra` into plain language.
 4. `localizedApiError(code, l10n)` (`lib/core/api/api_error_codes.dart`) — a
-   localized string for **49 of the 64 codes**.
+   localized string for **56 of the 68 codes** (re-counted 2026-11-03).
 5. Fall back to the server's `detail` string — **English, untranslated**.
 6. Fall back to a generic message.
 
@@ -74,19 +74,25 @@ refreshes or logs out on *codeless* 401s.
 
 | Code | Status | Raised at | Client |
 |---|---|---|---|
-| `username_taken` | 409 | `auth_service.py:150` | localized |
-| `email_taken` | 409 | `auth_service.py:160` | localized |
-| `username_invalid` | 422 | `auth_service.py:133` | — |
-| `display_name_invalid` | 422 | `auth_service.py:141` | — |
-| `tos_required` | 400 | `auth.py:90`, `auth_service.py:116,262` | localized |
-| `underage` | 400 | `auth.py:435`, `auth_service.py:126,286` | localized |
-| `dob_required` | 400 | `auth.py:426`, `auth_service.py:280` | localized |
+| `username_taken` | 409 | `auth_service.py:160` | localized |
+| `email_taken` | 409 | `auth_service.py:170` | localized |
+| `username_invalid` | 422 | `auth_service.py:139` | — |
+| `display_name_invalid` | 422 | `auth_service.py:151` | — |
+| `tos_required` | 400 | `auth.py:90`, `auth_service.py:122,285` | localized |
+| `underage` | 400 | `auth.py:99,444`, `auth_service.py:132,314` | localized |
+| `dob_required` | 400 | `auth.py:435`, `auth_service.py:308` | localized |
+| `email_unavailable` | 400 | `auth.py:108`, `auth_service.py:146,291` | localized |
 
 **Shape errors are 422; policy refusals are 400.** A future or >120-year date
 fails the Pydantic validator (422); a real date under 16 answers 400 `underage`
 from the router. `DateOfBirthField` refuses both before anything is sent, and a
 400 that still arrives is shown in the reader's language via `errorUnderage` /
 `errorDobRequired` — see [legal-and-age-gate.md](../features/legal-and-age-gate.md).
+
+`email_unavailable` is the address of a suspended account that was erased
+(`signup_blocks`), refused by both sign-up paths before any paid moderation
+call. Its `detail` never says why — anyone can type any address at sign-up —
+see [account-deletion.md](../features/account-deletion.md).
 
 ### Follows
 

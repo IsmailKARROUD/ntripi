@@ -2658,6 +2658,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get apiErrorEmailTaken => 'يوجد حساب بهذا البريد الإلكتروني بالفعل.';
 
   @override
+  String get apiErrorEmailUnavailable =>
+      'لا يمكن استخدام عنوان البريد الإلكتروني هذا لإنشاء حساب.';
+
+  @override
   String get reportItineraryTitle => 'الإبلاغ عن هذا المسار';
 
   @override

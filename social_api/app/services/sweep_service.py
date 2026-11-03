@@ -18,6 +18,10 @@ Three jobs, in one pass so a single scheduler trigger is all the deployment need
   4. Place IDs. Google place IDs a year old are refreshed with the free
      IDs-only call, after the commit and outside any transaction.
 
+  5. Deferred account deletions. A deletion asked for on the web while a legal
+     escalation held the account is done once every escalation on it is
+     closed (account_service.erase_deferred) — each erasure its own commit.
+
 Every step is idempotent — running twice produces no additional effect — and a
 PostgreSQL advisory lock makes concurrent runs impossible, so the HTTP endpoint,
 the in-process timer, and a second container can all fire without stepping on
@@ -44,7 +48,8 @@ from app.models.text_moderation_cache import TextModerationCache
 from app.models.text_moderation_decision import TextModerationDecision
 from app.models.user import User
 from app.services import (
-    admin_service, bug_report_service, edit_lock_service, google_places,
+    account_service, admin_service, bug_report_service, edit_lock_service,
+    google_places,
     moderation_actions, notification_service, text_moderation_service,
     translation_service,
 )
@@ -90,6 +95,7 @@ def run_moderation_sweep(db: Session, settings) -> dict:
         "place_ids_checked": 0,
         "place_ids_changed": 0,
         "place_ids_missing": 0,
+        "deferred_erasures": 0,
     }
     try:
         notifications: list[dict] = []
@@ -112,6 +118,14 @@ def run_moderation_sweep(db: Session, settings) -> dict:
         except Exception:
             db.rollback()
             logger.exception("place ID refresh failed")
+
+        # Last, and on its own: an erasure commits, and one that fails must
+        # cost neither the moderation work nor the other erasures.
+        try:
+            counters["deferred_erasures"] = account_service.erase_deferred(db, settings)
+        except Exception:
+            db.rollback()
+            logger.exception("deferred account erasures failed")
     except Exception:
         db.rollback()
         raise

@@ -15,12 +15,45 @@ must not 500 a registration or password-reset request.
 from __future__ import annotations
 
 import logging
+from html import escape
 
 from app.config import get_settings
+from app.i18n import RTL_LANGS, translator
 
 logger = logging.getLogger(__name__)
 
 _RESEND_ENDPOINT = "https://api.resend.com/emails"
+
+
+def branded_email_html(
+    heading: str, body: str, button_label: str, link: str, *, lang: str = "en",
+) -> str:
+    """The branded HTML body every Ntripi email uses: a heading, a paragraph and
+    one button, with the link printed beneath it for clients that drop buttons.
+
+    `lang` translates that last line and turns Arabic right to left; English
+    output is what it has always been, byte for byte. The radius is a typed
+    number, not a CSS variable — email clients drop variables, and
+    test_radius_scale holds it to the app's button token.
+
+    The link is escaped here: a raw `&lang=` is the entity `&lang;` to some mail
+    clients, which turn the URL into `…〈=en` and break the link. `heading` and
+    `body` are HTML, escaped by their callers.
+    """
+    direction = ' dir="rtl"' if lang in RTL_LANGS else ""
+    fallback = translator(lang)("email_button_fallback")
+    link = escape(link, quote=True)
+    return f"""\
+<div{direction} style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#1b2a22">
+  <h2 style="color:#1F5E3A;margin:0 0 12px">Ntripi</h2>
+  <h3 style="margin:0 0 8px">{heading}</h3>
+  <p style="color:#52615a;font-size:14px;margin:0 0 20px">{body}</p>
+  <a href="{link}" style="display:inline-block;background:#1F5E3A;color:#fff;
+     text-decoration:none;font-weight:700;padding:12px 22px;border-radius:14px">{button_label}</a>
+  <p style="color:#8a9690;font-size:12px;margin:24px 0 0">
+    {fallback}<br>{link}
+  </p>
+</div>"""
 
 
 def send_email(to: str, subject: str, html: str) -> None:

@@ -17,8 +17,8 @@ for one.
 
 | Document | Version | Date |
 |---|---|---|
-| Terms of Service | **3.2** | 2026-10-31 |
-| Privacy Policy | **2.5** | 2026-10-31 |
+| Terms of Service | **3.3** | 2026-11-03 |
+| Privacy Policy | **2.6** | 2026-11-03 |
 | Community Guidelines | **1.1** | 2026-08-06 |
 
 - **Bodies live in `app/constants/legal/<lang>.py`, one module per *language*
@@ -66,6 +66,28 @@ for one.
 
 ### Acceptance
 
+- **Deletion without the app, and what deletion keeps (Terms 3.3, Privacy
+  2.6, 2026-11-03).** The web route at ntripi.app/delete-account is named in
+  ToS §7 and Privacy §10–11, and §11's "Settings, Delete account" became the
+  app's real path (the profile's edit screen, Security, Delete account). The
+  ratings clause no longer promises "score only": deletion keeps a review's
+  text too, so ToS §9.2 and Privacy §10 say the scores and the text stay,
+  without the author's name or any link to the account — the open question
+  this doc carried until then, resolved by changing the documents rather than
+  the code. ToS §7 says a deleted suspended account's address cannot open a
+  new one; Privacy §10 says how (a keyed one-way hash, kept until we lift the
+  block), that a deletion requested under legal review waits for it and then
+  happens with an email, and — replacing "moderation records are deleted after
+  90 days", true only of the scan records — that moderation decisions, their
+  reports and the operator's copy of what they concerned are kept without a
+  time limit, as are photos a moderator removed. Privacy §3 lists the deletion
+  email, and §5 names the two email processors it had never named: Resend
+  (sends every email) and Google Workspace (receives mail to our addresses).
+  The ToS bump asks every user to accept once more, only days after 3.2.
+  `test_no_document_promises_a_score_only_rating`,
+  `test_both_documents_name_the_web_deletion_page` and
+  `test_privacy_names_every_email_processor` hold every language to it. See
+  [account-deletion.md](account-deletion.md).
 - **Google Maps Platform (Terms 3.2, Privacy 2.5, 2026-10-31).** Google's
   Places policies require an app's terms and privacy policy to incorporate
   Google's, so ToS §12 names the Google Maps/Google Earth Additional Terms of
@@ -222,8 +244,12 @@ New error codes: `tos_required`, `underage`, `dob_required`.
 - **App Store privacy nutrition label and Play Data safety both need the DOB
   declared** — outstanding.
 - **The six-language translations still need counsel review**, and English is
-  authoritative in the meantime — the 2.3 translation paragraphs and the 2.4
-  image-moderation paragraphs included.
+  authoritative in the meantime — the 2.3 translation paragraphs, the 2.4
+  image-moderation paragraphs, and what Terms 3.3 and Privacy 2.6 added on
+  deletion and retention included.
+- **Play Data safety's account-deletion field** takes
+  `https://ntripi.app/delete-account` — see
+  [account-deletion.md](account-deletion.md).
 - **App Store privacy label and Play Data safety must name Microsoft** before
   translation is switched on.
 - Tests: `test_legal_documents.py`, `test_tos_acceptance.py`, `test_age_gate.py`,
@@ -241,13 +267,4 @@ New error codes: `tos_required`, `underage`, `dob_required`.
 - [translations.md](translations.md) — the two engines Privacy §4 and §5 disclose
 - [image-moderation.md](image-moderation.md) — the two image scanners Privacy §4 and §5 disclose
 - [places-and-maps.md](places-and-maps.md) — Terms 3.2 and Privacy 2.5 name Google Maps Platform
-
-## OPEN QUESTIONS
-
-- **The ratings clause says "score only", but account deletion keeps the review
-  text.** The ToS ("anonymized form (score only, no identifying information)")
-  and Privacy §10 ("score only, no user link") both say so, while
-  `delete_my_account` only nulls `itinerary_ratings.user_id`: the `note` — and
-  now its cached translations — survive. Either the deletion should clear the
-  note, or both documents should say the text is kept. Undecided; the documents
-  were left as they are in 2.3.
+- [account-deletion.md](account-deletion.md) — Terms 3.3 and Privacy 2.6 describe it

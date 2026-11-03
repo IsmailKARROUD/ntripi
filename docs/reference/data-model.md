@@ -1,7 +1,7 @@
 # Data model — all tables
 
 Every table in the schema, extracted from `social_api/app/models/` via SQLAlchemy
-metadata. **34 tables.** Each row links to the feature doc that owns it.
+metadata. **35 tables.** Each row links to the feature doc that owns it.
 
 Conventions that hold everywhere:
 
@@ -24,8 +24,9 @@ Conventions that hold everywhere:
 | `users` | [accounts-and-profiles.md](../features/accounts-and-profiles.md) | the account, profile, counters, preferences, moderation state |
 | `follows` | [follows.md](../features/follows.md) | directed follow edge with pending/accepted status |
 | `user_blocks` | [blocking.md](../features/blocking.md) | one-way block row, consulted in both directions |
+| `signup_blocks` | [account-deletion.md](../features/account-deletion.md) | keyed hash of an erased suspended account's address, refused at sign-up |
 | `refresh_tokens` | [authentication.md](../features/authentication.md) | rotating refresh-token family |
-| `email_tokens` | [passwords-and-email.md](../features/passwords-and-email.md) | password-reset and email-verification tokens |
+| `email_tokens` | [passwords-and-email.md](../features/passwords-and-email.md) | password-reset, email-verification and account-deletion tokens |
 | `password_history` | [passwords-and-email.md](../features/passwords-and-email.md) | previous hashes, for reuse rejection |
 | `security_audit_log` | [passwords-and-email.md](../features/passwords-and-email.md) | security-event trail |
 | `itineraries` | [itineraries.md](../features/itineraries.md) | the trip: title, cost, visibility, soft-delete state |
@@ -86,6 +87,8 @@ Conventions that hold everywhere:
 | `tos_accepted_version` | VARCHAR(16) | nullable — the version string verbatim, never backfilled |
 | `date_of_birth` | DATE | nullable — **never backfilled**; owner-visible only |
 | `dob_source` | VARCHAR(16) | nullable — which source supplied the date |
+| `erasure_requested_at` | TIMESTAMPTZ | nullable — a web deletion held by an open legal escalation; the first request's time ([account-deletion.md](../features/account-deletion.md)) |
+| `erasure_request_lang` | VARCHAR(8) | nullable — the latest request's language, for the email sent when the sweep erases it |
 | `moderation_status` | VARCHAR(20) | NOT NULL, default `approved` |
 
 - CHECK `ck_user_moderation_status`: `moderation_status IN ('approved','pending','flagged','hidden','rejected')`
@@ -117,6 +120,19 @@ Conventions that hold everywhere:
 - CHECK `ck_no_self_block`; UNIQUE `uq_user_block`
 - **Both FKs CASCADE on purpose** — a block is a preference, not evidence.
 
+### `signup_blocks`
+
+| Column | Type | Notes |
+|---|---|---|
+| `email_hash` | VARCHAR(64) | PK — HMAC-SHA256 (`token_util.keyed_hash` on `SECRET_KEY`) of the lowercased address |
+| `created_at` | TIMESTAMPTZ | NOT NULL, default `now()` |
+
+- Written by `account_service.erase_account` when the account it erases is
+  suspended; read by both sign-up paths (400 `email_unavailable`).
+- **No user reference and no FK** — the account it came from is gone by design.
+- **No expiry**: kept until an operator lifts it at `/admin/suspended`.
+  Rotating `SECRET_KEY` changes every hash, which lifts every block.
+
 ---
 
 ## Sessions and credentials
@@ -141,7 +157,7 @@ Conventions that hold everywhere:
 | `id` | UUID | PK |
 | `user_id` | UUID | NOT NULL, indexed, FK → `users.id` CASCADE |
 | `token_hash` | VARCHAR(64) | NOT NULL, UNIQUE (indexed) |
-| `purpose` | VARCHAR(20) | NOT NULL |
+| `purpose` | VARCHAR(20) | NOT NULL — `password_reset`, `email_verify` or `account_delete`; no CHECK, so a new purpose needs no migration |
 | `expires_at`, `used_at` | TIMESTAMPTZ | `used_at` non-null = spent |
 
 ### `password_history`

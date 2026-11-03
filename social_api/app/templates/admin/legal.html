@@ -92,4 +92,39 @@
 {% else %}
 <div class="card"><p class="muted">No open legal escalations.</p></div>
 {% endif %}
+
+{% if erasures %}
+<h2>Deletion requests waiting</h2>
+<p class="sub">
+  Asked for at /delete-account while the account, one of its trips or one of
+  its reviews was under an open escalation above. Nothing was erased; the
+  moderation sweep erases each account once every escalation on it is closed,
+  and emails its address. The requester was told only that it will happen.
+</p>
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Waiting</th>
+        <th>Account</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in erasures %}
+      <tr>
+        <td><span class="pill sla-ok">{{ e.age }}</span></td>
+        <td>
+          <div>{{ e.user.username }}</div>
+          <div class="muted">{{ e.user.email }}</div>
+        </td>
+        <td class="muted">
+          {% if e.held %}Held by an open escalation{% else %}Free — erased at the next sweep{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
 {% endblock %}

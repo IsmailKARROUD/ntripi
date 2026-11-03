@@ -761,6 +761,7 @@
   "apiErrorTosRequired": "Du musst die Nutzungsbedingungen akzeptieren, um dich zu registrieren.",
   "apiErrorUsernameTaken": "Dieser Benutzername ist bereits vergeben.",
   "apiErrorEmailTaken": "Ein Konto mit dieser E-Mail existiert bereits.",
+  "apiErrorEmailUnavailable": "Mit dieser E-Mail-Adresse kann kein Konto erstellt werden.",
   "reportItineraryTitle": "Diese Reiseroute melden",
   "reportItineraryTooltip": "Melden",
   "reportReasonSpam": "Spam",

@@ -20,7 +20,6 @@ Two jobs, both deliberately kept out of the router:
 
 from __future__ import annotations
 
-import asyncio
 import html
 import logging
 from datetime import datetime, timedelta, timezone
@@ -29,8 +28,8 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.models.bug_report import BugReport
-from app.services.email_service import send_email
-from app.storage.factory import storage
+from app.services.email_service import branded_email_html, send_email
+from app.storage.factory import delete_from_sync, storage
 
 logger = logging.getLogger(__name__)
 
@@ -43,10 +42,6 @@ def send_notification(report: BugReport, reporter, settings) -> None:
             report.id,
         )
         return
-
-    # Lazy import: the auth stack is heavy and this path runs at most a few
-    # times an hour (same reasoning as moderation_email_service).
-    from app.services.auth_service import _email_html
 
     if reporter is not None:
         reporter_line = (
@@ -76,7 +71,7 @@ def send_notification(report: BugReport, reporter, settings) -> None:
     send_email(
         settings.OPERATOR_EMAIL,
         subject=f"[Ntripi] Bug report: {report.category or 'other'}",
-        html=_email_html(
+        html=branded_email_html(
             "New bug report", body, "Open the queue",
             f"{settings.share_base_url}/admin/bugs",
         ),
@@ -105,7 +100,7 @@ def purge_expired(db: Session, settings) -> int:
 
     purgeable_ids = []
     for report_id, key in rows:
-        if key and not _delete_object(key):
+        if key and not delete_from_sync(key):
             continue  # keep the row so the next sweep retries the object
         purgeable_ids.append(report_id)
 
@@ -114,18 +109,3 @@ def purge_expired(db: Session, settings) -> int:
 
     result = db.execute(delete(BugReport).where(BugReport.id.in_(purgeable_ids)))
     return result.rowcount or 0
-
-
-def _delete_object(key: str) -> bool:
-    """Best-effort storage delete from sync code. True when the object is gone.
-
-    asyncio.run is safe here: the sweep only ever runs on a worker thread (the
-    FastAPI threadpool, or asyncio.to_thread from the in-process timer), so
-    there is never a loop already running on this thread.
-    """
-    try:
-        asyncio.run(storage().delete(key))
-        return True
-    except Exception:
-        logger.exception("failed to delete bug-report screenshot %r", key)
-        return False

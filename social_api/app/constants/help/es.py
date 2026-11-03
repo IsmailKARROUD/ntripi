@@ -108,6 +108,7 @@ RELEASES: tuple[Release, ...] = (
             "**El mapa del viaje es su ruta.** La vista **Mapa** muestra ahora la ruta por las paradas que ves en pantalla, en el mapa de Google, con los lugares de Google incluidos.",
             "**El Feed y tu perfil, en los dos extremos de la barra.** La barra inferior queda ahora Feed, Buscar, Itinerarios, Guardados, Perfil, y la pestaña Perfil muestra tu foto de perfil cuando añades una.",
             "**Condiciones y Política de privacidad actualizadas.** Ahora cubren Google Maps, que dibuja parte de los mapas de Ntripi y su búsqueda de lugares. Se te pedirá aceptarlas una vez.",
+            "**Elimina tu cuenta sin la aplicación.** [ntripi.app/delete-account](/delete-account) envía un enlace a la dirección de tu cuenta; ábrelo y confirma. Las Condiciones y la Política de privacidad actualizadas dicen qué se conserva después —las reseñas conservan su texto, sin tu nombre— y se te pedirá que las aceptes una vez más.",
         ),
     ),
     Release(
@@ -1531,7 +1532,7 @@ Esto importa sobre todo para las notificaciones, que iOS no volverá a pedir: un
     Article(
         slug="your-data-and-privacy",
         title="Qué datos guarda Ntripi, y cómo borrarlos",
-        summary="Un resumen en lenguaje claro de qué se conserva, quién puede verlo y cómo eliminar tu cuenta para siempre.",
+        summary="Qué guarda Ntripi, quién puede verlo y cómo eliminar tu cuenta para siempre: en la aplicación o en la web, sin ella.",
         category="account",
         schema=SCHEMA_FAQ,
         intro="Ntripi guarda lo que escribes y lo que subes, más lo necesario para iniciar tu sesión. No hay publicidad, no hay rastreo publicitario de terceros y no se vende nada. La [política de privacidad](/privacy) es el texto que rige; esta es la versión corta.",
@@ -1570,11 +1571,26 @@ Cuando alguien pide leer tu viaje en su idioma, su texto va del mismo modo a un 
                 anchor="deleting",
                 heading="¿Cómo elimino mi cuenta?",
                 kind=KIND_FAQ,
-                body="""En la pantalla de edición de tu perfil, en Seguridad ▸ **Eliminar cuenta**. Lo confirmas con tu contraseña, o con Google si así inicias sesión.
+                body="""**En la aplicación:** en la pantalla de edición de tu perfil, en Seguridad ▸ **Eliminar cuenta**. Lo confirmas con tu contraseña, o con Google si así inicias sesión.
 
-La eliminación es permanente y se lleva tus viajes con ella. Los viajes que otras personas guardaron dejan de funcionar, ya que un marcador es un puntero y no una copia.
+**Sin la aplicación:** entra en [ntripi.app/delete-account](/delete-account) y escribe la dirección de correo de tu cuenta. Te llega un enlace a esa dirección; ábrelo antes de una hora y confirma. Si ya no puedes recibir correo allí, escribe a **[privacy@ntripi.app](mailto:privacy@ntripi.app)**.
 
-Tu foto de perfil, tu portada y las fotos de portada de tus viajes se borran a la vez.""",
+La eliminación es permanente y se lleva tus viajes, tu foto de perfil, tu portada y las fotos de portada de tus viajes. Los viajes que otras personas guardaron dejan de funcionar, ya que un marcador es un puntero y no una copia.""",
+            ),
+            Block(
+                anchor="what-deletion-keeps",
+                heading="¿Qué se conserva después de eliminar mi cuenta?",
+                kind=KIND_FAQ,
+                body="""La eliminación borra tu perfil, tu dirección de correo y tu fecha de nacimiento, tus viajes con sus fotos, tus conexiones, tus bloqueos y tus viajes guardados, tus avisos y cualquier recurso que tuvieras abierto. Algunas cosas se quedan, porque otras personas dependen de ellas o porque son pruebas:
+
+- **Tus valoraciones y reseñas** se quedan en los viajes que valoraste —la puntuación y el texto—, sin tu nombre ni ningún vínculo contigo, para que esos viajes conserven su valoración.
+- **Los registros de moderación** —las denuncias que hiciste o que se hicieron sobre tu contenido, y las decisiones tomadas sobre tu cuenta o tu contenido— se conservan sin límite de tiempo. Una decisión que tomó un moderador guarda una copia de aquello a lo que se refería, que en el caso de una cuenta es su dirección de correo y su nombre de usuario.
+- **Las fotos que retiró un moderador** se conservan como prueba.
+- **Los informes de errores** que enviaste se quedan hasta que se cierran y vence su plazo, ya sin vínculo contigo.
+
+Si tu cuenta está **suspendida** cuando se elimina, se conserva un código de un solo sentido obtenido de su dirección de correo, para que esa dirección no pueda usarse para registrarse de nuevo hasta que levantemos el bloqueo.
+
+Si parte de tu cuenta está **bajo revisión legal**, la eliminación espera a que la revisión se cierre, luego se hace sola y te escribimos cuando está hecha. La [política de privacidad](/privacy) tiene todos los detalles.""",
             ),
             Block(
                 anchor="requests",
@@ -1590,7 +1606,9 @@ La misma dirección cubre las solicitudes de rectificación, limitación y oposi
             "datos",
             "rgpd",
             "eliminar cuenta",
-            "borrar",
+            "eliminar cuenta sin la app",
+            "solicitar eliminación",
+            "borrar mis datos",
             "exportar",
             "datos personales",
             "rastreo",
@@ -1602,7 +1620,7 @@ La misma dirección cubre las solicitudes de rectificación, limitación y oposi
             "permissions", "sign-in-and-account-security",
             "share-an-itinerary-privately", "read-trips-in-another-language",
         ),
-        updated="2026-10-31",
+        updated="2026-11-03",
     ),
     Article(
         slug="sign-in-and-account-security",
@@ -1654,13 +1672,17 @@ Nunca aparece en tu perfil ni es visible para otro usuario. Se pide una vez y no
                 kind=KIND_FAQ,
                 body="""Habrás recibido un correo explicando por qué, con un enlace para recurrir. Los recursos los lee una persona.
 
-Si ya no tienes el correo, el formulario de recurso puede enviarte un enlace nuevo. Consulta [contenido oculto y recursos](/help/hidden-content-and-appeals).""",
+Si ya no tienes el correo, el formulario de recurso puede enviarte un enlace nuevo. Consulta [contenido oculto y recursos](/help/hidden-content-and-appeals).
+
+Aun así puedes eliminar una cuenta suspendida, en [ntripi.app/delete-account](/delete-account). Su dirección de correo ya no podrá usarse para registrarse de nuevo.""",
             ),
             Block(
                 anchor="deleting",
                 heading="¿Cómo elimino mi cuenta?",
                 kind=KIND_FAQ,
                 body="""Perfil ▸ editar ▸ **Seguridad ▸ Eliminar cuenta**, confirmado con tu contraseña o con Google.
+
+¿Ya no tienes la aplicación? [ntripi.app/delete-account](/delete-account) envía en su lugar un enlace a la dirección de tu cuenta; consulta [qué conserva la eliminación](/help/your-data-and-privacy#what-deletion-keeps).
 
 Es permanente, y se lleva tus viajes con ella. Si solo quieres desaparecer de la vista, poner tus viajes en [solo yo](/help/share-an-itinerary-privately) y hacer privada tu cuenta es reversible, y eliminarla no.""",
             ),
@@ -1681,9 +1703,10 @@ Es permanente, y se lleva tus viajes con ella. Si solo quieres desaparecer de la
             "eliminar cuenta",
             "edad",
             "16",
+            "eliminar cuenta sin la app",
         ),
         related=("your-data-and-privacy", "troubleshooting"),
-        updated="2026-09-28",
+        updated="2026-11-03",
     ),
     Article(
         slug="report-and-block",

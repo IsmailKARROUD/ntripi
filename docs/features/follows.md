@@ -102,8 +102,8 @@ Three details are load-bearing:
 - It then **`db.expire()`s the attribute**, which is why the loaded object still
   reads correctly afterwards.
 
-The **one exception** is `delete_my_account`'s bulk `UPDATE`s (clamped the same
-way) — see [accounts-and-profiles.md](accounts-and-profiles.md).
+The **one exception** is `account_service.erase_account`'s bulk `UPDATE`s (clamped
+the same way) — see [account-deletion.md](account-deletion.md).
 
 **The state change that justifies a bump is conditional too.** Accept flips the
 row with `UPDATE … WHERE status = 'pending'` and bumps only if it changed a row.

@@ -11,10 +11,8 @@ Endpoints:
   GET  /users/{user_id}       → public profile of any user (with follow status)
 """
 
-import logging
 import uuid
 
-import anyio
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy import case, select, or_, update
@@ -27,7 +25,6 @@ from app.dependencies import get_current_user, wants_counts
 from app.limiter import limiter
 from app.models.follow import Follow, FollowStatus
 from app.models.itinerary import Itinerary
-from app.models.itinerary_rating import ItineraryRating
 from app.models.track import Track
 from app.models.user import User
 from app.routers.follows import counts_answer
@@ -57,7 +54,7 @@ from app.services.image_service import (
     process_cover_image,
 )
 from app.services.moderation_service import ModerationContext, ModerationRejectedError
-from app.services import admin_service, block_service, notification_service
+from app.services import account_service, block_service, notification_service
 from app.services.itinerary_access import can_view_itinerary
 from app.services.text_moderation_service import (
     apply_author_edit_status, moderate_or_422,
@@ -67,7 +64,6 @@ from app.storage.factory import storage
 from app.errors import ApiError
 
 router = APIRouter(prefix="/users", tags=["Users"])
-logger = logging.getLogger(__name__)
 
 
 def _require_not_blocked(db: Session, viewer: User, target: User) -> None:
@@ -234,29 +230,13 @@ def delete_my_account(
     """
     Permanently delete the authenticated user's account.
 
-    Steps (order is critical):
+    Step 1 is here: re-authenticate — prevents accidental or unauthorized
+    deletion. Password accounts re-verify their password; passwordless (SSO)
+    accounts re-verify with their provider (Google today) — a fresh ID token
+    whose `sub` must match the account.
 
-    1. Re-authenticate — prevents accidental or unauthorized deletion.
-       Password accounts re-verify their password; passwordless (SSO) accounts
-       re-verify with their provider (Google today) — a fresh ID token whose
-       `sub` must match the account.
-
-    2. Decrement denormalized follow counters on other users BEFORE the
-       cascade delete removes the follow rows and we lose the information.
-         - Users that current_user follows: their followers_count -= 1
-         - Users that follow current_user: their following_count -= 1
-
-    3. Anonymize ratings: SET user_id = NULL on all rating rows belonging
-       to this user. This makes them GDPR-compliant anonymous community data.
-       We do this explicitly (not relying solely on ON DELETE SET NULL) so
-       the intent is clear to future developers.
-
-    4. Delete the user row. Cascade handles: itineraries, stops, annotations,
-       allowlist entries, follow rows, and any remaining non-anonymized data.
-
-    Token invalidation: get_current_user fetches the user from the DB on
-    every request. With the user row gone, it returns None and raises 401.
-    No token blacklist is needed.
+    The erasure itself is account_service.erase_account, shared with the web
+    flow at /delete-account and the sweep, so the three cannot drift apart.
     """
     # Step 1 — re-authenticate before an irreversible delete. Dual-method
     # accounts (password + linked Google) may present EITHER credential; the
@@ -310,102 +290,7 @@ def delete_my_account(
             code="reauth_required", detail="Re-authentication required.",
         )
 
-    # Step 2 — fix denormalized follow counters on other users.
-    # Users that current_user follows (accepted): they lose a follower.
-    following_ids = db.execute(
-        select(Follow.following_id).where(
-            Follow.follower_id == current_user.id,
-            Follow.status == FollowStatus.accepted,
-        )
-    ).scalars().all()
-
-    if following_ids:
-        db.execute(
-            update(User)
-            .where(User.id.in_(following_ids))
-            # Clamped like bump_follow_counters: a counter that had drifted must
-            # not go negative. case(), not GREATEST() — SQLite has none.
-            .values(followers_count=case(
-                (User.followers_count > 0, User.followers_count - 1), else_=0,
-            ))
-        )
-
-    # Users that follow current_user (accepted): they lose someone they follow.
-    follower_ids = db.execute(
-        select(Follow.follower_id).where(
-            Follow.following_id == current_user.id,
-            Follow.status == FollowStatus.accepted,
-        )
-    ).scalars().all()
-
-    if follower_ids:
-        db.execute(
-            update(User)
-            .where(User.id.in_(follower_ids))
-            .values(following_count=case(
-                (User.following_count > 0, User.following_count - 1), else_=0,
-            ))
-        )
-
-    # Step 3 — anonymize ratings before deleting the user row.
-    # ON DELETE SET NULL would handle this automatically, but doing it
-    # explicitly makes the GDPR anonymization intent clear in the code.
-    db.execute(
-        update(ItineraryRating)
-        .where(ItineraryRating.user_id == current_user.id)
-        .values(user_id=None)
-    )
-
-    # Collected before the delete: the rows that name the keys go with it.
-    image_keys = _erasable_image_keys(db, current_user)
-
-    # Step 4 — delete the user. Cascade handles all remaining owned data.
-    db.delete(current_user)
-    db.commit()
-
-    # Step 5 — the images. Their public URLs outlive the rows, so without this a
-    # "permanently deleted" account's photos stayed reachable. After the commit
-    # and best-effort: a storage outage must not resurrect the account.
-    for key in image_keys:
-        try:
-            # This endpoint is sync (FastAPI runs it in a worker thread) and the
-            # storage API is async; from_thread hands the coroutine to the loop.
-            anyio.from_thread.run(storage().delete, key)
-        except Exception:
-            logger.exception("account deletion: could not delete %s", key)
-
-
-def _erasable_image_keys(db: Session, user: User) -> list[str]:
-    """Storage keys to erase with the account — everything but possible evidence.
-
-    Kept: every image while the account itself is under an open legal
-    escalation, and the cover of any itinerary a moderator took down or that is
-    escalated in its own right. Those rows are gone after the cascade, but the
-    runbook's preservation duty attaches to the content, not to the row.
-    """
-    if admin_service.target_has_open_escalation(db, "user", user.id):
-        return []
-    keys = []
-    if user.avatar_url:
-        keys.append(f"avatars/{user.id}.jpg")
-    if user.cover_image_url:
-        keys.append(f"covers/{user.id}.jpg")
-    for itinerary in db.execute(
-        select(Itinerary).where(
-            Itinerary.user_id == user.id, Itinerary.cover_image_url.is_not(None),
-        )
-    ).scalars():
-        taken_down = (
-            itinerary.deleted_at is not None
-            or itinerary.hidden_at is not None
-            or itinerary.moderation_status in ("hidden", "rejected")
-        )
-        if taken_down or admin_service.target_has_open_escalation(
-            db, "itinerary", itinerary.id
-        ):
-            continue
-        keys.append(f"itineraries/{itinerary.id}.jpg")
-    return keys
+    account_service.erase_account(db, current_user)
 
 
 @router.get(

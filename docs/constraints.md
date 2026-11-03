@@ -61,10 +61,11 @@ returning 401/403 — the feature is invisible, not merely locked:
 
 ### `OPERATOR_EMAIL` is the one to actually set
 
-Unset, **four alert paths guard on it and skip the email** — `report_service`,
-`moderation_service` (the image flag email), `bug_report_service`, and
-`operator_alerts` (text and image moderation outages) — so the queues fill with
-nobody told.
+Unset, **five alert paths guard on it and skip the email** — `report_service`,
+`moderation_service` (the image flag email), `bug_report_service`,
+`operator_alerts` (text and image moderation outages), and
+`account_service` (a web deletion held by a legal escalation, through
+`operator_alerts.email_operator`) — so the queues fill with nobody told.
 
 ### Mailboxes
 
@@ -264,8 +265,16 @@ external scheduler) **or SLA auto-hide and post-outage re-checks never run.**
 - **Account deletion is a hard delete** with a documented set of `SET NULL`
   evidence columns, and it erases the account's stored images too — except while
   the account is under an open legal escalation, and except taken-down or
-  escalated itinerary covers — see
-  [accounts-and-profiles.md](features/accounts-and-profiles.md).
+  escalated itinerary covers. **`account_service.erase_account` is the only code
+  that deletes a User row** — the app's `DELETE /users/me`, the web route at
+  `/delete-account` (for people without the app, Google Play's deletion URL)
+  and the sweep all hand over to it; never copy its steps. The web route
+  **defers** while an escalation holds the account (on it, a trip it owns or a
+  review it wrote), answers the same for every address with **no database
+  session in the request**, never erases or spends its link on a GET, and
+  erasing a **suspended** account blocks its address from signing up again — a
+  keyed hash, never the address — until an operator lifts it — see
+  [account-deletion.md](features/account-deletion.md).
 - **The client's HTTP cache is per account.** Keys are `<JWT sub>:<url>`
   (`core/api/cache_key.dart`) and sign-out cleans the store; every keep-alive
   user-scoped provider is in `auth_provider.dart`'s reset list, run on sign-in
@@ -482,11 +491,14 @@ block appears a second time anywhere, extract it instead of copying.**
 | `services/user_service.py` | `get_active_user_or_404` / `..._by_username_or_404` — **the only** fetch-or-404; `get_follow` / `is_accepted_follower` — **never write an inline Follow query**; `bump_follow_counters` — **the only** way to touch the counters; `delete_follow` — **the only** way to delete a follow row (decrements from the row's status as it was deleted, never as loaded); `follow_counts` — **the only** source of a follow write's `counts` (read after the commit; `them` null where the profile would 404); `public_profile_text` |
 | `app/dependencies.py` | `return_requested(*representations)` — **the one** `?return=` opt-in factory; `wants_counts` |
 | `routers/follows.py` | `counts_answer` — the `?return=counts` answer, which the block route (`users.py`) shares |
-| `services/token_util.py` | `hash_token` / `as_aware_utc` / `new_raw_token` — every opaque-token service |
+| `services/token_util.py` | `hash_token` / `as_aware_utc` / `new_raw_token` — every opaque-token service; `keyed_hash` — **the one** HMAC for an identifier that must be recognised but never read back (the report IP hash, the sign-up block) |
+| `services/account_service.py` | `erase_account` — **the only** erasure of an account (both deletion routes and the sweep); `erasure_blocked` / `defer_erasure` / `erase_deferred`; `is_signup_blocked` / `lift_signup_block` |
+| `services/email_service.py` | `branded_email_html` — **the one** email body builder (`lang=` for the translated ones; it escapes the link, since a raw `&lang=` is an entity to some mail clients); never import a private copy |
+| `storage/factory.py` | `delete_from_sync` — **the one** best-effort storage delete from sync code on a worker thread (`asyncio.run`, which works on `asyncio.to_thread`'s threads where `anyio.from_thread.run` raises) |
 | `services/image_service.py` | `process_and_store` — all image uploads |
 | `services/google_service_account.py` | **the one** home of a Google service-account key read from an env var: `parse` (`strict=False`, and why), `validate` (the startup check — logs, never raises), `access_token` (the token cache, keyed by variable and scope, one lock per key). FCM push and Cloud Vision each hold their own key through it |
 | `services/moderation_service.py` | `label_text` — **the one** rendering of a stored image-scan label (a level for Cloud Vision, a percentage for Rekognition): the flag email, and both admin pages through the `scan_label` filter |
-| `services/operator_alerts.py` | `notify_operator` — **the one** throttled operator alert: at most one email per key per hour (in memory), its WARNING line, the `OPERATOR_EMAIL` guard, mail errors swallowed. Text moderation's degradation notices and image moderation's outage alerts; an async caller builds the body first and sends with `asyncio.to_thread`. A per-event email (a flag, a report) is not an alert and is never throttled |
+| `services/operator_alerts.py` | `notify_operator` — **the one** throttled operator alert: at most one email per key per hour (in memory), its WARNING line, the `OPERATOR_EMAIL` guard, mail errors swallowed. Text moderation's degradation notices and image moderation's outage alerts; an async caller builds the body first and sends with `asyncio.to_thread`. A per-event email (a flag, a report) is not an alert and is never throttled — `email_operator` is its unthrottled sibling, used by the deferred-deletion notice |
 | `services/share_service.py` | `build_share_url`, `build_profile_share_url`, `absolute_storage_url`, `absolutize_stored_url`, `default_preview_image_url` |
 | `services/app_links.py` | `cta_context` / `store_links` — every share page's call to action; `apple_app_site_association`, `asset_links`; `APP_LINK_PATHS` |
 | `services/ordering.py` | `key_between`, `n_keys_between` |

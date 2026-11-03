@@ -59,7 +59,7 @@ Wir können Ihnen in der App Hinweise zu Aktivitäten in Ihrem Konto und zu Maß
 
 Wir können Inhalte entfernen oder ausblenden, Sie verwarnen, Ihr Konto einschränken oder beenden, wenn Sie gegen diese Bedingungen oder die Community-Richtlinien verstoßen. Schwere Verstöße können zur sofortigen Beendigung ohne Vorwarnung führen.
 
-Wenn wir gegen Sie vorgehen, teilen wir Ihnen mit, was wir getan haben und warum. Sie können Ihr Konto jederzeit selbst in der App löschen.
+Wenn wir gegen Sie vorgehen, teilen wir Ihnen mit, was wir getan haben und warum. Sie können Ihr Konto jederzeit selbst löschen: in der App oder, ohne sie, unter ntripi.app/delete-account. Löschen Sie ein Konto, während es gesperrt ist, kann seine E-Mail-Adresse nicht mehr für ein neues Konto verwendet werden.
 
 
 8. WIDERSPRUCH
@@ -73,7 +73,7 @@ Inhalte, die Minderjährige betreffen, sind die einzige Ausnahme: Gegen sie ist 
 
 1. Ihre personenbezogenen Daten (Name, E-Mail-Adresse, Profil) werden gelöscht, wenn Sie Ihr Konto löschen.
 
-2. Bewertungen, die Sie zu Reiserouten abgeben, werden nach der Kontolöschung in anonymisierter Form (nur die Punktzahl, keine identifizierenden Angaben) aufbewahrt. Dies erhält die Aussagekraft der Community-Bewertungen für andere Nutzer.
+2. Bewertungen und Rezensionen, die Sie zu Reiserouten abgeben, werden nach der Kontolöschung ohne Ihren Namen und ohne Verbindung zu Ihrem Konto aufbewahrt: Die Punktzahlen und der von Ihnen geschriebene Text bleiben bei der Reiseroute. Dies erhält die Aussagekraft der Community-Bewertungen für andere Nutzer.
 
 3. Ihre Reiserouten und deren Inhalte werden endgültig gelöscht, wenn Sie Ihr Konto löschen.
 
@@ -189,7 +189,7 @@ Um zu prüfen, ob Sie unser Mindestalter erfüllen, und um Konten unter diesem A
 
 Um Ntripi sicher zu halten: automatische und menschliche Inhaltsprüfung, Bearbeitung von Meldungen, Durchsetzung der Community-Richtlinien und Widersprüche.
 
-Um Ihnen E-Mails zu Ihrem Konto zu senden — Verifizierung, Passwort-Zurücksetzung und Moderationshinweise. Werbe-E-Mails versenden wir nicht.
+Um Ihnen E-Mails zu Ihrem Konto zu senden — Verifizierung, Passwort-Zurücksetzung, Kontolöschung und Moderationshinweise. Werbe-E-Mails versenden wir nicht.
 
 Um Probleme zu beheben, die Sie uns melden.
 
@@ -245,6 +245,10 @@ Atlassian (Jira) — wenn wir einen von Ihnen gesendeten Fehlerbericht dorthin w
 
 Google (Firebase Cloud Messaging) — Push-Benachrichtigungen unter iOS und Android, sofern Sie sie zulassen. Ihrem Gerät wird ein Registrierungs-Token zugewiesen, das diese Installation identifiziert; wir speichern es, um eine Benachrichtigung an Ihr Gerät richten zu können, und löschen es, wenn Sie sich abmelden. Der Benachrichtigungstext läuft über Google, um Ihr Telefon zu erreichen: Er nennt, was geschehen ist, und gegebenenfalls die handelnde Person oder den Titel Ihrer eigenen Reiseroute. Hinweise zur Moderation Ihrer Inhalte nennen niemals die Person, die sie gemeldet hat. Erteilen Sie keine Benachrichtigungserlaubnis, wird kein Token erstellt und nichts gesendet.
 
+Resend — der Versand der E-Mails, die Ntripi Ihnen schickt: Verifizierung, Passwort-Zurücksetzung, Kontolöschung und Moderationshinweise. Resend erhält Ihre E-Mail-Adresse und die Nachricht.
+
+Google (Google Workspace) — unsere eigenen Postfächer. E-Mails, die Sie an eine unserer Adressen wie privacy@ntripi.app senden, werden dort empfangen und gespeichert.
+
 Außerdem geben wir Daten weiter, wenn wir gesetzlich dazu verpflichtet sind und wenn es erforderlich ist, um auf eine unmittelbare Gefahr für die Sicherheit einer Person zu reagieren.
 
 
@@ -286,13 +290,19 @@ Wir verwenden weder Analyse- noch Werbe-Cookies noch Tracking-Skripte Dritter.
 
 Ihre Kontodaten und Inhalte bleiben gespeichert, bis Sie sie oder Ihr Konto löschen.
 
-Sie können Ihr Konto jederzeit in den App-Einstellungen löschen. Die Kontolöschung entfernt Ihr Profil, Ihre Reiserouten und Ihre identifizierenden Angaben dauerhaft.
+Sie können Ihr Konto jederzeit löschen: in der App im Bearbeitungsbildschirm Ihres Profils unter Sicherheit, Konto löschen, oder ohne die App unter ntripi.app/delete-account, das einen Link zur einmaligen Verwendung an die Adresse des Kontos sendet. Die Kontolöschung entfernt Ihr Profil, Ihre Reiserouten und Ihre identifizierenden Angaben dauerhaft, außer dem, was dieser Abschnitt als aufbewahrt nennt.
 
 Ihr Geburtsdatum wird für die Dauer des Kontos gespeichert und mit ihm gelöscht. Wir speichern es statt nur der Antwort, die es uns gegeben hat, weil sich das Mindestalter im Lauf der Zeit ändert und ein gespeichertes Ja oder Nein unbemerkt veralten würde.
 
-Von Ihnen abgegebene Bewertungen werden in anonymisierter Form (nur die Punktzahl, keine Zuordnung zum Nutzer) aufbewahrt, um die Aussagekraft der Community-Bewertungen zu erhalten. Sie stimmen dem bei der Kontoerstellung zu, wie in unseren Nutzungsbedingungen beschrieben.
+Von Ihnen geschriebene Bewertungen und Rezensionen werden nach der Löschung Ihres Kontos ohne jede Zuordnung zu Ihnen aufbewahrt: Die Punktzahlen und der Text bleiben bei der Reiseroute, um die Aussagekraft der Community-Bewertungen zu erhalten. Sie stimmen dem bei der Kontoerstellung zu, wie in unseren Nutzungsbedingungen beschrieben.
 
-Moderationsaufzeichnungen werden 90 Tage nach Abschluss des Vorgangs gelöscht, mit einer Ausnahme: Hat ein Bild mit einer Datenbank bekannter rechtswidriger Bilder übereingestimmt, werden die Aufzeichnung der Übereinstimmung und der Hash des Bildes unbefristet aufbewahrt. Das Bild selbst wird gelöscht; die Aufzeichnung ist der einzige Beleg dafür, dass die Entfernung stattgefunden hat, und ihre Aufbewahrung ist eine gesetzliche Pflicht, auf die wir auf Ihren Wunsch nicht verzichten können.
+Ist ein Konto, eine seiner Reiserouten oder eine seiner Rezensionen Gegenstand einer rechtlichen Prüfung, wenn seine Löschung beantragt wird, wartet die Löschung, bis die Prüfung abgeschlossen ist, und erfolgt dann automatisch; wir schreiben an die Adresse des Kontos, sobald sie erledigt ist.
+
+Ist ein Konto bei seiner Löschung gesperrt, bewahren wir einen Einweg-Code auf, der aus seiner E-Mail-Adresse gebildet wird — einen schlüsselbasierten Hash, aus dem sich die Adresse nicht zurückgewinnen lässt —, damit diese Adresse nicht für ein neues Konto verwendet werden kann. Er bleibt erhalten, bis wir die Sperre aufheben.
+
+Die Aufzeichnungen unserer automatischen Prüfungen von Texten und Bildern werden 90 Tage nach ihrer Erstellung gelöscht — später, wenn eine noch auf die Prüfung durch einen Menschen wartet —, mit einer Ausnahme: Hat ein Bild mit einer Datenbank bekannter rechtswidriger Bilder übereingestimmt, werden die Aufzeichnung der Übereinstimmung und der Hash des Bildes unbefristet aufbewahrt. Das Bild selbst wird gelöscht; die Aufzeichnung ist der einzige Beleg dafür, dass die Entfernung stattgefunden hat, und ihre Aufbewahrung ist eine gesetzliche Pflicht, auf die wir auf Ihren Wunsch nicht verzichten können.
+
+Moderationsentscheidungen — was über ein Konto oder einen Inhalt entschieden wurde, und warum — werden ohne zeitliche Begrenzung aufbewahrt, auch nach der Löschung des Kontos, zusammen mit den Meldungen, auf denen sie beruhen, und, wenn ein Moderator entschieden hat, einer Kopie dessen, worauf sich die Entscheidung bezog: des Textes des Inhalts oder der E-Mail-Adresse und des Benutzernamens des Kontos. Sie sind der Beleg für Entscheidungen, gegen die Einspruch erhoben oder die überprüft werden können. Wird ein Konto gelöscht, bleiben außerdem die Fotos von Inhalten, die ein Moderator entfernt hat, und alle seine Fotos, solange das Konto Gegenstand einer rechtlichen Prüfung ist, als Beleg erhalten.
 
 Benachrichtigungen in der App werden 90 Tage nach dem Lesen gelöscht. Ungelesene bleiben erhalten.
 
@@ -305,7 +315,7 @@ Die Google-Kennung eines von Ihnen ausgewählten Orts und die damit gespeicherte
 
 11. IHRE RECHTE
 
-Die meisten Ihrer Daten können Sie direkt in der App einsehen, berichtigen, exportieren oder löschen: Ihr Profil ist bearbeitbar, Ihre Inhalte sind bearbeit- und löschbar, und Einstellungen, Konto löschen entfernt das Konto.
+Die meisten Ihrer Daten können Sie direkt in der App einsehen, berichtigen, exportieren oder löschen: Ihr Profil ist bearbeitbar, Ihre Inhalte sind bearbeit- und löschbar, und Konto löschen, im Bearbeitungsbildschirm Ihres Profils unter Sicherheit, entfernt das Konto. Ohne die App leistet ntripi.app/delete-account dasselbe.
 
 Je nach Wohnort haben Sie unter Umständen zusätzlich das Recht, eine Kopie Ihrer Daten zu verlangen, sie berichtigen oder löschen zu lassen, ihre Verarbeitung einzuschränken oder ihr zu widersprechen und sich bei Ihrer nationalen Datenschutzbehörde zu beschweren. Schreiben Sie an privacy@ntripi.app, und wir antworten Ihnen.
 

@@ -1101,6 +1101,7 @@
   "apiErrorTosRequired": "يجب قبول شروط الخدمة للتسجيل.",
   "apiErrorUsernameTaken": "اسم المستخدم هذا مستخدم بالفعل.",
   "apiErrorEmailTaken": "يوجد حساب بهذا البريد الإلكتروني بالفعل.",
+  "apiErrorEmailUnavailable": "لا يمكن استخدام عنوان البريد الإلكتروني هذا لإنشاء حساب.",
   "reportItineraryTitle": "الإبلاغ عن هذا المسار",
   "reportItineraryTooltip": "إبلاغ",
   "reportReasonSpam": "محتوى مزعج",

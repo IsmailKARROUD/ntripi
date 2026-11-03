@@ -108,6 +108,7 @@ RELEASES: tuple[Release, ...] = (
             "**Die Karte der Reise ist ihre Route.** Die **Karten**-Ansicht zeigt jetzt die Route durch die Stopps auf Ihrem Bildschirm, auf der Karte von Google — Google-Orte eingeschlossen.",
             "**Feed und Ihr Profil an den beiden Enden der Leiste.** Die Leiste unten lautet nun Feed, Suche, Reiserouten, Gespeichert, Profil, und der Tab Profil zeigt Ihr Profilfoto, sobald Sie eines hinzugefügt haben.",
             "**Aktualisierte Nutzungsbedingungen und Datenschutzerklärung.** Sie decken jetzt Google Maps ab, das einen Teil der Karten von Ntripi und seine Ortssuche liefert. Sie werden einmal gebeten, sie anzunehmen.",
+            "**Konto ohne die App löschen.** [ntripi.app/delete-account](/delete-account) schickt einen Link an die Adresse Ihres Kontos; öffnen Sie ihn und bestätigen Sie. Die aktualisierten Nutzungsbedingungen und die Datenschutzerklärung sagen, was danach bleibt — Rezensionen behalten ihren Text, ohne Ihren Namen —, und Sie werden gebeten, sie noch einmal zu akzeptieren.",
         ),
     ),
     Release(
@@ -1527,7 +1528,7 @@ Am wichtigsten ist das bei Benachrichtigungen, für die iOS nicht erneut fragt: 
     Article(
         slug="your-data-and-privacy",
         title="Welche Daten Ntripi speichert, und wie Sie sie löschen",
-        summary="In klarer Sprache: was gespeichert wird, wer es sehen kann und wie Sie Ihr Konto endgültig entfernen.",
+        summary="Was Ntripi speichert, wer es sehen kann und wie Sie Ihr Konto endgültig löschen — in der App oder ohne sie im Web.",
         category="account",
         schema=SCHEMA_FAQ,
         intro="Ntripi speichert, was Sie schreiben und hochladen, sowie das, was zur Anmeldung nötig ist. Es gibt keine Werbung, kein Werbe-Tracking durch Dritte, und nichts wird verkauft. Maßgeblich ist die [Datenschutzerklärung](/privacy); dies ist die Kurzfassung.",
@@ -1566,11 +1567,26 @@ Wenn jemand Ihre Reise in seiner Sprache lesen möchte, geht ihr Text auf diesel
                 anchor="deleting",
                 heading="Wie lösche ich mein Konto?",
                 kind=KIND_FAQ,
-                body="""Im Bearbeitungsbildschirm Ihres Profils unter Sicherheit ▸ **Konto löschen**. Sie bestätigen mit Ihrem Passwort oder mit Google, falls Sie sich so anmelden.
+                body="""**In der App:** im Bearbeitungsbildschirm Ihres Profils unter Sicherheit ▸ **Konto löschen**. Sie bestätigen mit Ihrem Passwort oder mit Google, falls Sie sich so anmelden.
 
-Die Löschung ist endgültig und nimmt Ihre Reisen mit. Von anderen gespeicherte Reisen funktionieren dann nicht mehr, denn ein Lesezeichen ist ein Verweis und keine Kopie.
+**Ohne die App:** Rufen Sie [ntripi.app/delete-account](/delete-account) auf und geben Sie die E-Mail-Adresse Ihres Kontos ein. An diese Adresse kommt ein Link; öffnen Sie ihn innerhalb einer Stunde und bestätigen Sie. Erhalten Sie dort keine E-Mails mehr, schreiben Sie an **[privacy@ntripi.app](mailto:privacy@ntripi.app)**.
 
-Ihr Profilbild, Ihr Titelbild und die Titelbilder Ihrer Reisen werden dabei ebenfalls gelöscht.""",
+Die Löschung ist endgültig und nimmt Ihre Reisen, Ihr Profilbild, Ihr Titelbild und die Titelbilder Ihrer Reisen mit. Von anderen gespeicherte Reisen funktionieren dann nicht mehr, denn ein Lesezeichen ist ein Verweis und keine Kopie.""",
+            ),
+            Block(
+                anchor="what-deletion-keeps",
+                heading="Was bleibt, wenn ich mein Konto lösche?",
+                kind=KIND_FAQ,
+                body="""Die Löschung entfernt Ihr Profil, Ihre E-Mail-Adresse und Ihr Geburtsdatum, Ihre Reisen samt Fotos, Ihre Verbindungen, Blockierungen und gespeicherten Reisen, Ihre Benachrichtigungen und jeden offenen Einspruch. Einiges bleibt, weil andere darauf angewiesen sind oder weil es als Beleg dient:
+
+- **Ihre Bewertungen und Rezensionen** bleiben bei den bewerteten Reisen — die Punktzahl und der Text —, ohne Ihren Namen und ohne Verbindung zu Ihnen, damit diese Reisen ihre Bewertung behalten.
+- **Moderationsunterlagen** — Meldungen, die Sie gemacht haben oder die Ihre Inhalte betrafen, und Entscheidungen über Ihr Konto oder Ihre Inhalte — werden ohne zeitliche Begrenzung aufbewahrt. Eine Entscheidung, die ein Moderator getroffen hat, behält eine Kopie dessen, worum es ging; bei einem Konto sind das seine E-Mail-Adresse und sein Benutzername.
+- **Fotos, die ein Moderator entfernt hat,** bleiben als Beleg erhalten.
+- **Fehlerberichte,** die Sie gesendet haben, bleiben, bis sie geschlossen und ausgelaufen sind, ohne Verbindung zu Ihnen.
+
+Ist Ihr Konto bei der Löschung **gesperrt**, wird ein Einweg-Code aus seiner E-Mail-Adresse aufbewahrt, damit sich mit dieser Adresse niemand erneut registrieren kann, bis wir die Sperre aufheben.
+
+Ist ein Teil Ihres Kontos Gegenstand einer **rechtlichen Prüfung**, wartet die Löschung, bis die Prüfung abgeschlossen ist, erfolgt dann von selbst, und wir schreiben Ihnen, wenn sie erledigt ist. Alle Einzelheiten stehen in der [Datenschutzerklärung](/privacy).""",
             ),
             Block(
                 anchor="requests",
@@ -1586,19 +1602,21 @@ Dieselbe Adresse deckt Anträge auf Berichtigung, Einschränkung und Widerspruch
             "daten",
             "dsgvo",
             "konto löschen",
+            "konto löschen ohne app",
+            "löschung beantragen",
+            "meine daten löschen",
             "entfernen",
             "exportieren",
             "personenbezogene daten",
             "tracking",
             "werbung",
-            "anzeigen",
             "wer kann sehen",
         ),
         related=(
             "permissions", "sign-in-and-account-security",
             "share-an-itinerary-privately", "read-trips-in-another-language",
         ),
-        updated="2026-10-31",
+        updated="2026-11-03",
     ),
     Article(
         slug="sign-in-and-account-security",
@@ -1650,13 +1668,17 @@ Es erscheint nie in Ihrem Profil und ist für andere Nutzer nie sichtbar. Es wir
                 kind=KIND_FAQ,
                 body="""Sie haben eine E-Mail mit der Begründung und einem Link zum Einspruch erhalten. Einsprüche werden von einem Menschen gelesen.
 
-Haben Sie die E-Mail nicht mehr, kann das Einspruchsformular Ihnen einen neuen Link schicken. Siehe [ausgeblendete Inhalte und Einsprüche](/help/hidden-content-and-appeals).""",
+Haben Sie die E-Mail nicht mehr, kann das Einspruchsformular Ihnen einen neuen Link schicken. Siehe [ausgeblendete Inhalte und Einsprüche](/help/hidden-content-and-appeals).
+
+Ein gesperrtes Konto können Sie trotzdem löschen, unter [ntripi.app/delete-account](/delete-account). Mit seiner E-Mail-Adresse kann sich danach niemand erneut registrieren.""",
             ),
             Block(
                 anchor="deleting",
                 heading="Wie lösche ich mein Konto?",
                 kind=KIND_FAQ,
                 body="""Profil ▸ bearbeiten ▸ **Sicherheit ▸ Konto löschen**, bestätigt mit Ihrem Passwort oder mit Google.
+
+Sie haben die App nicht mehr? [ntripi.app/delete-account](/delete-account) schickt stattdessen einen Link an die Adresse Ihres Kontos — siehe [was die Löschung aufbewahrt](/help/your-data-and-privacy#what-deletion-keeps).
 
 Es ist endgültig und nimmt Ihre Reisen mit. Wollen Sie nur aus der Sichtbarkeit verschwinden, ist es umkehrbar, Ihre Reisen auf [Nur ich](/help/share-an-itinerary-privately) zu stellen und Ihr Konto privat zu machen — eine Löschung ist es nicht.""",
             ),
@@ -1676,9 +1698,10 @@ Es ist endgültig und nimmt Ihre Reisen mit. Wollen Sie nur aus der Sichtbarkeit
             "konto löschen",
             "alter",
             "16",
+            "konto löschen ohne app",
         ),
         related=("your-data-and-privacy", "troubleshooting"),
-        updated="2026-09-28",
+        updated="2026-11-03",
     ),
     Article(
         slug="report-and-block",

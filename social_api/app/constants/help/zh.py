@@ -108,6 +108,7 @@ RELEASES: tuple[Release, ...] = (
             "**行程地图就是它的路线。** **地图** 视图现在会在 Google 的地图上显示经过你屏幕上停靠点的路线——包括 Google 地点。",
             "**动态和个人资料分列底部栏两端。** 底部栏的顺序现在是动态、搜索、行程、已保存、个人资料；添加头像后，个人资料标签页会显示你的头像。",
             "**条款和隐私政策已更新。** 它们现在涵盖 Google 地图，Ntripi 的部分地图和地点搜索由它提供。你需要接受一次。",
+            "**没有应用也能删除账号。** [ntripi.app/delete-account](/delete-account) 会向你账号的邮箱发送一个链接，打开并确认即可。更新后的使用条款和隐私政策说明了删除后会保留什么——点评会保留文字，但不再署你的名字——你需要再接受一次。",
         ),
     ),
     Release(
@@ -1519,7 +1520,7 @@ ARTICLES: tuple[Article, ...] = (
     Article(
         slug="your-data-and-privacy",
         title="‏Ntripi 存储哪些数据，以及如何删除",
-        summary="用通俗的话说明保存了什么、谁能看到，以及如何永久删除你的账号。",
+        summary="Ntripi 保存了什么、谁能看到，以及如何永久删除你的账号——在应用里，或在没有应用时通过网页。",
         category="account",
         schema=SCHEMA_FAQ,
         intro="‏Ntripi 存储你写下的和上传的内容，外加让你保持登录所需的信息。没有广告，没有第三方广告追踪，也不会出售任何东西。[隐私政策](/privacy)是具有约束力的正式文本；这里是简版。",
@@ -1558,11 +1559,26 @@ ARTICLES: tuple[Article, ...] = (
                 anchor="deleting",
                 heading="怎么删除我的账号？",
                 kind=KIND_FAQ,
-                body="""在个人资料的编辑页面，安全 ▸ **删除账号**。用密码确认，如果你是用 Google 登录的，就用 Google 确认。
+                body="""**在应用里：**在个人资料的编辑页面，安全 ▸ **删除账号**。用密码确认，如果你是用 Google 登录的，就用 Google 确认。
 
-删除是永久性的，你的行程也会一并消失。别人保存过的那些行程会随之失效，因为书签是一个指向，而不是一份副本。
+**没有应用时：**打开 [ntripi.app/delete-account](/delete-account)，输入账号所用的电子邮箱。我们会向该邮箱发送一个链接，在一小时内打开并确认即可。如果那个邮箱已经收不到邮件，请写信到 **[privacy@ntripi.app](mailto:privacy@ntripi.app)**。
 
-你的头像、封面以及行程的封面照片也会一并删除。""",
+删除是永久性的，你的行程、头像、封面以及行程的封面照片都会一并删除。别人保存过的那些行程会随之失效，因为书签是一个指向，而不是一份副本。""",
+            ),
+            Block(
+                anchor="what-deletion-keeps",
+                heading="删除账号后还会保留什么？",
+                kind=KIND_FAQ,
+                body="""删除会移除你的个人资料、电子邮箱和出生日期、你的行程及照片、你的关注关系、屏蔽和保存的行程、你的通知，以及任何尚未结束的申诉。少数内容会保留下来，因为别人依赖它们，或者它们是证据：
+
+- **你的评分和点评**会留在你评过的行程上——分数和文字都在——但不再署你的名字，也不再与你有任何关联，这样那些行程才能保有原来的评分。
+- **审核记录**——你提交的举报、别人针对你的内容提交的举报，以及就你的账号或内容作出的决定——会无限期保留。由审核人员作出的决定会保留所涉对象的副本；如果对象是账号，就是它的电子邮箱和用户名。
+- **被审核人员移除的照片**会作为证据保留。
+- 你发送的**问题反馈**会保留到关闭并超出保留期为止，且不再与你关联。
+
+如果你的账号在删除时处于**停用**状态，我们会保留一个由其电子邮箱生成的单向代码，以免该邮箱再次注册，直到我们解除限制。
+
+如果你的账号有一部分正处于**法律审查**中，删除会等到审查结束后自动进行，完成后我们会发邮件告诉你。完整说明见[隐私政策](/privacy)。""",
             ),
             Block(
                 anchor="requests",
@@ -1577,6 +1593,10 @@ ARTICLES: tuple[Article, ...] = (
             "隐私",
             "数据",
             "删除账号",
+            "没有应用删除账号",
+            "申请删除",
+            "删除我的数据",
+            "注销",
             "移除",
             "导出",
             "个人数据",
@@ -1588,7 +1608,7 @@ ARTICLES: tuple[Article, ...] = (
             "permissions", "sign-in-and-account-security",
             "share-an-itinerary-privately", "read-trips-in-another-language",
         ),
-        updated="2026-10-31",
+        updated="2026-11-03",
     ),
     Article(
         slug="sign-in-and-account-security",
@@ -1640,13 +1660,17 @@ ARTICLES: tuple[Article, ...] = (
                 kind=KIND_FAQ,
                 body="""你应该收到过一封说明原因的邮件，里面带有申诉链接。申诉会由人来阅读。
 
-如果那封邮件已经不在了，申诉表单可以给你补发一个新链接。见[被隐藏的内容与申诉](/help/hidden-content-and-appeals)。""",
+如果那封邮件已经不在了，申诉表单可以给你补发一个新链接。见[被隐藏的内容与申诉](/help/hidden-content-and-appeals)。
+
+被停用的账号也可以删除，网址是 [ntripi.app/delete-account](/delete-account)。删除后，它的电子邮箱将无法再次注册。""",
             ),
             Block(
                 anchor="deleting",
                 heading="怎么删除我的账号？",
                 kind=KIND_FAQ,
                 body="""个人资料 ▸ 编辑 ▸ **安全 ▸ 删除账号**，用密码或 Google 确认。
+
+应用已经不在了？[ntripi.app/delete-account](/delete-account) 会改为向你账号的邮箱发送一个链接——见[删除后会保留什么](/help/your-data-and-privacy#what-deletion-keeps)。
 
 这是永久性的，你的行程也会一并消失。如果你只是想从别人视野里消失，把行程设为[仅自己](/help/share-an-itinerary-privately)并把账号改为私密是可以撤销的，而删除不可以。""",
             ),
@@ -1665,9 +1689,10 @@ ARTICLES: tuple[Article, ...] = (
             "删除账号",
             "年龄",
             "16岁",
+            "没有应用删除账号",
         ),
         related=("your-data-and-privacy", "troubleshooting"),
-        updated="2026-09-28",
+        updated="2026-11-03",
     ),
     Article(
         slug="report-and-block",

@@ -59,7 +59,7 @@ We may send you notices inside the app about activity on your account and about 
 
 We may remove or hide content, warn you, restrict your account, or terminate it, where you breach these terms or the Community Guidelines. Serious breaches can result in immediate termination without warning.
 
-Where we act against you we will tell you what we did and why. You may delete your account yourself at any time from the app.
+Where we act against you we will tell you what we did and why. You may delete your account yourself at any time: in the app or, without it, at ntripi.app/delete-account. If you delete an account while it is suspended, its email address can no longer be used to create a new account.
 
 
 8. APPEALS
@@ -73,7 +73,7 @@ Content involving minors is the one exception: it is not appealable.
 
 1. Your personal data (name, email, profile) will be deleted when you delete your account.
 
-2. Ratings you submit on itineraries will be retained in anonymized form (score only, no identifying information) after account deletion. This preserves the integrity of community scores for other users.
+2. Ratings and reviews you submit on itineraries will be retained after account deletion without your name or any link to your account: the scores and the text you wrote stay with the itinerary. This preserves the integrity of community scores for other users.
 
 3. Your itineraries and their content will be permanently deleted when you delete your account.
 
@@ -189,7 +189,7 @@ To check that you meet our minimum age, and to keep under-age accounts off Ntrip
 
 To keep Ntripi safe: automated and human review of content, handling reports, enforcing the Community Guidelines, and appeals.
 
-To email you about your account — verification, password reset, and moderation notices. We do not send marketing email.
+To email you about your account — verification, password reset, account deletion and moderation notices. We do not send marketing email.
 
 To fix problems you report to us.
 
@@ -245,6 +245,10 @@ Atlassian (Jira) — where we forward a bug report you sent so it can be tracked
 
 Google (Firebase Cloud Messaging) — push notifications on iOS and Android, if you allow them. Your device is issued a registration token that identifies that installation; we store it so we can address a notification to your device, and we delete it when you sign out. The notification text passes through Google to reach your phone: it says what happened and, where relevant, names the person who acted or the title of your own itinerary. Notices about moderation of your content never name who reported it. If you do not grant notification permission, no token is created and nothing is sent.
 
+Resend — sending the emails Ntripi sends you: verification, password reset, account deletion and moderation notices. It receives your email address and the message.
+
+Google (Google Workspace) — our own mailboxes. Email you send to one of our addresses, such as privacy@ntripi.app, is received and stored there.
+
 We also disclose data where we are legally required to, and where it is necessary to respond to an imminent risk to someone's safety.
 
 
@@ -286,13 +290,19 @@ We do not use analytics cookies, advertising cookies, or any third-party trackin
 
 Your account data and content are kept until you delete them, or until you delete your account.
 
-You may delete your account at any time from the app settings. Account deletion permanently removes your profile, itineraries, and identifying information.
+You may delete your account at any time: in the app, from your profile's edit screen under Security, Delete account; or without the app at ntripi.app/delete-account, which emails a single-use link to the account's address. Deletion permanently removes your profile, itineraries and identifying information, except what this section says is kept.
 
 Your date of birth is kept for as long as the account exists and is deleted with it. We keep it rather than only the answer it gave us, because the minimum age changes with time and a stored yes or no would silently go stale.
 
-Ratings you have submitted are retained in anonymised form (score only, no user link) to preserve the integrity of community scores. You consent to this when you create your account, as described in our Terms of Service.
+Ratings and reviews you have written are kept after you delete your account, without any link to you: the scores and the text stay with the itinerary, to preserve the integrity of community scores. You consent to this when you create your account, as described in our Terms of Service.
 
-Moderation records are deleted after 90 days once the matter is closed, with one exception: where an image matched a known-illegal-image database, the record of the match and the hash of the image are retained indefinitely. The image itself is deleted; the record is the only evidence that the removal happened, and keeping it is a legal duty we cannot waive at your request.
+If an account, one of its itineraries or one of its reviews is under legal review when its deletion is requested, the deletion waits until the review is closed, then happens automatically; we email the account's address when it is done.
+
+If an account is suspended when it is deleted, we keep a one-way code made from its email address — a keyed hash that cannot be turned back into the address — so that the address cannot be used to create a new account. It is kept until we lift the block.
+
+The records of our automated checks on text and images are deleted 90 days after they were made — later if one is still waiting for a person to review it — with one exception: where an image matched a known-illegal-image database, the record of the match and the hash of the image are retained indefinitely. The image itself is deleted; the record is the only evidence that the removal happened, and keeping it is a legal duty we cannot waive at your request.
+
+Moderation decisions — what was decided about an account or a piece of content, and why — are kept without a time limit, also after the account is deleted, together with the reports behind them and, where a moderator decided, a copy of what the decision concerned: the content's text, or the account's email address and username. They are the evidence for decisions that can be appealed or reviewed. When an account is deleted, the photos of content a moderator removed, and all of its photos while the account is under legal review, are kept as evidence too.
 
 In-app notifications are deleted 90 days after you have read them. Unread ones are kept.
 
@@ -305,7 +315,7 @@ Google's identifier for a place you picked, and the search words kept with it, a
 
 11. YOUR RIGHTS
 
-You can access, correct, export, or delete most of your data directly in the app: your profile is editable, your content is editable and deletable, and Settings, Delete account removes the account.
+You can access, correct, export, or delete most of your data directly in the app: your profile is editable, your content is editable and deletable, and Delete account, on your profile's edit screen under Security, removes the account. Without the app, ntripi.app/delete-account does the same.
 
 Depending on where you live you may also have the right to ask us for a copy of your data, to have it corrected or erased, to restrict or object to how we use it, and to complain to your national data protection authority. Write to privacy@ntripi.app and we will respond.
 

@@ -2637,6 +2637,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get apiErrorEmailTaken => 'Ya existe una cuenta con este correo.';
 
   @override
+  String get apiErrorEmailUnavailable =>
+      'Esta dirección de correo no puede usarse para crear una cuenta.';
+
+  @override
   String get reportItineraryTitle => 'Denunciar este itinerario';
 
   @override

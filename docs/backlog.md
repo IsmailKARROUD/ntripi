@@ -389,6 +389,47 @@ advice."* §5's counsel contact block is an empty fill-in form, and **§7's six
 readiness boxes are all unticked**, including *"Calendar reminder for a quarterly
 dry run"*. → [features/content-reports.md](features/content-reports.md)
 
+### idea — the in-app deletion does not wait for a legal escalation
+
+The web route at `/delete-account` defers an erasure while an escalation holds
+the account and lets the sweep finish it; `DELETE /users/me` still erases at
+once, keeping only the images, because its answer is what installed builds
+parse. Aligning it needs a new answer (a 202 with a code) and app copy for it
+in six languages. → [features/account-deletion.md](features/account-deletion.md)
+
+### idea — the app's delete screen says "all personal data"
+
+`deleteAccountBullet1` ("Your profile and all personal data") promises more than
+deletion does: since Privacy 2.6 the policy says a moderator's decision keeps a
+copy of what it concerned, an account's email address and username included. The
+string ships with the binary, in six `.arb` files, so rewording it waits for an
+app release. → [features/account-deletion.md](features/account-deletion.md)
+
+### idea — no operator erase for someone who lost the mailbox
+
+The web route proves the request with a link to the account's address. Someone
+who can no longer receive mail there can only write to privacy@, and erasing
+for them takes SQL. An `/admin` action running `account_service.erase_account`
+behind a typed confirmation would close it.
+→ [features/account-deletion.md](features/account-deletion.md)
+
+### idea — three per-event operator emails still inline their guard
+
+`report_service`, `bug_report_service` and the image-flag email in
+`moderation_service` each write their own `OPERATOR_EMAIL` check; the deferred
+account deletion uses `operator_alerts.email_operator`. Moving the three onto
+it removes the copies (the image-flag one builds its body on the loop and sends
+on a thread, so it needs care). → [constraints.md](constraints.md#shared-helpers-dry)
+
+### planned — counsel: how long a deletion may wait, and what to say
+
+A web deletion held by a legal escalation waits until the escalation closes,
+and the requester is told only that it will happen. GDPR Art. 12(3)–(4) set a
+month (extendable) for an answer and expect reasons for not acting; what a
+legal hold allows us to say is for counsel. Railway's backup retention, which
+keeps an erased account for as long as a backup lasts, is not recorded
+anywhere either. → [features/account-deletion.md](features/account-deletion.md#open-questions)
+
 ### planned — legal translations need counsel review
 
 Three documents × six languages. English is authoritative and every other
@@ -443,13 +484,6 @@ stored.
 (`EDIT_LOCK_*`), so an operator has no discoverable way to learn constraints that
 will refuse to boot. Full list in
 [constraints.md](constraints.md#envexample-is-14-settings-behind).
-
-### planned — the ratings clause says "score only", but deletion keeps the review text
-
-The ToS and Privacy §10 promise a deleted account's ratings are kept as "score
-only"; `delete_my_account` nulls `user_id` and leaves the `note` (and its cached
-translations). Either the deletion clears the note or both documents change. →
-[features/legal-and-age-gate.md](features/legal-and-age-gate.md#open-questions)
 
 ### idea — `POST /waitlist/join` has no rate limit
 

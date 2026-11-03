@@ -122,6 +122,18 @@ class User(Base):
         String(16), nullable=True, default=None
     )
 
+    # A deletion asked for at /delete-account while the account, a trip it owns
+    # or a review it wrote is under an open legal escalation: the account is
+    # evidence until then, so the sweep erases it once every escalation is
+    # closed (account_service.erase_deferred). The first request's time stands;
+    # the language is the latest request's, for the email sent when it is done.
+    erasure_requested_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
+    )
+    erasure_request_lang: Mapped[str | None] = mapped_column(
+        String(8), nullable=True, default=None
+    )
+
     # Moderation state of this profile's free text (display_name + bio).
     # 'hidden'/'rejected' means other viewers see the @username fallback and no
     # bio; the account itself is unaffected (bans use is_active).

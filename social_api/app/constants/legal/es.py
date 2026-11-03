@@ -59,7 +59,7 @@ Podemos enviarte avisos dentro de la aplicación sobre la actividad de tu cuenta
 
 Podemos eliminar u ocultar contenido, advertirte, restringir tu cuenta o cancelarla si incumples estas condiciones o las Normas de la comunidad. Los incumplimientos graves pueden dar lugar a la cancelación inmediata sin aviso previo.
 
-Cuando tomemos una medida contra ti, te diremos qué hemos hecho y por qué. Puedes eliminar tu cuenta tú mismo en cualquier momento desde la aplicación.
+Cuando tomemos una medida contra ti, te diremos qué hemos hecho y por qué. Puedes eliminar tu cuenta tú mismo en cualquier momento: en la aplicación o, sin ella, en ntripi.app/delete-account. Si eliminas una cuenta mientras está suspendida, su dirección de correo ya no podrá usarse para crear una cuenta nueva.
 
 
 8. RECLAMACIONES
@@ -73,7 +73,7 @@ El contenido que involucra a menores es la única excepción: no admite reclamac
 
 1. Tus datos personales (nombre, correo electrónico, perfil) se eliminarán cuando elimines tu cuenta.
 
-2. Las valoraciones que envíes sobre itinerarios se conservarán de forma anonimizada (solo la puntuación, sin información identificativa) tras la eliminación de la cuenta. Esto preserva la integridad de las puntuaciones de la comunidad para los demás usuarios.
+2. Las valoraciones y reseñas que envíes sobre itinerarios se conservarán tras la eliminación de la cuenta, sin tu nombre ni ningún vínculo con tu cuenta: las puntuaciones y el texto que escribiste se quedan con el itinerario. Esto preserva la integridad de las puntuaciones de la comunidad para los demás usuarios.
 
 3. Tus itinerarios y su contenido se eliminarán de forma permanente cuando elimines tu cuenta.
 
@@ -189,7 +189,7 @@ Para comprobar que cumples nuestra edad mínima y mantener fuera de Ntripi las c
 
 Para mantener seguro Ntripi: revisión automática y humana del contenido, gestión de denuncias, aplicación de las Normas de la comunidad y reclamaciones.
 
-Para enviarte correos sobre tu cuenta: verificación, restablecimiento de contraseña y avisos de moderación. No enviamos correos comerciales.
+Para enviarte correos sobre tu cuenta: verificación, restablecimiento de contraseña, eliminación de la cuenta y avisos de moderación. No enviamos correos comerciales.
 
 Para corregir los problemas que nos comunicas.
 
@@ -245,6 +245,10 @@ Atlassian (Jira) — cuando trasladamos allí un informe de error que has enviad
 
 Google (Firebase Cloud Messaging) — las notificaciones push en iOS y Android, si las permites. Tu dispositivo recibe un token de registro que identifica esa instalación; lo guardamos para poder dirigir una notificación a tu dispositivo y lo borramos cuando cierras sesión. El texto de la notificación pasa por Google para llegar a tu teléfono: indica qué ha ocurrido y, cuando procede, nombra a la persona que ha actuado o el título de tu propio itinerario. Los avisos sobre la moderación de tu contenido nunca nombran a quien lo denunció. Si no concedes el permiso de notificaciones, no se crea ningún token y no se envía nada.
 
+Resend — el envío de los correos que Ntripi te manda: verificación, restablecimiento de contraseña, eliminación de la cuenta y avisos de moderación. Recibe tu dirección de correo y el mensaje.
+
+Google (Google Workspace) — nuestros propios buzones. Los correos que envías a una de nuestras direcciones, como privacy@ntripi.app, se reciben y se guardan allí.
+
 También comunicamos datos cuando la ley nos obliga a ello y cuando es necesario para responder a un riesgo inminente para la seguridad de alguien.
 
 
@@ -286,13 +290,19 @@ No usamos cookies analíticas, cookies publicitarias ni ningún script de rastre
 
 Los datos de tu cuenta y tu contenido se conservan hasta que los elimines o hasta que elimines tu cuenta.
 
-Puedes eliminar tu cuenta en cualquier momento desde los ajustes de la aplicación. La eliminación de la cuenta borra de forma permanente tu perfil, tus itinerarios y tu información identificativa.
+Puedes eliminar tu cuenta en cualquier momento: en la aplicación, desde la pantalla de edición de tu perfil, en Seguridad, Eliminar cuenta; o sin la aplicación en ntripi.app/delete-account, que envía un enlace de un solo uso a la dirección de la cuenta. La eliminación borra de forma permanente tu perfil, tus itinerarios y tu información identificativa, salvo lo que esta sección indica que se conserva.
 
 Tu fecha de nacimiento se conserva mientras exista la cuenta y se elimina con ella. La conservamos en lugar de solo la respuesta que nos dio, porque la edad mínima cambia con el tiempo y un sí o un no guardados quedarían obsoletos sin que nadie lo notara.
 
-Las valoraciones que hayas enviado se conservan de forma anonimizada (solo la puntuación, sin vínculo con el usuario) para preservar la integridad de las puntuaciones de la comunidad. Lo consientes al crear tu cuenta, según lo descrito en nuestras Condiciones de uso.
+Las valoraciones y reseñas que hayas escrito se conservan tras eliminar tu cuenta, sin ningún vínculo contigo: las puntuaciones y el texto se quedan con el itinerario, para preservar la integridad de las puntuaciones de la comunidad. Lo consientes al crear tu cuenta, según lo descrito en nuestras Condiciones de uso.
 
-Los registros de moderación se eliminan a los 90 días una vez cerrado el asunto, con una excepción: cuando una imagen ha coincidido con una base de datos de imágenes ilegales conocidas, el registro de la coincidencia y el hash de la imagen se conservan indefinidamente. La imagen se elimina; el registro es la única prueba de que la retirada se produjo, y conservarlo es un deber legal al que no podemos renunciar a petición tuya.
+Si una cuenta, uno de sus itinerarios o una de sus reseñas está bajo revisión legal cuando se solicita su eliminación, la eliminación espera a que la revisión se cierre y luego se realiza automáticamente; escribimos a la dirección de la cuenta cuando está hecha.
+
+Si una cuenta está suspendida cuando se elimina, conservamos un código de un solo sentido obtenido de su dirección de correo —un hash con clave que no permite recuperar la dirección— para que esa dirección no pueda usarse para crear una cuenta nueva. Se conserva hasta que levantemos el bloqueo.
+
+Los registros de nuestras comprobaciones automáticas de textos e imágenes se eliminan a los 90 días de crearse —más tarde si alguno aún espera la revisión de una persona—, con una excepción: cuando una imagen ha coincidido con una base de datos de imágenes ilegales conocidas, el registro de la coincidencia y el hash de la imagen se conservan indefinidamente. La imagen se elimina; el registro es la única prueba de que la retirada se produjo, y conservarlo es un deber legal al que no podemos renunciar a petición tuya.
+
+Las decisiones de moderación —qué se decidió sobre una cuenta o un contenido, y por qué— se conservan sin límite de tiempo, también después de eliminar la cuenta, junto con las denuncias que las motivaron y, cuando decidió un moderador, una copia de aquello a lo que se refería la decisión: el texto del contenido, o la dirección de correo y el nombre de usuario de la cuenta. Son la prueba de decisiones que pueden recurrirse o revisarse. Cuando se elimina una cuenta, también se conservan como prueba las fotos de los contenidos que retiró un moderador y todas sus fotos mientras la cuenta esté bajo revisión legal.
 
 Los avisos dentro de la aplicación se eliminan 90 días después de que los hayas leído. Los no leídos se conservan.
 
@@ -305,7 +315,7 @@ El identificador de Google de un lugar que elegiste, y las palabras de búsqueda
 
 11. TUS DERECHOS
 
-Puedes consultar, corregir, exportar o eliminar la mayor parte de tus datos directamente en la aplicación: tu perfil es editable, tu contenido es editable y eliminable, y Ajustes, Eliminar cuenta borra la cuenta.
+Puedes consultar, corregir, exportar o eliminar la mayor parte de tus datos directamente en la aplicación: tu perfil es editable, tu contenido es editable y eliminable, y Eliminar cuenta, en la pantalla de edición de tu perfil, dentro de Seguridad, borra la cuenta. Sin la aplicación, ntripi.app/delete-account hace lo mismo.
 
 Según dónde residas, puedes tener además derecho a solicitarnos una copia de tus datos, a que se rectifiquen o supriman, a limitar u oponerte a su uso y a presentar una reclamación ante tu autoridad nacional de protección de datos. Escribe a privacy@ntripi.app y te responderemos.
 

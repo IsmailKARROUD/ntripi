@@ -156,6 +156,14 @@ loop re-raises `CancelledError`; swallowing it would break Starlette's lifespan.
    and are never purged**); expired bug reports; notifications; idle device
    tokens; dead edit locks.
 
+After the commit, two more, each in its own try/rollback so neither can cost the
+moderation work: the yearly Google place-ID refresh
+([places-and-maps.md](places-and-maps.md)), then **deferred account
+erasures** — deletions asked for at `/delete-account` while a legal escalation
+held the account, erased once nothing holds them
+(`account_service.erase_deferred`, each its own commit; see
+[account-deletion.md](account-deletion.md)).
+
 Emails are collected during the transaction and sent **after** the commit, each
 wrapped. **The re-check does not scan images** — a fail-open upload
 (`error_allowed`) is listed in `/admin/flagged` as "Not scanned" for a human, and
@@ -186,7 +194,7 @@ Migrations: `e190f1dcbf2c` created both; `cc74b2080cbf` allowed rating targets;
 
 ## API surface
 
-### Admin — 30 routes, all HTML, `include_in_schema=False`
+### Admin — 31 routes, all HTML, `include_in_schema=False`
 
 | Lane | Routes |
 |---|---|
@@ -195,12 +203,13 @@ Migrations: `e190f1dcbf2c` created both; `cc74b2080cbf` allowed rating targets;
 | reports | `GET /admin/reports`, `POST /admin/reports/{id}/action`, `POST /admin/reports/bulk` |
 | flagged images | `GET /admin/flagged`, `POST /admin/flagged/{log_id}/action` |
 | text flags | `GET /admin/text-flags`, `POST /admin/text-flags/{decision_id}/action` |
-| legal | `GET /admin/legal`, `POST /admin/legal/takedown`, `POST /admin/legal/{id}/close` |
+| legal | `GET /admin/legal` (the open escalations, and below them the web deletions they hold — read-only, the sweep erases each once nothing holds it), `POST /admin/legal/takedown`, `POST /admin/legal/{id}/close` |
 | appeals | `GET /admin/appeals`, `POST /admin/appeals/{id}/decide` |
 | bugs | `GET /admin/bugs`, `POST /admin/bugs/{id}/close`, `POST /admin/bugs/{id}/jira` |
 | outcomes | `GET /admin/log`, `/hidden`, `/removed`, `/suspended` |
 | itinerary | `GET /admin/itineraries/{id}`, `POST …/unhide`, `…/restore`, `…/remove` |
 | reversals | `POST /admin/ratings/{id}/unhide`, `POST /admin/users/{id}/unhide`, `POST /admin/users/{id}/unban` |
+| sign-up blocks | `POST /admin/signup-blocks/lift` — from a form on `/admin/suspended`: hashes the address typed in and deletes its block, the only way an erased suspended account's address signs up again |
 
 `bulk_resolve` only accepts `dismiss` / `delete`, silently skips non-pending
 rows, and for rating or profile targets calls `hide_reported_target(commit=False)`
@@ -248,12 +257,15 @@ Errors: 422 `appeal_reason_required` / `appeal_reason_too_long`, 404
 |---|---|---|---|---|
 | POST | `/internal/moderation-sweep` | `Bearer $SWEEP_TOKEN` | 10/min | the counters dict, or `{"skipped": "locked"}` |
 
-Counters: `sla_hidden, sla_already_hidden, rechecked, still_pending,
+Counters, in order: `sla_hidden, sla_already_hidden, rechecked, still_pending,
 recheck_hidden, cache_purged, decisions_purged, bug_reports_purged,
 notifications_purged, device_tokens_purged, edit_locks_purged,
-translations_purged` — the last covers orphaned translations, translations of
-removed trips and stale translation usage counters
-([translations.md](translations.md#housekeeping)).
+translations_purged, place_search_usage_purged, place_ids_checked,
+place_ids_changed, place_ids_missing, deferred_erasures`. `translations_purged`
+covers orphaned translations, translations of removed trips and stale
+translation usage counters ([translations.md](translations.md#housekeeping));
+`deferred_erasures` is the accounts the run erased
+([account-deletion.md](account-deletion.md)).
 
 ## Config
 
@@ -325,3 +337,4 @@ There is no admin client — `/admin` is server-rendered. The user-facing half:
 - [passwords-and-email.md](passwords-and-email.md) — the shared email plumbing
 - `../../social_api/docs/csam_response_runbook.md`
 - [places-and-maps.md](places-and-maps.md) — the sweep's yearly place-ID refresh
+- [account-deletion.md](account-deletion.md) — the sweep's deferred erasures, the Legal lane's waiting deletions, the sign-up block lift

@@ -246,12 +246,15 @@ app.state.limiter = limiter
 
 
 def _rate_limit_response(request: Request, exc: RateLimitExceeded) -> Response:
-    # The share pages are read in browsers, where a JSON 429 is a screen of raw
-    # text; every other limited route keeps slowapi's JSON.
+    # The share pages and the account-deletion forms are read in browsers, where
+    # a JSON 429 is a screen of raw text; every other limited route keeps
+    # slowapi's JSON.
     if request.url.path.startswith("/share/"):
         return share.rate_limited_page(request, exc)
     if is_embed_path(request.url.path):
         return embed.rate_limited_page(request, exc)
+    if request.url.path in web.DELETION_FORM_PATHS:
+        return web.deletion_rate_limited_page(request, exc)
     return _rate_limit_exceeded_handler(request, exc)
 
 

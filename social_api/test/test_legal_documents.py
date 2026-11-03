@@ -93,9 +93,42 @@ class TestDocumentBodies:
     def test_tos_keeps_the_ratings_retention_clause(self):
         # privacy.py and migration e493ea56a71b both cite the ToS as the
         # consent basis for keeping anonymised ratings. Dropping it would cut
-        # a stated legal basis out from under two files that name it.
+        # a stated legal basis out from under two files that name it. Since
+        # 3.3 it says what deletion actually keeps — the score AND the text.
         body = get_tos("en")
-        assert "anonymized form (score only, no identifying information)" in body
+        assert (
+            "retained after account deletion without your name or any link to "
+            "your account: the scores and the text you wrote stay with the "
+            "itinerary"
+        ) in body
+
+    # How each language promised "score only" before 3.3 / 2.6 — deletion keeps
+    # a review's text, so the promise was false wherever it appeared.
+    SCORE_ONLY = {
+        "en": "score only", "fr": "note seule", "es": "solo la puntuación",
+        "de": "nur die Punktzahl", "ar": "الدرجة فقط", "zh": "仅保留分数",
+    }
+
+    @pytest.mark.parametrize("lang", SUPPORTED)
+    def test_no_document_promises_a_score_only_rating(self, lang):
+        assert self.SCORE_ONLY[lang] not in get_tos(lang)
+        assert self.SCORE_ONLY[lang] not in get_privacy(lang)
+
+    @pytest.mark.parametrize("lang", SUPPORTED)
+    def test_both_documents_name_the_web_deletion_page(self, lang):
+        # Google Play's deletion URL, and the only erasure path a suspended
+        # account has — named in the terms (§7) and twice in the policy (§10–11).
+        assert "ntripi.app/delete-account" in get_tos(lang)
+        assert get_privacy(lang).count("ntripi.app/delete-account") >= 2
+
+    @pytest.mark.parametrize("lang", SUPPORTED)
+    def test_privacy_names_every_email_processor(self, lang):
+        # Resend sends every email Ntripi sends (the deletion link among them);
+        # Google Workspace receives mail to our addresses. Both handle users'
+        # addresses, so both are processors §5 must name.
+        body = get_privacy(lang)
+        assert "Resend" in body
+        assert "Google (Google Workspace)" in body or "Google（Google Workspace）" in body
 
 
 class TestPrevailingLanguageNotice:

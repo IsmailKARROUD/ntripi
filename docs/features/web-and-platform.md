@@ -120,18 +120,19 @@ the three affects the security ordering.
 
 | Limit | Endpoints |
 |---|---|
-| 5/hour | `POST /auth/register`, `/auth/change-password`, `/web/appeal-request`, `/bug-reports` |
+| 5/hour | `POST /auth/register`, `/auth/change-password`, `/web/appeal-request`, `/bug-reports`, `/web/delete-account-request` (`ACCOUNT_DELETION_RATE_LIMIT`) |
 | 10/minute | `/auth/login`, `/auth/google`, `/users/me/avatar`, `/users/me/cover-image`, `/admin/login`, `/internal/moderation-sweep` |
 | 60/minute | `/auth/refresh`, `POST /translations` |
 | 3/hour | `/auth/forgot-password`, `/auth/resend-verification` |
-| 10/hour | `/auth/accept-tos`, `/appeals`, `/web/appeal`, `POST /reports` |
+| 10/hour | `/auth/accept-tos`, `/appeals`, `/web/appeal`, `POST /reports`, `/web/delete-account` |
 | 30/minute | `GET /users/search`, `GET /itineraries/feed` |
 | 120/minute (`SHARE_RATE_LIMIT`) | `GET /share/i/{id}`, `GET /share/u/{username}` |
 
-The `/share` limit answers with an **HTML** page (`share_rate_limited.html`,
-`Retry-After` set) rather than slowapi's JSON, because those pages are read in
-browsers — `main.py`'s `_rate_limit_response` picks by path; every other limited
-route keeps the JSON body.
+The `/share` limit and the two `/delete-account` form posts answer with an **HTML**
+page (`share_rate_limited.html`, `delete_account_message.html`; `Retry-After` set
+through `limiter.retry_after`) rather than slowapi's JSON, because those pages
+are read in browsers — `main.py`'s `_rate_limit_response` picks by path; every
+other limited route keeps the JSON body, `/web/appeal-request` included.
 
 **`POST /waitlist/join` and `GET /help/search` are the two unlimited public
 POST/GET surfaces** — the latter deliberately, the former apparently not.
@@ -154,6 +155,11 @@ reaches the share-page teaser and nothing else**, and
   are seeded with a marker in every non-teaser field; every open GET (and every
   `/admin` page) is fetched signed out, plus the anonymous report POST, and a
   marker in any body or header fails it.
+
+The four `/delete-account` routes are `token-form`: the request page and its
+POST hand out nothing (the same answer for every address, with no database
+session in the route — [account-deletion.md](account-deletion.md)), and the
+confirm page and its POST need the emailed token.
 
 The Flutter half is `kPublicRoutes`, pinned by
 `test/core/router/public_routes_test.dart`. See
@@ -266,6 +272,7 @@ Full columns: [reference/data-model.md](../reference/data-model.md#waitlist).
 | GET | `/terms`, `/privacy`, `/guidelines` | none | see [legal-and-age-gate.md](legal-and-age-gate.md) |
 | GET | `/reset-password`, `/verify-email` | none | see [passwords-and-email.md](passwords-and-email.md) |
 | GET | `/appeal`, `/appeal/{token}` · POST `/web/appeal`, `/web/appeal-request` | none | see [admin-and-appeals.md](admin-and-appeals.md) |
+| GET | `/delete-account`, `/delete-account/confirm` · POST `/web/delete-account-request`, `/web/delete-account` | none (the confirm page and its POST need the emailed token) | deleting an account without the app — Google Play's deletion URL; see [account-deletion.md](account-deletion.md) |
 | GET | `/robots.txt`, `/sitemap.xml`, `/llms.txt`, `/llms-full.txt` | none | see [help-centre.md](help-centre.md) |
 | GET | `/.well-known/apple-app-site-association`, `/.well-known/assetlinks.json` | none | the app-link association files; **404 until configured** — see [app-links.md](app-links.md) |
 | GET | `/manifest.webmanifest` | none | names the Android app (`related_applications`) so Chrome can tell a share page it is installed; **404 until `ANDROID_APP_PACKAGE` is set** — see [app-links.md](app-links.md) |
@@ -416,3 +423,4 @@ ProviderScope
 - [app-links.md](app-links.md) — the `/.well-known` files, the link routing, `singleTask`
 - [constraints.md](../constraints.md)
 - [places-and-maps.md](places-and-maps.md) — the `/embed/*` map pages and their framing exception
+- [account-deletion.md](account-deletion.md) — the public `/delete-account` pages and their rate limit

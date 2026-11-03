@@ -34,6 +34,12 @@ for search engines, a search index, and the sitemap. Nothing is authored twice.
   `test_help_content.py`.
 - Article models are `frozen=True, slots=True` with tuple collections — required
   for the `lru_cache`s to be safe.
+- **One block is also rendered outside the help centre**:
+  `your-data-and-privacy#what-deletion-keeps` is shown on `/delete-account`
+  (`web.py`, through `article(lang, …)` and `render_markdown`), so the deletion
+  page and the help page cannot disagree about what deletion keeps. Rewording
+  that block rewords the page, in every language; renaming its anchor breaks
+  the page — `test_account_deletion_web.py` fetches it in all six.
 - **`whats-new` is a normal `Article`** with `schema=SCHEMA_RELEASES`;
   `templates/help/whats_new.html` is an **include** from `article.html`, not a
   route.
@@ -157,8 +163,9 @@ strips the Arabic definite article from tokens ≥5 chars.
   `?lang=`. `hreflang_alternates` appends `x-default` last.
 - **The language switcher uses `switch_lang(code)`, not a bare `?lang=`** — the
   bare form replaces the whole query string, which drops `q` on `/help/search`.
-- `sitemap_paths()`: `/`, `/help`, `/privacy`, `/terms`, `/guidelines`, plus every
-  `en` article. **Deliberately absent**: `/help/search`, `/admin`, `/appeal`,
+- `sitemap_paths()`: `/`, `/help`, `/privacy`, `/terms`, `/guidelines`,
+  `/delete-account` (the page people search for without the app — Play's
+  deletion URL), plus every `en` article. **Deliberately absent**: `/help/search`, `/admin`, `/appeal`,
   `/reset-password`, `/verify-email`, `/app`, `/share/*`.
 - **`llms.txt` is per-language and its links carry `?lang=`.** The index is the
   first thing an assistant reads; English titles under `?lang=de` would advertise
@@ -307,3 +314,4 @@ For each article the change touches:
 - [admin-and-appeals.md](admin-and-appeals.md) — why `robots.txt` names no crawlers
 - [constraints.md](../constraints.md)
 - [places-and-maps.md](places-and-maps.md) — `/help/add-locations-from-google-maps` describes it
+- [account-deletion.md](account-deletion.md) — `your-data-and-privacy` describes it; its `what-deletion-keeps` block is rendered on `/delete-account`
