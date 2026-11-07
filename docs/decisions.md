@@ -3116,3 +3116,58 @@ the button, and the 180 px beside the list held the 155 px button plus one.
   above.
 - **Centring the identity row on its own band rather than the window**: beside
   the side bar it would sit 40 px right of the cover and the name above it.
+
+### 2026-11-07 — The NSFW pre-check decides once for every platform, within 5 s; the web loads its model as a graph model; a picture the crop editor cannot decode is reported
+
+**Context.** The owner reported that on the web a picture that isn't allowed
+"just keeps loading", while Android says at once that it isn't allowed. The
+release web build, run in a headless browser against the backend with its image
+scanner stubbed, showed:
+- the web pre-check had never run. `nsfw_glue.js` loaded the vendored *graph*
+  model without `{ type: 'graph' }`, NSFWJS read it as a layers model, and the
+  load threw inside a catch. Every picture went on to the crop editor, and only
+  the backend refused it, at save — which the web does report;
+- a picture the browser cannot decode (a HEIC photo) left the crop editor's
+  loader spinning forever, Done disabled, its error unhandled. The web picker
+  hands over the file as it is; the phones' re-encodes it;
+- each platform decided for itself: the phones also refused `sexy > 0.999`
+  (`9d57ebf`), the web never read sexy;
+- the web loaded TensorFlow.js twice — `nsfwjs.min.js` already bundles it.
+
+**Decision.**
+- `nsfw_glue.js` loads the model with `{ type: 'graph' }`, and only
+  `nsfwjs.min.js`; `tf.min.js` is deleted.
+- The platform files return the porn, hentai and sexy scores, and
+  `nsfw_precheck.dart` decides once for both: porn or hentai above 0.6, or sexy
+  above 0.999 — the phones' rule.
+- `kNsfwPrecheckBudget` (5 s): a model that cannot answer in time lets the pick
+  through to the backend scan.
+- `_CropScreen` reports a failed decode, `openImageCropOverlay` closes and
+  throws, and both pickers say "Could not load image. Please try another." —
+  the profile photo's used to swallow every failure.
+- `test/core/moderation/nsfw_web_assets_test.dart` holds the glue to
+  `model.json`'s format and to the vendored files.
+
+**Consequences.**
+- On the web a picture the model flags is refused at the pick, as on a phone.
+  Checked on the release build: explicit-level scores injected at the JS
+  boundary gave the message under the cover; the real model ran and let a
+  neutral picture through; the server's refusal still showed at save; HEIC gave
+  "Could not load image" on the cover and the profile photo. No explicit image
+  was used.
+- The web downloads what it already did (the failing load fetched the weights
+  before it threw), minus `tf.min.js`'s 1.3 MB — and now for a working check.
+- A pick made before the model is ready skips the instant check; the backend
+  still refuses the picture at save.
+
+**Alternatives rejected.**
+- **Waiting for the model however long it takes**: on a slow connection the
+  picker would spin through a 20 MB download — the symptom reported.
+- **Skipping the check whenever the model is not loaded yet**: a pick right
+  after the form opens would nearly always skip it; the budget lets a model
+  that is almost ready answer.
+- **Decoding before the crop editor opens**: it would change when the editor
+  appears for every picture to cover a rare failure; reporting from the editor
+  keeps the existing timing.
+- **Converting HEIC in the browser**: a decoder library for a format the help
+  article can explain ("save it as a JPEG").

@@ -1,14 +1,15 @@
 // nsfw_glue.js — bridges Flutter web to NSFWJS without pulling TensorFlow.js
 // into app boot. Exposes window.ntripiNsfw = { load(), classify(bytes) }.
 //
-// load()          lazily injects the vendored tf.min.js + nsfwjs.min.js and
-//                 loads the local model — only on first call (when an upload
-//                 UI mounts), so it never blocks the initial page load.
-// classify(bytes) returns { porn, hentai } confidences (0..1). Resolves to null
-//                 if the model isn't available, so the Dart side never-blocks.
+// load()          lazily injects the vendored nsfwjs.min.js and loads the local
+//                 model — only on first call (when an upload UI mounts), so it
+//                 never blocks the initial page load.
+// classify(bytes) returns { porn, hentai, sexy } confidences (0..1). Resolves
+//                 to null if the model isn't available, so the Dart side
+//                 never-blocks; lib/core/moderation/nsfw_precheck.dart decides.
 //
-// The heavy assets are NOT committed — drop them into web/nsfw/ per README.md.
-// Until then load() rejects and classify() returns null (pre-check disabled).
+// nsfwjs.min.js carries its own TensorFlow.js: loading a second copy registered
+// every backend and kernel twice and downloaded 1.3 MB for nothing.
 (function () {
   'use strict';
 
@@ -28,10 +29,11 @@
   function load() {
     if (_ready) return _ready;
     _ready = (async function () {
-      await loadScript('nsfw/tf.min.js');
       await loadScript('nsfw/nsfwjs.min.js');
-      // Vendored MobileNetV2Mid graph model (model.json + shards).
-      _model = await nsfwjs.load('nsfw/model/');
+      // The vendored model is a graph model (model.json "format"); without
+      // type 'graph' NSFWJS reads it as a layers model, the load throws, and
+      // the pre-check is silently off — as it was on the web until 2026-11-07.
+      _model = await nsfwjs.load('nsfw/model/', { type: 'graph' });
     })().catch(function (e) {
       // Leave _model null so classify() returns null (never-block).
       console.warn('[ntripiNsfw] model load failed; pre-check disabled:', e);
@@ -56,10 +58,11 @@
     try {
       var img = await loadImage(url);
       var preds = await _model.classify(img);
-      var out = { porn: 0, hentai: 0 };
+      var out = { porn: 0, hentai: 0, sexy: 0 };
       preds.forEach(function (p) {
         if (p.className === 'Porn') out.porn = p.probability;
         else if (p.className === 'Hentai') out.hentai = p.probability;
+        else if (p.className === 'Sexy') out.sexy = p.probability;
       });
       return out;
     } catch (e) {

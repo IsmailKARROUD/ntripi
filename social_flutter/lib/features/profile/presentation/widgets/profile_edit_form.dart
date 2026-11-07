@@ -123,7 +123,12 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
         _avatarRemoved = false;
       });
     } catch (_) {
-      // Picker errors are silent — user can retry.
+      // Say so, as the cover field does: a file the crop editor cannot decode
+      // (a HEIC photo in a web browser) otherwise looked like an ignored tap.
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.couldNotLoadImage)),
+      );
     }
   }
 

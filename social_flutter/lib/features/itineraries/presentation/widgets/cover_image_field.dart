@@ -42,6 +42,8 @@ const _maxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
 
 /// Launches the full-screen crop overlay with the given source bytes and
 /// target dimensions. Returns the cropped PNG bytes, or null if cancelled.
+/// Throws when [sourceBytes] cannot be decoded — a HEIC photo in a web
+/// browser — once the overlay has closed itself, so the caller says why.
 ///
 /// Used by [CoverImageField] and by ad-hoc avatar pickers that don't want
 /// the full picker chrome — they only need the crop step after their own
@@ -89,6 +91,15 @@ Future<Uint8List?> openImageCropOverlay(
         if (!completer.isCompleted) completer.complete(bytes);
       },
       onCancel: () => historyEntry.remove(),
+      // Left open, an undecodable image spun the editor's loader forever with
+      // Done disabled — the web's "keeps loading" (2026-11-07).
+      onDecodeFailed: (error, stack) {
+        if (closed) return;
+        closed = true;
+        historyEntry.remove();
+        overlayEntry.remove();
+        if (!completer.isCompleted) completer.completeError(error, stack);
+      },
     ),
   );
 
@@ -331,6 +342,7 @@ class _CropScreen extends StatefulWidget {
   final int targetHeight;
   final void Function(Uint8List bytes) onDone;
   final VoidCallback onCancel;
+  final void Function(Object error, StackTrace stack) onDecodeFailed;
 
   const _CropScreen({
     required this.imageBytes,
@@ -338,6 +350,7 @@ class _CropScreen extends StatefulWidget {
     required this.targetHeight,
     required this.onDone,
     required this.onCancel,
+    required this.onDecodeFailed,
   });
 
   @override
@@ -375,9 +388,14 @@ class _CropScreenState extends State<_CropScreen> {
   }
 
   Future<void> _decodeImageSize() async {
-    final codec = await ui.instantiateImageCodec(widget.imageBytes);
-    final frame = await codec.getNextFrame();
-    final img = frame.image;
+    final ui.Image img;
+    try {
+      final codec = await ui.instantiateImageCodec(widget.imageBytes);
+      img = (await codec.getNextFrame()).image;
+    } catch (error, stack) {
+      if (mounted) widget.onDecodeFailed(error, stack);
+      return;
+    }
     if (mounted) {
       setState(() {
         _imageSize = Size(img.width.toDouble(), img.height.toDouble());

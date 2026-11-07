@@ -9,6 +9,9 @@
 //
 // The second test guards the rotate control: the crop math runs in a rotated
 // "display space", so a bug there ships a cover framed on the wrong region.
+//
+// The third guards an image the editor cannot decode (a HEIC photo in a web
+// browser): its loader used to spin forever with Done disabled.
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -183,5 +186,48 @@ void main() {
         reason: 'top-left must no longer hold the marker');
     expect(await _pixelAt(tester, result!, 10, 30), isSameColorAs(Colors.blue));
     expect(await _pixelAt(tester, result!, 30, 30), isSameColorAs(Colors.blue));
+  });
+
+  testWidgets('an image that cannot be decoded closes the editor and throws',
+      (tester) async {
+    late BuildContext ctx;
+    await tester.pumpWidget(
+      BetterFeedback(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(builder: (c) {
+              ctx = c;
+              return const Text('form');
+            }),
+          ),
+        ),
+      ),
+    );
+
+    Object? error;
+    var settled = false;
+    openImageCropOverlay(ctx,
+            sourceBytes: Uint8List.fromList(List.filled(64, 7)),
+            targetWidth: 1200,
+            targetHeight: 630)
+        .then<void>((_) => settled = true, onError: (Object e) {
+      error = e;
+      settled = true;
+    });
+    await tester.pump();
+    expect(find.text('Adjust cover photo'), findsOneWidget);
+
+    await _settle(tester, () => settled);
+    await tester.pump();
+
+    expect(error, isNotNull,
+        reason: 'the caller must learn the image could not be read');
+    expect(find.text('Adjust cover photo'), findsNothing,
+        reason: 'the editor must not stay open on its loader');
+    expect(find.text('form'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

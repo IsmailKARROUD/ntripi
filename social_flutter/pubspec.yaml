@@ -2,7 +2,7 @@ name: ntripi
 description: Ntripi — share, discover and plan travel itineraries.
 publish_to: 'none'
 
-version: 0.3.7+18
+version: 0.3.8+19
 
 environment:
   # google_sign_in 7.x requires Dart >= 3.7 (the v7 rewrite). Local toolchain is 3.12.
@@ -155,8 +155,7 @@ flutter:
   uses-material-design: true
   assets:
    - assets/data/currencies.json
-   # NSFW pre-check model (mobile). The .tflite binary is not committed — the
-   # check is a no-op until it's dropped in (see assets/models/README.md).
+   # NSFW pre-check model (mobile), committed — see assets/models/README.md.
    - assets/models/nsfw_mobilenet.tflite
    # UI sound cues. AssetSource paths drop the `assets/` prefix — AudioCache
    # adds it back (see sfx_service.dart).

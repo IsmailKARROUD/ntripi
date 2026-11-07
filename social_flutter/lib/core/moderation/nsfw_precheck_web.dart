@@ -1,20 +1,18 @@
 // Web NSFW pre-check — delegates to NSFWJS (TensorFlow.js) through a tiny
 // vendored glue script that exposes `window.ntripiNsfw`. The glue lazily loads
-// tf.min.js + nsfwjs.min.js + the model on first use, so app boot is never
-// blocked (see web/nsfw/README.md for the vendored files).
+// nsfwjs.min.js + the model on first use, so app boot is never blocked (see
+// web/nsfw/README.md). It only scores a picture; nsfw_precheck.dart decides,
+// for both platforms.
 //
 // Uses the modern dart:js_interop (not the deprecated dart:html/dart:js_util),
 // which resolves on every platform so `flutter analyze` stays clean.
 //
 // Never-block contract: if the glue script or model is absent, or anything
-// throws, isLikelyNsfw() returns false — the backend image scan is the
-// authority.
+// throws, nsfwScores() returns null — the backend image scan is the authority.
 
 import 'dart:js_interop';
 
 import 'package:flutter/foundation.dart';
-
-const double _kNsfwThreshold = 0.60;
 
 Future<void>? _loadFuture;
 
@@ -31,9 +29,11 @@ extension type _NtripiNsfw(JSObject _) implements JSObject {
 extension type _NsfwResult(JSObject _) implements JSObject {
   external double get porn;
   external double get hentai;
+  // Nullable: a browser can still hold a glue cached before it sent `sexy`.
+  external double? get sexy;
 }
 
-void warmUpNsfwPrecheck() {
+void warmUpNsfwModel() {
   // Fire-and-forget: trigger the glue's lazy model load without awaiting it.
   _ensureLoaded();
 }
@@ -50,18 +50,20 @@ Future<void> _load() async {
   }
 }
 
-Future<bool> isLikelyNsfw(Uint8List imageBytes) async {
+/// The model's scores for [imageBytes], or null when it cannot answer.
+Future<({double porn, double hentai, double sexy})?> nsfwScores(
+    Uint8List imageBytes) async {
   try {
     final glue = _glue;
-    if (glue == null) return false;
+    if (glue == null) return null;
     await _ensureLoaded();
-    // classify(bytes) → { porn: <0..1>, hentai: <0..1> } or null.
+    // classify(bytes) → { porn, hentai, sexy } (each 0..1) or null.
     final result = await glue.classify(imageBytes.toJS).toDart;
-    if (result == null) return false;
-    return result.porn > _kNsfwThreshold || result.hentai > _kNsfwThreshold;
+    if (result == null) return null;
+    return (porn: result.porn, hentai: result.hentai, sexy: result.sexy ?? 0);
   } catch (e) {
-    // Any failure → allow the upload; the backend scan is authoritative.
+    // Any failure → no answer, which allows the upload; the backend decides.
     if (kDebugMode) debugPrint('NSFW pre-check errored (allowing): $e');
-    return false;
+    return null;
   }
 }

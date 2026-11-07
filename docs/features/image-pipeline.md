@@ -160,13 +160,24 @@ builds already installed, and go once no build in testing calls them
   overlay, outside `MaterialApp` — see [bug-reports.md](bug-reports.md).
   Regression test: `test/widgets/cover_crop_overlay_test.dart`.
 - The crop editor can rotate a picked image 90° (`71f8c44`).
+- **A picture the platform cannot decode closes the crop editor.**
+  `_CropScreen` reports the failed decode (`onDecodeFailed`),
+  `openImageCropOverlay` removes the overlay and throws, and the picker says
+  *"Could not load image. Please try another."* (`couldNotLoadImage`) — under a
+  cover field, in a snackbar for the profile photo. On the web the picker hands
+  over the file as it is (no resize, no re-encode), so a HEIC photo reaches the
+  editor; until 2026-11-07 its loader spun forever with Done disabled, and the
+  profile photo's picker swallowed the error. Regression tests:
+  `test/widgets/cover_crop_overlay_test.dart`,
+  `test/widgets/undecodable_image_pick_test.dart`.
 - `_CropScreen` is private to `cover_image_field.dart`.
 - `core/cache/image_cache.dart` — the project-wide image cache; `?v=` is what
   gives it cross-device freshness.
 - `image_picker` for selection; `UserAvatar` and
   `itinerary_cover_placeholder.dart` render the `nt.sand` placeholders.
-- `core/moderation/nsfw_precheck*.dart` — the client pre-check facade, currently
-  inert on both platforms. See [image-moderation.md](image-moderation.md).
+- `core/moderation/nsfw_precheck*.dart` — the client pre-check, run on the
+  picked file before the crop editor opens; one decision and a 5 s budget for
+  every platform. See [image-moderation.md](image-moderation.md#the-client-pre-check).
 
 ## Known gaps / TODOs
 

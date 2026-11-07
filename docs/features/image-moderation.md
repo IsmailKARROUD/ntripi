@@ -194,16 +194,42 @@ email an hour per situation:
 ### The client pre-check
 
 `lib/core/moderation/nsfw_precheck*.dart` is a **UX and cost optimisation only —
-the backend is the authority.** It is currently **inert on both platforms**:
+the backend is the authority.** It runs on every platform, on the picked file,
+before the crop editor opens. A picture it refuses never reaches the editor or
+the network: a cover field (a trip's, or a profile's) says *"This image appears
+to contain content that isn't allowed."* (`imageBlockedNsfw`) under the
+picture; the profile photo says it in a snackbar.
 
-- **Mobile** (`nsfw_precheck_io.dart:8`): *"The model file
-  (assets/models/nsfw_mobilenet.tflite, ~3 MB) is NOT vendored in the repo …
-  Until it's dropped in, this tier is a no-op."* The required contract is in
-  `social_flutter/assets/models/README.md` — input `[1,224,224,3]` float32 RGB
-  `/255`, output `[1,5]` softmax over `drawings, hentai, neutral, porn, sexy`.
-- **Web** (`social_flutter/web/nsfw/README.md`): TensorFlow.js and NSFWJS weights
-  are not committed. `load()` fails gracefully and the pre-check is a no-op.
-  Everything is served same-origin from `web/nsfw/` — **do not switch
+- **One model on both platforms**, committed since 2026-07-28 (`f9a8ceb`): the
+  GantMan MobileNetV2 (input `[1,224,224,3]` float32 RGB `/255`, a softmax over
+  `drawings, hentai, neutral, porn, sexy`). The phones run
+  `assets/models/nsfw_mobilenet.tflite` through `tflite_flutter`
+  (`nsfw_precheck_io.dart`); the web runs the same network as a TensorFlow.js
+  graph model through NSFWJS (`nsfw_precheck_web.dart` →
+  `web/nsfw/nsfw_glue.js`).
+- **One decision** (`nsfw_precheck.dart`). The platform files only return the
+  porn, hentai and sexy scores; the facade refuses when porn or hentai is above
+  `kNsfwThreshold` (0.6), or sexy above `kNsfwSexyThreshold` (0.999 — the
+  owner's tuning, `9d57ebf`). Until 2026-11-07 each platform decided for itself,
+  and the web left sexy out.
+- **A time budget**, `kNsfwPrecheckBudget` (5 s). The model loads in the
+  background when an upload field mounts (`warmUpNsfwPrecheck`). A pick that
+  finds it still loading, or a model that does not answer, goes on unchecked to
+  the backend scan rather than hold the picker on a spinner.
+- **Fails open**: a missing model, a load or inference error, or a picture the
+  model cannot read all answer "allow".
+- **The web model is a graph model.** `nsfw_glue.js` must load it with
+  `{ type: 'graph' }`. Without it NSFWJS reads it as a layers model and the load
+  throws inside a catch — how the web shipped until 2026-11-07, letting every
+  picture through to the crop editor while the phones refused it.
+  `nsfwjs.min.js` carries its own TensorFlow.js, so nothing loads `tf.min.js`
+  beside it (a second copy registered every kernel twice).
+  `test/core/moderation/nsfw_web_assets_test.dart` holds the glue to the model's
+  format and to the files that are vendored.
+- On the web, the first upload field opened in a browser downloads about 20 MB
+  (NSFWJS and the weights) — no more than before the fix, since the failing load
+  fetched the weights before it threw.
+- Everything is served same-origin from `web/nsfw/` — **do not switch
   `nsfw_glue.js` back to a CDN URL**, which would need a CSP change.
 
 ### Audit retention
@@ -273,10 +299,10 @@ code.
 
 ## Known gaps / TODOs
 
-- **The client pre-check is inert on both platforms** — neither the TFLite model
-  nor the NSFWJS weights are vendored. Every image reaches the backend scan,
-  which is the actual authority, so this is a cost/UX gap rather than a safety
-  one. See [backlog.md](../backlog.md).
+- **A pick the client model cannot answer within 5 s goes on unchecked** —
+  typically the first pick on a slow connection, while the web's model is still
+  downloading. The backend scan still refuses the picture at save; only the
+  instant message is missed.
 - **The post-outage re-check does not re-scan images.** An `error_allowed` image
   scan sets `itinerary.moderation_status = 'pending'`, and the sweep's re-check
   then re-scans only the **text** fields of that itinerary. A fail-open image is

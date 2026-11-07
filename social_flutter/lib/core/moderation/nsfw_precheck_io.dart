@@ -1,13 +1,13 @@
 // Mobile/desktop NSFW pre-check — runs the GantMan MobileNetV2 NSFW model
 // (5 classes) through tflite_flutter, off the UI thread via IsolateInterpreter.
+// It only scores a picture; nsfw_precheck.dart decides, for both platforms.
 //
 // Never-block contract: if the model asset is absent or anything throws, this
-// silently disables itself and isLikelyNsfw() returns false — the backend
-// image scan remains the authority.
+// silently disables itself and nsfwScores() returns null — the backend image
+// scan remains the authority.
 //
-// The model file (assets/models/nsfw_mobilenet.tflite, ~3 MB) is NOT vendored
-// in the repo; see assets/models/README.md for how to source it. Until it's
-// dropped in, this tier is a no-op.
+// The model file (assets/models/nsfw_mobilenet.tflite, ~17 MB) is committed;
+// see assets/models/README.md for its contract.
 
 import 'dart:ui' as ui;
 
@@ -20,8 +20,6 @@ const int _kHentaiIndex = 1;
 const int _kPornIndex = 3;
 const int _kSexyIndex = 4;
 const int _kModelInputSize = 224;
-const double _kNsfwThreshold = 0.6;
-const double _kNsfwThresholdSexy = 0.999;
 const String _kModelAsset = 'assets/models/nsfw_mobilenet.tflite';
 
 // The loaded model (null until _load succeeds, or forever if it fails).
@@ -29,9 +27,9 @@ IsolateInterpreter? _interpreter;
 // Holds the in-flight/finished load so we only ever load once — see _ensureLoaded.
 Future<void>? _loadFuture;
 
-void warmUpNsfwPrecheck() {
+void warmUpNsfwModel() {
   // Fire-and-forget: kick off the (idempotent) model load without awaiting it,
-  // so mounting the upload UI never blocks on the ~3 MB model.
+  // so mounting the upload UI never blocks on the ~17 MB model.
   _ensureLoaded();
 }
 
@@ -53,15 +51,17 @@ Future<void> _load() async {
   }
 }
 
-Future<bool> isLikelyNsfw(Uint8List imageBytes) async {
+/// The model's scores for [imageBytes], or null when it cannot answer.
+Future<({double porn, double hentai, double sexy})?> nsfwScores(
+    Uint8List imageBytes) async {
   try {
-    await _ensureLoaded(); // block until the (one-time) model load finishes
+    await _ensureLoaded(); // wait for the (one-time) model load to finish
     final interpreter = _interpreter;
-    if (interpreter == null) return false; // model unavailable → allow the upload
+    if (interpreter == null) return null; // model unavailable → no answer
 
     // Convert the raw image into the tensor the model expects (224×224 RGB floats).
     final input = await _preprocess(imageBytes);
-    if (input == null) return false;
+    if (input == null) return null;
 
     // Pre-allocate the buffer the model writes results into: shape [1, 5], i.e.
     // one row of 5 softmax probabilities (one per class) that the run() call fills.
@@ -69,16 +69,17 @@ Future<bool> isLikelyNsfw(Uint8List imageBytes) async {
     await interpreter.run(input, output); // runs on the background isolate
 
     // output[0] = [drawings, hentai, neutral, porn, sexy], each 0.0–1.0, summing ≈1.
+    // `drawings` and `neutral` never refuse, so only these three leave here.
     final scores = (output[0] as List).cast<double>();
-    // Flag only the two explicit classes above the threshold; `sexy`/`drawings`
-    // stay allowed (this is a soft UX pre-check, not the authoritative filter).
-    return scores[_kPornIndex] > _kNsfwThreshold ||
-        scores[_kHentaiIndex] > _kNsfwThreshold ||
-        scores[_kSexyIndex] > _kNsfwThresholdSexy;
+    return (
+      porn: scores[_kPornIndex],
+      hentai: scores[_kHentaiIndex],
+      sexy: scores[_kSexyIndex],
+    );
   } catch (e) {
-    // Any failure → allow the upload; the backend scan is authoritative.
+    // Any failure → no answer, which allows the upload; the backend decides.
     if (kDebugMode) debugPrint('NSFW pre-check errored (allowing): $e');
-    return false;
+    return null;
   }
 }
 

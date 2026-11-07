@@ -111,6 +111,7 @@ RELEASES: tuple[Release, ...] = (
             "**Supprimer votre compte sans l’application.** [ntripi.app/delete-account](/delete-account) envoie un lien à l’adresse de votre compte ; ouvrez-le et confirmez. Les Conditions et la Politique de confidentialité mises à jour disent ce qui reste ensuite — les avis gardent leur texte, sans votre nom — et il vous sera demandé de les accepter une nouvelle fois.",
             "**Les onglets passent sur le côté sur un grand écran.** Sur une tablette, ou dans une fenêtre de navigateur assez large, les cinq onglets s’affichent sur le côté gauche plutôt qu’en bas, et chaque écran reste centré, à une largeur confortable à lire. Les tablettes peuvent désormais être tournées à l’horizontale.",
             "**Les grands écrans tirent parti de leur place.** Les onglets sur le côté occupent toute la hauteur de l’écran. **Nouvel itinéraire** passe tout à droite, à l’écart de votre liste, et le titre **Mes itinéraires** partage sa ligne avec **Tous**, **Les miens** et **Partagés**. Sur un profil, le nom se place à côté des compteurs **Abonnés** et **Abonnements**, et **Passeport**, **Réside à** et **Parle** s’alignent sur une seule ligne, d’un bord à l’autre de l’écran. Quand la place manque, tout s’empile comme sur un téléphone.",
+            "**Les images non autorisées sont aussi arrêtées sur le web.** Comme sur téléphone, une image qui enfreint manifestement les règles de la communauté est refusée dès que vous la choisissez, et la raison s’affiche. Si vous choisissez une image que votre navigateur ne peut pas ouvrir — certaines photos HEIC, par exemple —, l’application le dit désormais, au lieu de charger sans fin.",
         ),
     ),
     Release(
@@ -738,10 +739,10 @@ Le recadrage est large, parce que c’est la forme qu’utilise un aperçu de li
                 body="""Une image peut être refusée pour trois raisons :
 
 - **Trop petite.** En dessous de 600 pixels sur son plus petit côté, elle paraîtra floue sur un écran moderne.
-- **Un format non pris en charge.** JPEG, PNG et les formats photo habituels conviennent.
-- **Le contenu.** Les envois sont vérifiés automatiquement au regard des [règles de la communauté](/guidelines) avant d’être stockés.
+- **Un format non pris en charge.** JPEG, PNG et les formats photo habituels conviennent. Une image qui ne peut pas être ouverte — certaines photos HEIC dans un navigateur web, par exemple — est écartée dès que vous la choisissez ; enregistrez-la en JPEG et choisissez-la de nouveau.
+- **Le contenu.** Les envois sont vérifiés automatiquement au regard des [règles de la communauté](/guidelines) avant d’être stockés. Une image qui les enfreint manifestement est refusée dès que vous la choisissez, sur téléphone comme sur le web ; les autres sont vérifiées à l’enregistrement.
 
-Une photo refusée arrête tout l’enregistrement : rien n’en est conservé — ni vos autres modifications, ni un voyage que vous étiez en train de créer. L’écran reste tel que vous l’avez laissé : choisissez une autre photo, ou retirez-la, puis enregistrez de nouveau.
+Une photo refusée au moment d’enregistrer arrête tout l’enregistrement : rien n’en est conservé — ni vos autres modifications, ni un voyage que vous étiez en train de créer. L’écran reste tel que vous l’avez laissé : choisissez une autre photo, ou retirez-la, puis enregistrez de nouveau.
 
 Si vous pensez qu’un refus était injustifié, [dites-le-nous](/help/contact).""",
             ),
@@ -771,9 +772,11 @@ Mieux vaut tout de même en ajouter une vraie avant de partager publiquement : d
             "vignette",
             "refusée",
             "trop petite",
+            "non autorisée",
+            "heic",
         ),
         related=("plan-a-trip-itinerary", "share-a-trip-link"),
-        updated="2026-10-21",
+        updated="2026-11-07",
         cta="Donnez un visage à votre voyage.",
     ),
     Article(

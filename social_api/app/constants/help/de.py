@@ -111,6 +111,7 @@ RELEASES: tuple[Release, ...] = (
             "**Konto ohne die App löschen.** [ntripi.app/delete-account](/delete-account) schickt einen Link an die Adresse Ihres Kontos; öffnen Sie ihn und bestätigen Sie. Die aktualisierten Nutzungsbedingungen und die Datenschutzerklärung sagen, was danach bleibt — Rezensionen behalten ihren Text, ohne Ihren Namen —, und Sie werden gebeten, sie noch einmal zu akzeptieren.",
             "**Auf breiten Bildschirmen wandern die Tabs an die Seite.** Auf einem Tablet oder in einem Browserfenster mit genug Platz stehen die fünf Tabs am linken Rand statt unten, und jeder Bildschirm bleibt mittig, in angenehmer Lesebreite. Tablets lassen sich jetzt auch quer halten.",
             "**Breite Bildschirme nutzen ihren Platz.** Die Tabs am Rand verteilen sich über die ganze Höhe des Bildschirms. **Neue Reiseroute** rückt ganz nach rechts, weg von Ihrer Liste, und der Titel **Meine Reiserouten** teilt sich seine Zeile mit **Alle**, **Meine** und **Geteilt**. Im Profil steht der Name neben den Zählern **Follower** und **Gefolgt**, und **Reisepass**, **Wohnt in** und **Spricht** stehen in einer Zeile quer über den Bildschirm. Wo der Platz nicht reicht, steht alles untereinander wie auf dem Telefon.",
+            "**Unzulässige Bilder werden jetzt auch im Web gestoppt.** Wie auf dem Telefon wird ein Bild, das offensichtlich gegen die Community-Richtlinien verstößt, schon beim Auswählen abgelehnt, mit Begründung. Wählen Sie ein Bild, das Ihr Browser nicht öffnen kann — etwa manche HEIC-Fotos —, sagt die App das jetzt, statt endlos zu laden.",
         ),
     ),
     Release(
@@ -736,10 +737,10 @@ Der Zuschnitt ist breit, denn das ist das Format einer Linkvorschau. Ein hochfor
                 body="""Ein Bild kann aus drei Gründen abgelehnt werden:
 
 - **Zu klein.** Unter 600 Pixeln an der kürzeren Seite wirkt es auf einem modernen Display unscharf.
-- **Ein nicht unterstütztes Format.** JPEG, PNG und die üblichen Fotoformate sind in Ordnung.
-- **Der Inhalt.** Uploads werden vor dem Speichern automatisch gegen die [Community-Richtlinien](/guidelines) geprüft.
+- **Ein nicht unterstütztes Format.** JPEG, PNG und die üblichen Fotoformate sind in Ordnung. Ein Bild, das sich nicht öffnen lässt — etwa manche HEIC-Fotos in einem Webbrowser —, wird schon beim Auswählen abgewiesen; speichern Sie es als JPEG und wählen Sie es erneut.
+- **Der Inhalt.** Uploads werden vor dem Speichern automatisch gegen die [Community-Richtlinien](/guidelines) geprüft. Ein Bild, das offensichtlich gegen sie verstößt, wird schon beim Auswählen abgelehnt, auf dem Telefon wie im Web; alle anderen werden beim Speichern geprüft.
 
-Ein abgelehntes Foto hält das ganze Speichern auf: Nichts davon wird übernommen — weder Ihre anderen Änderungen noch eine Reise, die Sie gerade anlegen. Der Bildschirm bleibt, wie Sie ihn verlassen haben: Wählen Sie ein anderes Foto oder entfernen Sie es, und speichern Sie erneut.
+Ein beim Speichern abgelehntes Foto hält das ganze Speichern auf: Nichts davon wird übernommen — weder Ihre anderen Änderungen noch eine Reise, die Sie gerade anlegen. Der Bildschirm bleibt, wie Sie ihn verlassen haben: Wählen Sie ein anderes Foto oder entfernen Sie es, und speichern Sie erneut.
 
 Wenn Sie eine Ablehnung für falsch halten, [sagen Sie es uns](/help/contact).""",
             ),
@@ -768,9 +769,11 @@ Vor dem öffentlichen Teilen lohnt sich trotzdem ein echtes: In einem Feed volle
             "vorschaubild",
             "abgelehnt",
             "zu klein",
+            "nicht erlaubt",
+            "heic",
         ),
         related=("plan-a-trip-itinerary", "share-a-trip-link"),
-        updated="2026-10-21",
+        updated="2026-11-07",
         cta="Geben Sie Ihrer Reise ein Gesicht.",
     ),
     Article(

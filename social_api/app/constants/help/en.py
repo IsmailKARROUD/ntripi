@@ -197,6 +197,11 @@ RELEASES: tuple[Release, ...] = (
             "beside the **Followers** and **Following** counts, and **Passport**, "
             "**Lives in** and **Speaks** line up in one row across the screen. "
             "Wherever there isn't room, everything stacks as it does on a phone.",
+            "**Pictures that aren't allowed are stopped on the web too.** As on a "
+            "phone, a picture that plainly breaks the community guidelines is "
+            "refused as soon as you pick it, with a message saying why. Picking "
+            "one your browser cannot open — some HEIC photos, for example — now "
+            "says so too, instead of loading forever.",
         ),
     ),
     Release(
@@ -1022,10 +1027,10 @@ ARTICLES: tuple[Article, ...] = (
             "upload."
         ),
         category="building",
-        updated="2026-10-21",
+        updated="2026-11-07",
         keywords=(
             "cover", "photo", "image", "picture", "upload", "crop", "banner",
-            "thumbnail", "rejected", "too small",
+            "thumbnail", "rejected", "too small", "not allowed", "heic",
         ),
         related=("plan-a-trip-itinerary", "share-a-trip-link"),
         cta="Give your trip a face.",
@@ -1055,13 +1060,18 @@ ARTICLES: tuple[Article, ...] = (
                     "- **Too small.** Anything under 600 pixels on its shortest "
                     "side will look soft on a modern screen.\n"
                     "- **An unsupported format.** JPEG, PNG and the usual photo "
-                    "formats are fine.\n"
+                    "formats are fine. A picture that cannot be opened — some HEIC "
+                    "photos in a web browser, for example — is turned away as soon "
+                    "as you pick it; save it as a JPEG and pick it again.\n"
                     "- **Content.** Uploads are checked automatically against the "
-                    "[community guidelines](/guidelines) before they are stored.\n\n"
-                    "A refused photo stops the whole save: nothing from it is "
-                    "kept — not your other changes, and not a trip you were "
-                    "creating. The screen stays as you left it, so choose another "
-                    "photo, or remove it, and save again.\n\n"
+                    "[community guidelines](/guidelines) before they are stored. A "
+                    "picture that plainly breaks them is refused as soon as you "
+                    "pick it, on a phone or on the web; the rest are checked when "
+                    "you save.\n\n"
+                    "A photo refused when you save stops the whole save: nothing "
+                    "from it is kept — not your other changes, and not a trip you "
+                    "were creating. The screen stays as you left it, so choose "
+                    "another photo, or remove it, and save again.\n\n"
                     "If you believe a refusal was wrong, [tell us](/help/contact)."
                 ),
             ),

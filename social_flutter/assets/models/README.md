@@ -1,21 +1,24 @@
 # NSFW pre-check model (mobile)
 
 The client-side NSFW pre-check on **iOS/Android** loads a TensorFlow Lite model
-from this directory. The model binary is **not committed** (it's ~3 MB and must
-be sourced/verified separately). Until it's added, the mobile pre-check is a
-no-op — every image is allowed through to the backend image scan,
-which is the actual authority (never-block contract in
-`lib/core/moderation/nsfw_precheck_io.dart`).
+from this directory. The model is **committed** (`nsfw_mobilenet.tflite`,
+~17 MB, since 2026-07-28). If it fails to load, the mobile pre-check is a no-op —
+every image is allowed through to the backend image scan, which is the actual
+authority (never-block contract in `lib/core/moderation/nsfw_precheck.dart`).
 
-## Required file
+The web runs the same network as a TensorFlow.js graph model
+(`web/nsfw/model/`), and both platforms' scores go through one decision —
+thresholds and time budget — in `lib/core/moderation/nsfw_precheck.dart`.
+
+## File
 
 ```
 assets/models/nsfw_mobilenet.tflite
 ```
 
-## How to source it
+## Where it comes from
 
-Use the GantMan `nsfw_model` MobileNetV2 model (5 classes, 224×224 input):
+The GantMan `nsfw_model` MobileNetV2 model (5 classes, 224×224 input):
 
 - Prebuilt/community TFLite export of https://github.com/GantMan/nsfw_model, **or**
 - Convert the Keras `nsfw.299x299.h5` / MobileNetV2 SavedModel to TFLite:
@@ -36,6 +39,7 @@ The Dart preprocessing in `nsfw_precheck_io.dart` assumes:
 - **Output:** `[1, 5]` softmax over the alphabetical classes
   `drawings, hentai, neutral, porn, sexy` (indices 0–4).
 
-If your model differs (e.g. 299×299 input, `-1..1` normalization, different
-class order), update the constants in `nsfw_precheck_io.dart` accordingly, then
-verify on a device before shipping.
+If a replacement model differs (e.g. 299×299 input, `-1..1` normalization,
+different class order), update the constants in `nsfw_precheck_io.dart`
+accordingly — and replace the web's model too, so both platforms still score a
+picture alike — then verify on a device before shipping.

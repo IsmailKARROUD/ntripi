@@ -1,35 +1,37 @@
 # NSFW pre-check assets (web)
 
 The client-side NSFW pre-check on **Flutter web** uses NSFWJS (TensorFlow.js),
-bridged by `nsfw_glue.js` (committed). The heavy libraries and model weights are
-**not committed** — drop them here to activate the web pre-check. Until then the
-glue's `load()` fails gracefully and the pre-check is a no-op (never-block
-contract in `lib/core/moderation/nsfw_precheck_web.dart`).
+bridged by `nsfw_glue.js`. Everything it loads is committed here and served
+same-origin. The decision over the scores (thresholds, time budget) is the
+Dart side's, shared with the phones: `lib/core/moderation/nsfw_precheck.dart`.
 
-## Required files
+## Files
 
 ```
-web/nsfw/tf.min.js          # TensorFlow.js (UMD build)
-web/nsfw/nsfwjs.min.js       # NSFWJS (UMD build)
-web/nsfw/model/model.json    # MobileNetV2Mid graph model manifest
-web/nsfw/model/*.bin         # model weight shards (~4.2 MB total)
+web/nsfw/nsfw_glue.js        # the bridge: window.ntripiNsfw = { load, classify }
+web/nsfw/nsfwjs.min.js       # NSFWJS UMD build — carries its own TensorFlow.js (3.7.0)
+web/nsfw/model/model.json    # GantMan MobileNetV2 (224×224, 5 classes), a *graph* model
+web/nsfw/model/*.bin         # its weight shards (~17 MB, float32)
 ```
 
-## How to source them
+It is the same network as the phones' `assets/models/nsfw_mobilenet.tflite`, so
+both platforms score a picture alike.
 
-```bash
-cd web/nsfw
-curl -L -o tf.min.js https://unpkg.com/@tensorflow/tfjs@3.21.0/dist/tf.min.js
-curl -L -o nsfwjs.min.js https://unpkg.com/nsfwjs@2.4.2/dist/nsfwjs.min.js
-# MobileNetV2Mid graph model (from the nsfwjs repo's example/nsfw_demo model):
-#   https://github.com/infinitered/nsfwjs → models/mobilenet_v2_mid/
-# Place model.json + the group1-shard*.bin files under web/nsfw/model/.
-```
+## The model is a graph model
 
-`nsfw_glue.js` calls `nsfwjs.load('nsfw/model/')`. If you use a different model
-variant, adjust that path/options in `nsfw_glue.js`.
+`model.json` says `"format": "graph-model"`, so the glue must load it with
+`nsfwjs.load('nsfw/model/', { type: 'graph' })`. Without `type: 'graph'` NSFWJS
+reads it as a layers model, the load throws ("Improper config format"), and the
+pre-check is silently off — which is how the web shipped until 2026-11-07.
+`test/core/moderation/nsfw_web_assets_test.dart` fails if the two disagree.
+
+## No separate TensorFlow.js
+
+`nsfwjs.min.js` bundles TensorFlow.js. Loading `tf.min.js` as well registered
+every backend and kernel twice (hundreds of console warnings) and cost a 1.3 MB
+download; it was removed on 2026-11-07. Do not add it back.
 
 ## Content-Security-Policy note
 
 Everything is served same-origin from `web/nsfw/` — no CDN at runtime — so no CSP
-changes are needed. Do **not** switch `nsfw_glue.js` back to a CDN URL.
+changes are needed. Do **not** switch `nsfw_glue.js` to a CDN URL.

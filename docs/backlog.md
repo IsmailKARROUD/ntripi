@@ -46,22 +46,15 @@ for Google, and Google shipped a month later (`eb63f28`). Apple never did.
 App Store review expects Sign in with Apple where a third-party social login is
 offered, so this is on the release path. → [features/authentication.md](features/authentication.md)
 
-### in-progress — the client NSFW pre-check is inert on both platforms
+### ~~in-progress — the client NSFW pre-check is inert on both platforms~~ — done 2026-11-07
 
-Neither model file is vendored, by design — they are large binaries — so the tier
-is a no-op everywhere.
-
-- **Mobile** — `core/moderation/nsfw_precheck_io.dart:8`: *"The model file
-  (assets/models/nsfw_mobilenet.tflite, ~3 MB) is NOT vendored in the repo; see
-  assets/models/README.md for how to source it. Until it's dropped in, this tier
-  is a no-op."* The required contract is documented: input `[1,224,224,3]` float32
-  RGB `/255`, output `[1,5]` softmax over `drawings, hentai, neutral, porn, sexy`.
-- **Web** — `social_flutter/web/nsfw/README.md`: TensorFlow.js and NSFWJS weights
-  are not committed; `load()` fails gracefully. Everything must stay same-origin —
-  *"Do **not** switch `nsfw_glue.js` back to a CDN URL."*
-
-The backend image scan is the actual authority, so this is a cost and UX
-gap, not a safety one. → [features/image-moderation.md](features/image-moderation.md)
+Both models were committed on 2026-07-28 (`f9a8ceb`), and the phones' pre-check
+has run since. The web's did not: `nsfw_glue.js` loaded the vendored *graph*
+model without `{ type: 'graph' }`, NSFWJS read it as a layers model, and the
+load threw inside a catch — so the web let every picture through to the crop
+editor while the phones refused it on the spot. Fixed 2026-11-07, with one
+decision and a 5 s time budget for both platforms
+([decisions.md](decisions.md)). → [features/image-moderation.md](features/image-moderation.md#the-client-pre-check)
 
 ### in-progress — push notifications are code-complete but not provisioned
 
