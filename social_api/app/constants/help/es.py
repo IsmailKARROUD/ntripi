@@ -109,6 +109,7 @@ RELEASES: tuple[Release, ...] = (
             "**El Feed y tu perfil, en los dos extremos de la barra.** La barra inferior queda ahora Feed, Buscar, Itinerarios, Guardados, Perfil, y la pestaña Perfil muestra tu foto de perfil cuando añades una.",
             "**Condiciones y Política de privacidad actualizadas.** Ahora cubren Google Maps, que dibuja parte de los mapas de Ntripi y su búsqueda de lugares. Se te pedirá aceptarlas una vez.",
             "**Elimina tu cuenta sin la aplicación.** [ntripi.app/delete-account](/delete-account) envía un enlace a la dirección de tu cuenta; ábrelo y confirma. Las Condiciones y la Política de privacidad actualizadas dicen qué se conserva después —las reseñas conservan su texto, sin tu nombre— y se te pedirá que las aceptes una vez más.",
+            "**Las pestañas pasan al lateral en una pantalla ancha.** En una tableta, o en una ventana del navegador con espacio de sobra, las cinco pestañas aparecen en el lado izquierdo en lugar de abajo, y cada pantalla queda centrada, con un ancho cómodo de leer. Ahora las tabletas también se pueden girar en horizontal.",
         ),
     ),
     Release(
@@ -162,6 +163,8 @@ Busca el enlace de verificación en tu bandeja de entrada. Si te registraste con
 - **Guardados** — los viajes que has marcado.
 - **Perfil** — tu propio perfil, y el engranaje que abre todos los ajustes. Cuando añades una foto de perfil, la pestaña la muestra.
 
+En una pantalla ancha —una tableta o una ventana del navegador con espacio de sobra— las cinco pestañas pasan al lado izquierdo, de arriba abajo.
+
 La campana junto al engranaje, en tu perfil, abre tus notificaciones.""",
             ),
             Block(
@@ -193,7 +196,7 @@ Los viajes nuevos son visibles **solo para ti** hasta que lo cambies, así que e
             "comenzar",
         ),
         related=("plan-a-trip-itinerary", "share-an-itinerary-privately"),
-        updated="2026-10-31",
+        updated="2026-11-07",
         cta="¿Listo para planificar algo? Empieza tu primer viaje.",
     ),
     Article(
@@ -278,7 +281,7 @@ Consulta [cómo compartir un viaje sin hacerlo público](/help/share-an-itinerar
         title="Las pantallas y los iconos de Ntripi, explicados",
         summary="Un recorrido guiado por las cinco pestañas, la pantalla de itinerario y los iconos que irás encontrando.",
         category="getting-started",
-        intro="Ntripi tiene cinco pestañas abajo y muy poco adorno encima. Casi todo lo que puedes cambiar vive detrás del engranaje de tu perfil o detrás de una pulsación larga sobre el propio elemento. Esta página le pone nombre a cada cosa.",
+        intro="Ntripi tiene cinco pestañas —abajo, o en un lateral si la pantalla es ancha— y muy poco adorno alrededor. Casi todo lo que puedes cambiar vive detrás del engranaje de tu perfil o detrás de una pulsación larga sobre el propio elemento. Esta página le pone nombre a cada cosa.",
         blocks=(
             Block(
                 anchor="bottom-nav",
@@ -290,7 +293,9 @@ Consulta [cómo compartir un viaje sin hacerlo público](/help/share-an-itinerar
 4. **Guardados** — los viajes que has marcado, con un campo de filtro.
 5. **Perfil** — tu propio perfil; la pestaña muestra tu foto de perfil cuando añades una. El engranaje abre todos los ajustes; la campana de al lado abre tus notificaciones.
 
-Tocar la pestaña en la que ya estás te devuelve arriba del todo, que es la salida más rápida de una pantalla profunda.""",
+Tocar la pestaña en la que ya estás te devuelve arriba del todo, que es la salida más rápida de una pantalla profunda.
+
+En una pantalla ancha —una tableta o una ventana del navegador con espacio a ambos lados de la página— la barra pasa al lado izquierdo, con las mismas cinco pestañas de arriba abajo.""",
             ),
             Block(
                 anchor="itinerary-screen",
@@ -335,9 +340,12 @@ En el viaje de otra persona el mismo gesto ofrece denunciar o bloquear. Los dos 
             "interfaz",
             "disposición",
             "pantallas",
+            "barra lateral",
+            "tableta",
+            "ipad",
         ),
         related=("getting-started", "app-settings"),
-        updated="2026-10-31",
+        updated="2026-11-07",
         cta="Compruébalo tú mismo: abre Ntripi.",
     ),
     Article(

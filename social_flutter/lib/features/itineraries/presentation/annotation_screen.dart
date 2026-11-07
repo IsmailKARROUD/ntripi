@@ -13,6 +13,7 @@ import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
 import 'package:ntripi/features/itineraries/domain/annotation.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:ntripi/shared/widgets/keyboard_avoidance.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
@@ -148,7 +149,7 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
         saving: _saving,
         child: Scaffold(
       backgroundColor: nt.surface,
-      body: Column(children: [
+      body: ContentColumn(child: Column(children: [
         SafeArea(
           bottom: false,
           child: EditorialTopBar(
@@ -379,7 +380,7 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
           ),
         ],
       )),
-      ]),
+      ])),
         ),
       ),
     );

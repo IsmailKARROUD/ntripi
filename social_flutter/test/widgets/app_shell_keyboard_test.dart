@@ -1,4 +1,6 @@
-// The bottom-nav shell lifts its tabs above the keyboard exactly once.
+// The tabs' shell lifts its tabs above the keyboard exactly once, beside
+// either bar — and the home-indicator inset goes to whoever sits on it: the
+// bottom bar, or, beside the side bar, the tabs themselves.
 //
 // Regression: the shell rebuilt its tabs' MediaQuery from a context above its
 // own Scaffold, putting back the keyboard inset that Scaffold had consumed.
@@ -60,6 +62,24 @@ void _phone(WidgetTester tester) {
   addTearDown(tester.view.reset);
 }
 
+/// Wide enough for the tabs' side bar (sideBarFits).
+void _tablet(WidgetTester tester) {
+  tester.view.physicalSize = const Size(1024, 800);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+}
+
+/// The bottom inset a tab is handed, read from inside it.
+Future<double> _tabBottomInset(WidgetTester tester) async {
+  late BuildContext tabContext;
+  await tester.pumpWidget(_shell(Builder(builder: (c) {
+    tabContext = c;
+    return const SizedBox.expand();
+  })));
+  await tester.pumpAndSettle();
+  return MediaQuery.paddingOf(tabContext).bottom;
+}
+
 void main() {
   testWidgets('a tab Scaffold ends at the keyboard, not a keyboard higher',
       (tester) async {
@@ -105,5 +125,36 @@ void main() {
     expect(field.bottom, lessThanOrEqualTo(_keyboardTop));
     expect(field.bottom, greaterThan(_keyboardTop - 60),
         reason: 'counted twice, the keyboard would leave a 300pt gap');
+  });
+
+  testWidgets('the bottom bar holds the home-indicator inset, not the tabs',
+      (tester) async {
+    _phone(tester);
+    tester.view.padding = const FakeViewPadding(bottom: 34);
+
+    expect(await _tabBottomInset(tester), 0);
+  });
+
+  testWidgets(
+      'beside the side bar nothing holds the home-indicator inset, so the tabs '
+      'keep it', (tester) async {
+    _tablet(tester);
+    tester.view.padding = const FakeViewPadding(bottom: 34);
+
+    expect(await _tabBottomInset(tester), 34);
+  });
+
+  testWidgets(
+      'beside the side bar, a tab Scaffold still ends at the keyboard, not a '
+      'keyboard higher', (tester) async {
+    _tablet(tester);
+    const body = Key('tab-body');
+    await tester.pumpWidget(_shell(const Scaffold(body: SizedBox.expand(key: body))));
+    await tester.pumpAndSettle();
+
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    await tester.pumpAndSettle();
+
+    expect(tester.getRect(find.byKey(body)).bottom, _keyboardTop);
   });
 }

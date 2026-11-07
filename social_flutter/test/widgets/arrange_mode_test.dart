@@ -505,9 +505,12 @@ void main() {
     await tester.pump(kLongPressTimeout + kPressTimeout);
     await hold.moveBy(const Offset(40, 0)); // under way: the targets open
     await tester.pump();
-    // The free end of its own track, which takes its own stop.
-    await hold.moveTo(tester.getCenter(_inArrangement(find.text('Museum'))) +
-        const Offset(500, 0));
+    // The free end of its own track, which takes its own stop — measured from
+    // the view, which is no wider than the column however wide the window.
+    await hold.moveTo(Offset(
+      tester.getRect(find.byType(ArrangeTripView)).right - 24,
+      tester.getCenter(_inArrangement(find.text('Museum'))).dy,
+    ));
     await tester.pump();
     expect(_fadedCopy('Museum'), findsOneWidget, reason: 'still lifted');
     await hold.up();

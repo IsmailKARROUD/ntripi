@@ -35,7 +35,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:ntripi/core/cache/image_cache.dart';
 import 'package:ntripi/core/moderation/nsfw_precheck.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
-import 'package:ntripi/core/utils/platform_utils.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 
@@ -244,10 +243,8 @@ class _CoverImageFieldState extends State<CoverImageField> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-          maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
-      child: Column(
+    // No width of its own: both forms that hold it sit in the ContentColumn.
+    return Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -298,8 +295,7 @@ class _CoverImageFieldState extends State<CoverImageField> {
             ),
           ],
         ],
-      ),
-    );
+      );
   }
 }
 

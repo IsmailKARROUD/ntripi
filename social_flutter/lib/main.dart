@@ -19,6 +19,7 @@ import 'package:ntripi/core/router/app_router.dart';
 import 'package:ntripi/core/storage/secure_storage.dart';
 import 'package:ntripi/features/auth/presentation/widgets/tos_gate.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/core/ui/orientation_policy.dart';
 import 'package:ntripi/features/bug_report/presentation/bug_report_localizations.dart';
 import 'package:ntripi/features/bug_report/presentation/bug_report_sheet.dart';
 import 'package:ntripi/features/bug_report/presentation/bug_report_theme.dart';
@@ -37,10 +38,9 @@ Future<void> main() async {
   // A session from before the share pages' hint existed gets one now.
   if (kIsWeb) unawaited(syncWebSessionHint());
 
-  // Lock the app to portrait — landscape layouts are unsupported.
-  await SystemChrome.setPreferredOrientations(
-    [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown],
-  );
+  // Phones stay portrait; a tablet turns and resizes, and the layout follows
+  // the width (core/ui/app_layout.dart).
+  await OrientationPolicy.start();
 
   // Hive-backed cache store for Dio responses. Web has no application
   // support directory, so caching is mobile/desktop-only.
@@ -141,23 +141,27 @@ class NtripiApp extends ConsumerWidget {
           locale: locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          // AppBar-less screens still need correct status/nav bar icon
-          // brightness — reuse the style the theme sets on AppBars.
-          builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
-            value: Theme.of(context).appBarTheme.systemOverlayStyle ??
-                SystemUiOverlayStyle.dark,
-            // Inside MaterialApp so the shake handler has a ScaffoldMessenger
-            // for the confirmation snackbar; BetterFeedback.of() still finds
-            // the controller above.
-            // TosGate wraps everything routed: many screens are declared at
-            // the router's root level and would slip past a shell-mounted gate.
-            // NotificationPoller sits here for the same reason, and gates
-            // itself on the session so /login and /splash never poll.
-            // PushGateway needs the same placement: it navigates with the
-            // router, so it must be inside MaterialApp.router's builder.
-            child: TosGate(
-              child: NotificationPoller(
-                child: PushGateway(child: ShakeToReport(child: child!)),
+          builder: (context, child) => Theme(
+            data: columnSnackBars(
+                Theme.of(context), MediaQuery.sizeOf(context).width),
+            // AppBar-less screens still need correct status/nav bar icon
+            // brightness — reuse the style the theme sets on AppBars.
+            child: AnnotatedRegion<SystemUiOverlayStyle>(
+              value: Theme.of(context).appBarTheme.systemOverlayStyle ??
+                  SystemUiOverlayStyle.dark,
+              // Inside MaterialApp so the shake handler has a ScaffoldMessenger
+              // for the confirmation snackbar; BetterFeedback.of() still finds
+              // the controller above.
+              // TosGate wraps everything routed: many screens are declared at
+              // the router's root level and would slip past a shell-mounted gate.
+              // NotificationPoller sits here for the same reason, and gates
+              // itself on the session so /login and /splash never poll.
+              // PushGateway needs the same placement: it navigates with the
+              // router, so it must be inside MaterialApp.router's builder.
+              child: TosGate(
+                child: NotificationPoller(
+                  child: PushGateway(child: ShakeToReport(child: child!)),
+                ),
               ),
             ),
           ),

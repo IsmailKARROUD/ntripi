@@ -23,8 +23,8 @@ import 'package:ntripi/features/itineraries/domain/itinerary.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/shared_itinerary_card.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
-import 'package:ntripi/core/utils/platform_utils.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/saving_overlay.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
@@ -131,14 +131,11 @@ class _ItineraryListScreenState extends ConsumerState<ItineraryListScreen> {
     return SavingOverlay(
       saving: _deleting,
       tint: nt.surface,
+      // The whole Scaffold is the column, so New itinerary sits at its corner.
+      child: ContentPage(
       child: Scaffold(
       backgroundColor: nt.surface,
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity,
-            ),
             child: RefreshIndicator(
                 onRefresh: () async {
                   // Offline: skip entirely — evicting covers would delete
@@ -283,8 +280,6 @@ class _ItineraryListScreenState extends ConsumerState<ItineraryListScreen> {
                   ],
                 ),
               ),
-          ),
-        ),
       ),
       floatingActionButton: OfflineGate(
         // FABs have no native disabled style — dim explicitly when offline.
@@ -303,6 +298,7 @@ class _ItineraryListScreenState extends ConsumerState<ItineraryListScreen> {
           ),
         ),
       ),
+    ),
     ),
     );
   }

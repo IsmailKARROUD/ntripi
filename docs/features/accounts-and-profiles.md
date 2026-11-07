@@ -158,7 +158,9 @@ itinerary_id, stop_id}]}` — derived from the user's stops, filtered by
 - **Model** — `User` (`shared/models/user.dart`), manual
   `fromJson`/`toJson`/`copyWith`.
 - **The Profile tab shows your photo** (since 2026-10-31) — `ProfileTabIcon`
-  (`shared/widgets/profile_tab_icon.dart`), the last tab of the bottom bar.
+  (`shared/widgets/profile_tab_icon.dart`), the last tab of the bar — along
+  the bottom, or down the side on a wide window, where it keeps the same 24 px
+  box and ring.
   The shell reads `avatarUrl` from `myProfileProvider` under `TosGate`'s gate
   (`hasSessionProvider`), so it never sends a request of its own, and draws it
   through `cachedImageProvider` (`core/cache/image_cache.dart`). The photo keeps

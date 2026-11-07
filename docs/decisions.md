@@ -2896,3 +2896,87 @@ anything.
   date of birth, an agreement and a sensitive Google scope, then refuses them.
 - **Having the app ask first**: only the server knows whether a token means sign-in
   or sign-up, the same reason the consent sheet waits for `tos_required`.
+
+### 2026-11-07 — Width decides the layout: one centred column, and the tabs move down the side when they fit
+
+**Context.** On a wide window the bottom bar spent height and looked like a phone
+layout stretched out: on a 1440 px laptop its five tabs sat 288 px apart above a
+480 px column. The owner asked for the bar to move into the side space whenever
+there was room, following the width, because a browser window can be resized at
+any moment. The column itself was a platform check, not a width check:
+`isDesktopWeb()` capped content at 480 px in a desktop browser only, so an iPad
+or an Android tablet, in the app or in a browser, stretched every screen edge to
+edge and had no side space at all. Nine screens had no cap even on the desktop.
+The portrait lock in `main.dart` no longer held on tablets either: Android 16
+ignores it on large screens for apps targeting SDK 36, and iPad ignores it while
+the app can multitask (`UIRequiresFullScreen` is not set).
+
+**Decision** (the owner's choices, one by one).
+- **Width alone decides, on every device**, live while a window is resized; no
+  setting. `core/ui/app_layout.dart` holds `kContentMaxWidth`, `kSideBarWidth`
+  and `sideBarFits`, re-exported by `app_theme.dart` like the radius scale.
+- **One centred column of 600 px on every device**, replacing the 480 px
+  desktop-only cap. "As much space as it needs" was weighed and rejected: the
+  trip card's cover is a fixed 120 px strip, so a laptop without a cap would show
+  about a sixth of each photo scaled past its 1200 px, lines would run near 190
+  characters instead of about 80, and no side space would be left for the bar.
+- **The column holds everything on a wide screen.** Screens take it through
+  `ContentColumn`, or through `ContentPage` — the whole Scaffold in the column,
+  the sides painted — where an `AppBar` or a floating button sits in the
+  Scaffold's slots (thirteen screens use a Material `AppBar`; a body-only column
+  left it spanning the window). The nine uncapped screens got it, the New
+  itinerary button sits at the column's corner, snackbars on a window wider than
+  the column are as wide as its content (`columnSnackBars`), and sheets are
+  capped at 600. Full-window screens keep the window, each listed with its
+  reason in `test/content_column_guard_test.dart`.
+- **The side bar shows only when it fits beside the column**: a window of at
+  least 600 + 2 × 80 = 760 px. The gap opposite the bar matches it, so the column
+  stays centred on the window — exactly where a trip page, which has no bar,
+  puts it — and is never squeezed.
+- **Same screens as the bottom bar**: the shell only. Trip, stop, form, ratings
+  and other-profile pages stay full-screen with their back arrow.
+- **It looks like the bottom bar**: the same five tabs from one list, labels
+  under icons, the open tab green with no pill, the photo and its ring, the open
+  tab resetting on tap; 80 px wide, a hairline on its inner edge, against the
+  window's leading edge (the right in Arabic). It scrolls in a short window.
+- **Tablets turn and resize; phones stay portrait.** `OrientationPolicy` locks
+  portrait under a shortest side of 600 logical px (Android's sw600dp) and frees
+  every orientation from there; `MainActivity.kt` applies the same line before
+  the first frame, and the manifest no longer locks anything.
+- **Plain sides**: the column has no edge lines.
+
+**Consequences.**
+- Desktop browsers get a wider column (600 instead of 480); iPads and Android
+  tablets get a column where they had none. Every screen already rendered wider
+  than 600 on a tablet, so nothing was laid out for less.
+- The iPad mini in portrait (744 pt) and a phone browser turned sideways under
+  760 px keep the bottom bar, with the column centred.
+- Crossing 760 px never remounts the open tab: the shell's Row keeps its three
+  slots in both layouts, and go_router's branch keys would carry the state across
+  anyway (a mutation of the slots alone still passed the remount test).
+- Beside the side bar nothing reserves the home-indicator inset, so the tabs keep
+  it; under a banner the side bar drops the status-bar inset the banner took, as
+  the tabs already did.
+- The help centre (`getting-started`, `app-map`, the 0.4.0 notes) says so in all
+  six languages; the `bottom-nav` diagram still draws the bottom bar, and its
+  legend adds the side.
+- Tests: `content_column_guard_test.dart` (new guard), `content_column_test.dart`,
+  `orientation_policy_test.dart`, side-bar cases in `app_shell_tabs_test.dart`,
+  `app_shell_keyboard_test.dart` and `profile_tab_icon_test.dart`.
+  `arrange_mode_test.dart` measured "the free end of its track" as 500 px from a
+  stop, which a 600 px page no longer reaches; it measures from the view's edge.
+
+**Alternatives rejected.**
+- **Deciding by platform** (desktop web, iPad, tablet): a browser window, a
+  tablet in Split View and a rotated tablet all change size at any moment.
+- **A bar that pushes the column over** (the side bar from 560 px): the column
+  would jump 40 px whenever a trip opened or closed.
+- **The side bar on reading pages too** (trip, stop, ratings), or **on every
+  screen**: those pages have no bar to give back height from, and a bar there
+  needs navigation above the router plus guards against leaving a trip in edit
+  mode — moved to the backlog.
+- **A wide bar with labels beside the icons**, a **New itinerary button in the
+  bar**, and **the bar next to the column** instead of at the window's edge.
+- **Hairlines down the column's sides**: cards already carry their own.
+- **Forcing portrait on tablets** (`UIRequiresFullScreen`, Android's SDK 36
+  opt-out): both are going away, and the first takes Split View from iPad users.

@@ -14,11 +14,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/ntripi_logo.dart';
-import 'package:ntripi/core/utils/platform_utils.dart';
 import 'package:ntripi/features/auth/presentation/widgets/tos_agreement_row.dart';
 import 'package:ntripi/features/auth/providers/auth_provider.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/date_of_birth_field.dart';
 import 'package:ntripi/shared/widgets/locale_picker_button.dart';
 import 'package:ntripi/shared/widgets/saving_overlay.dart';
@@ -76,11 +76,7 @@ class _AcceptTermsScreenState extends ConsumerState<AcceptTermsScreen> {
       tint: nt.surface,
       child: Scaffold(
         backgroundColor: nt.surface,
-        body: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity,
-            ),
+        body: ContentColumn(
             child: SafeArea(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
@@ -173,7 +169,6 @@ class _AcceptTermsScreenState extends ConsumerState<AcceptTermsScreen> {
                 ),
               ),
             ),
-          ),
         ),
       ),
     );

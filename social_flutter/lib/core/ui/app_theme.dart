@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'app_layout.dart';
 import 'app_radii.dart';
 
 // The radius scale travels with the colors: whoever draws a box has both.
 export 'app_radii.dart';
+// So does the width rule: whoever lays out a screen has the column.
+export 'app_layout.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // This file is the single source of truth for EVERY color in the app.
@@ -547,6 +550,17 @@ const _darkScheme = ColorScheme(
 ThemeData buildNtripiTheme() => _buildTheme(NtripiColors.light, _lightScheme);
 ThemeData buildNtripiDarkTheme() => _buildTheme(NtripiColors.dark, _darkScheme);
 
+/// [theme] with snackbars as wide as the column's content (its 16 px gutters
+/// off) on a window wider than the column; a phone keeps the theme's margins.
+/// A Scaffold centres a snackbar of set width, and the column is centred on
+/// the window, so the two line up on every screen.
+ThemeData columnSnackBars(ThemeData theme, double windowWidth) =>
+    windowWidth > kContentMaxWidth
+        ? theme.copyWith(
+            snackBarTheme:
+                theme.snackBarTheme.copyWith(width: kContentMaxWidth - 32))
+        : theme;
+
 ThemeData _buildTheme(NtripiColors nt, ColorScheme scheme) {
   final isDark = nt.brightness == Brightness.dark;
   final base = ThemeData(colorScheme: scheme, useMaterial3: true);
@@ -687,7 +701,26 @@ ThemeData _buildTheme(NtripiColors nt, ColorScheme scheme) {
       elevation: 0,
     ),
 
+    // The tabs' side bar on a wide window (the shell's _SideBar): the bottom
+    // bar's look turned on its side — labels under icons, no pill behind the
+    // open tab, which turns green like the bar's.
+    navigationRailTheme: NavigationRailThemeData(
+      backgroundColor: nt.surface,
+      elevation: 0,
+      labelType: NavigationRailLabelType.all,
+      useIndicator: false,
+      groupAlignment: -1,
+      selectedIconTheme: IconThemeData(color: nt.forest, size: 24),
+      unselectedIconTheme: IconThemeData(color: nt.text3, size: 24),
+      selectedLabelTextStyle: GoogleFonts.dmSans(
+          fontSize: 10, fontWeight: FontWeight.w600, color: nt.forest),
+      unselectedLabelTextStyle:
+          GoogleFonts.dmSans(fontSize: 10, color: nt.text3),
+    ),
+
     bottomSheetTheme: BottomSheetThemeData(
+      // As wide as the column it opens over (Material's own cap is 640).
+      constraints: const BoxConstraints(maxWidth: kContentMaxWidth),
       backgroundColor: nt.surface,
       // Same ground as a route: a sheet's SectionCards read as cards off the
       // nt.border hairline, exactly as they do on the form screens.

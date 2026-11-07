@@ -535,6 +535,9 @@ block appears a second time anywhere, extract it instead of copying.**
 | **A screen opened from outside the app is never alone, and always has a way out.** A notification tap enters through `GoRouter.pushOverHome` / `openFromOutside` (`core/router/navigation_ext.dart`), never `go()`; so does a shared link, through `appLinkOnEnter` and `landHome` (`core/router/app_links.dart`), parked rather than dropped while splash is up or nobody is signed in; every screen `notificationRoute` can open leaves through `popOr`, in every state | `go()` left the tapped screen alone on its navigator — a back arrow that did nothing, an Android back that closed the app — and destroyed the screen the user had left. `tap_routing_test.dart` and `notification_destinations_exit_test.dart` hold the two halves, and the second fails until a new destination has a case |
 | **On the web every screen is a URL the app can start on, and the app never starts on an editing form.** The address bar shows the screen on top (`GoRouter.optionURLReflectsImperativeAPIs`, `main.dart`); a reload or a pasted address on a form that saves under an edit claim lands on what it edits (`editingRouteLaunchRedirect`), and a trip or profile URL opened signed out is parked through the sign-in (`signInRedirect`). `test/core/router/landing_routes_test.dart` classifies every route as one or the other | the bar used to show the screen beneath the pushes — `#/profile/me` over a shared profile — so a reload or a copied URL lost the screen; showing the screen on top made forms reachable on a fresh start, where they hold no claim and their Save could only fail (2026-10-26) |
 | **Share a link only through `shareLink` / `ShareService`**, never share_plus directly | the phone builds' share popup carries a Copy link row only through the `ntripi/share` channel; share_plus alone has no way to add it |
+| **Width decides the layout, never the platform.** Every screen keeps its content in one centred column of at most `kContentMaxWidth` (600 px, `core/ui/app_layout.dart`) — through `ContentColumn`, or `ContentPage` when an `AppBar` or a floating button sits in the Scaffold's own slots. Full-window screens are listed with their reason in `test/content_column_guard_test.dart`, which also fails on a platform check | a desktop-only cap (`isDesktopWeb()`, 480 px) left every tablet stretched edge to edge, and nine screens had no cap even in a desktop browser (2026-11-07) |
+| **The tabs' bar moves down the side only once it fits beside the column** — `sideBarFits`, a window of at least 760 px — and the column stays centred on the window | a bar that pushed the column over would move it every time a trip page, which has no bar, opened or closed |
+| **Phones are portrait-only; a tablet turns and resizes.** The line is a shortest side of 600 logical px (`core/ui/orientation_policy.dart`, and `MainActivity.kt` before the first frame) | a tablet's portrait lock no longer held — Android 16 ignores it on large screens at target SDK 36, iPad while the app can multitask — and the layout follows the width |
 
 ### Surfaces and chrome
 
@@ -591,7 +594,7 @@ One contract, in `shared/widgets/keyboard_avoidance.dart`, held by
 `test/keyboard_avoidance_guard_test.dart`.
 
 - **Whoever lifts content above the keyboard removes the inset from what it
-  passes down.** Scaffold does; the bottom-nav shell and `AboveKeyboard` do too.
+  passes down.** Scaffold does; the tabs' shell and `AboveKeyboard` do too.
   The shell rebuilds its tabs' MediaQuery from a context *above* its Scaffold, so
   it must strip the inset itself — until 2026-10-01 it did not, and every tab
   lifted twice.

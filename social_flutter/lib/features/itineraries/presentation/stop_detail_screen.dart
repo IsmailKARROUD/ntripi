@@ -41,6 +41,7 @@ import 'package:ntripi/features/translation/presentation/translatable_text.dart'
 import 'package:ntripi/features/translation/providers/translation_providers.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/utils/duration_format.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 
 class StopDetailScreen extends ConsumerStatefulWidget {
@@ -101,14 +102,14 @@ class _StopDetailScreenState extends ConsumerState<StopDetailScreen> {
     final editing = ref.watch(editLockProvider(itineraryId)).holdsClaim;
 
     return itineraryAsync.when(
-      loading: () => const Scaffold(
+      loading: () => const ContentPage(child: Scaffold(
         body: Center(child: NTripiRouteLoader()),
-      ),
-      error: (e, _) => Scaffold(
+      )),
+      error: (e, _) => ContentPage(child: Scaffold(
         appBar: AppBar(),
         body: Center(
             child: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
-      ),
+      )),
       data: (itinerary) {
         // Locate this stop across all tracks.
         Stop? stop;
@@ -124,10 +125,10 @@ class _StopDetailScreenState extends ConsumerState<StopDetailScreen> {
         }
 
         if (stop == null) {
-          return Scaffold(
+          return ContentPage(child: Scaffold(
             appBar: AppBar(),
             body: Center(child: Text(AppLocalizations.of(context)!.stopNotFound)),
-          );
+          ));
         }
 
         final totalStops = itinerary.tracks.length;
@@ -361,7 +362,7 @@ class _StopDetailView extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: nt.surface,
-      body: CustomScrollView(
+      body: ContentColumn(child: CustomScrollView(
         slivers: [
           // ── Stop hero ──────────────────────────────────────────────────────
           SliverToBoxAdapter(
@@ -608,7 +609,7 @@ class _StopDetailView extends ConsumerWidget {
 
           const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
-      ),
+      )),
     );
   }
 }

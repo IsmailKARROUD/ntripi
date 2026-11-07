@@ -10,6 +10,7 @@ import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/features/reports/data/report_repository.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/user_avatar.dart';
 
@@ -22,7 +23,7 @@ class BlockedUsersScreen extends ConsumerWidget {
     final nt = context.nt;
     final blocked = ref.watch(blockedUsersProvider);
 
-    return Scaffold(
+    return ContentPage(child: Scaffold(
       backgroundColor: nt.surface,
       appBar: AppBar(title: Text(l10n.blockedUsers)),
       body: blocked.when(
@@ -79,7 +80,7 @@ class BlockedUsersScreen extends ConsumerWidget {
           );
         },
       ),
-    );
+    ));
   }
 }
 

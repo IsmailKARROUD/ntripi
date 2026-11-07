@@ -14,11 +14,11 @@ import 'package:ntripi/core/providers/locale_provider.dart';
 import 'package:ntripi/core/push/push_service.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
-import 'package:ntripi/core/utils/platform_utils.dart';
 import 'package:ntripi/features/notifications/domain/app_notification.dart';
 import 'package:ntripi/features/notifications/presentation/widgets/notification_tile.dart';
 import 'package:ntripi/features/notifications/providers/notification_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
@@ -141,11 +141,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
     return Scaffold(
       backgroundColor: nt.surface,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity,
-          ),
+      body: ContentColumn(
           child: Column(
             children: [
               SafeArea(
@@ -173,7 +169,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               ),
             ],
           ),
-        ),
       ),
     );
   }

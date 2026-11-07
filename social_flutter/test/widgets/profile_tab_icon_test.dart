@@ -175,4 +175,42 @@ void main() {
         tester.getTopLeft(find.text('Feed')).dy);
     expect((_ring(tester).border as Border).top.color, _barColor);
   });
+
+  testWidgets(
+      'Given the photo in a real side bar, Then it keeps the icon\'s 24 px box, '
+      'the Profile label sits as far below it as Feed\'s does below its icon, '
+      'and the open tab rings it in the bar\'s color', (tester) async {
+    final image = await _photo(tester);
+    await tester.pumpWidget(MaterialApp(
+      theme: buildNtripiTheme(),
+      home: Scaffold(
+        body: Row(
+          children: [
+            NavigationRail(
+              selectedIndex: 1,
+              selectedIconTheme: const IconThemeData(color: _barColor),
+              destinations: [
+                const NavigationRailDestination(
+                    icon: Icon(Icons.dynamic_feed_outlined), label: Text('Feed')),
+                NavigationRailDestination(
+                  icon: ProfileTabIcon(photo: _ReadyImage(image)),
+                  selectedIcon:
+                      ProfileTabIcon(photo: _ReadyImage(image), selected: true),
+                  label: const Text('Profile'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(tester.getSize(find.byType(ProfileTabIcon)), const Size(24, 24));
+    double gap(String label, Finder icon) =>
+        tester.getTopLeft(find.text(label)).dy - tester.getBottomLeft(icon).dy;
+    expect(gap('Profile', find.byType(ProfileTabIcon)),
+        gap('Feed', find.byIcon(Icons.dynamic_feed_outlined)));
+    expect((_ring(tester).border as Border).top.color, _barColor);
+  });
 }

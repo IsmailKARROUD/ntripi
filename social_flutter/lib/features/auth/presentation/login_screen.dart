@@ -20,8 +20,8 @@ import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
 import 'package:ntripi/features/itineraries/providers/saved_itineraries_provider.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/core/utils/appeal_link.dart';
-import 'package:ntripi/core/utils/platform_utils.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/field_help.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/locale_picker_button.dart';
@@ -218,9 +218,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       tint: nt.surface,
       child: Scaffold(
       backgroundColor: nt.surface,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
+      body: ContentColumn(
           child: SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
@@ -461,8 +459,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
         ),
-      ),
-    ),),),);
+      ),),),);
   }
 }
 

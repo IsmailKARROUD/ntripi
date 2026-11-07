@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/data/countries.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 
 /// Full-screen country picker.
 ///
@@ -61,7 +62,7 @@ class _CountryPickerScreenState extends State<CountryPickerScreen> {
     final nt = context.nt;
     final langCode = Localizations.localeOf(context).languageCode;
     final filtered = _filtered(langCode);
-    return Scaffold(
+    return ContentPage(child: Scaffold(
       backgroundColor: nt.surface,
       appBar: AppBar(
         backgroundColor: nt.surface,
@@ -162,6 +163,6 @@ class _CountryPickerScreenState extends State<CountryPickerScreen> {
           ),
         ],
       ),
-    );
+    ));
   }
 }

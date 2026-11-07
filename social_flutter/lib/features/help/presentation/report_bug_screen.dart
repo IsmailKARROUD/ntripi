@@ -16,11 +16,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/toggle_feedback.dart';
-import 'package:ntripi/core/utils/platform_utils.dart';
 import 'package:ntripi/features/bug_report/presentation/bug_report_entry.dart';
 import 'package:ntripi/features/bug_report/providers/shake_report_enabled_provider.dart';
 import 'package:ntripi/features/help/presentation/widgets/shake_phone_demo.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 
 // Mirrors the Settings row's handler: the switch and the row's own onTap both
@@ -48,11 +48,7 @@ class ReportBugScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: nt.surface,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity,
-          ),
+      body: ContentColumn(
           child: Column(
             children: [
               SafeArea(
@@ -70,7 +66,6 @@ class ReportBugScreen extends ConsumerWidget {
               ),
             ],
           ),
-        ),
       ),
     );
   }

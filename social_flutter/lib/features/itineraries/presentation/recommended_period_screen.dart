@@ -18,6 +18,7 @@ import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
 import 'package:ntripi/features/itineraries/domain/recommended_period.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:ntripi/shared/widgets/moderation_hint.dart';
 
@@ -211,7 +212,7 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
       },
       child: Scaffold(
       backgroundColor: nt.surface,
-      body: Column(children: [
+      body: ContentColumn(child: Column(children: [
         SafeArea(
           bottom: false,
           child: EditorialTopBar(
@@ -374,7 +375,7 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
           ),
           ],
         )),
-      ]),
+      ])),
       ),
     );
   }

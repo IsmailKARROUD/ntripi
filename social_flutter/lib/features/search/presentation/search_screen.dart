@@ -13,10 +13,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
-import 'package:ntripi/core/utils/platform_utils.dart';
 import 'package:ntripi/features/search/providers/search_provider.dart';
 import 'package:ntripi/shared/models/user.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/field_help.dart';
@@ -60,11 +60,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
     return Scaffold(
       backgroundColor: nt.surface,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity,
-          ),
+      body: ContentColumn(
           child: Column(
             children: [
               SafeArea(
@@ -129,7 +125,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               ),
             ],
           ),
-        ),
       ),
     );
   }

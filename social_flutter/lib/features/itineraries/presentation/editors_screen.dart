@@ -27,6 +27,7 @@ import 'package:ntripi/features/itineraries/domain/itinerary_editor.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/models/user.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
 import 'package:ntripi/shared/widgets/user_avatar.dart';
@@ -42,7 +43,7 @@ class EditorsScreen extends ConsumerWidget {
     final nt = context.nt;
     final editorsAsync = ref.watch(editorsProvider(itineraryId));
 
-    return Scaffold(
+    return ContentPage(child: Scaffold(
       backgroundColor: nt.surface,
       appBar: AppBar(title: Text(l10n.editorsTitle)),
       body: ListView(
@@ -99,7 +100,7 @@ class EditorsScreen extends ConsumerWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 
   Future<void> _openAddDialog(BuildContext context, WidgetRef ref) async {

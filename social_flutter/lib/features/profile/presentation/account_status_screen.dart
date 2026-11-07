@@ -13,6 +13,7 @@ import 'package:ntripi/features/profile/domain/violation.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/appeal_sheet.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/reload_report.dart';
 
@@ -25,7 +26,7 @@ class AccountStatusScreen extends ConsumerWidget {
     final nt = context.nt;
     final violationsAsync = ref.watch(myViolationsProvider);
 
-    return Scaffold(
+    return ContentPage(child: Scaffold(
       backgroundColor: nt.surface,
       appBar: AppBar(
         // Explicit: a notification can open this alone, where AppBar draws none.
@@ -88,7 +89,7 @@ class AccountStatusScreen extends ConsumerWidget {
           );
         },
       ),
-    );
+    ));
   }
 }
 

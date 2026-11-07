@@ -15,9 +15,9 @@ import 'package:go_router/go_router.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
-import 'package:ntripi/core/utils/platform_utils.dart';
 import 'package:ntripi/features/auth/providers/auth_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
@@ -107,11 +107,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       tint: nt.surface,
       child: Scaffold(
       backgroundColor: nt.surface,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity,
-          ),
+      body: ContentColumn(
           child: Column(
             children: [
               SafeArea(
@@ -247,7 +243,6 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               ),
             ],
           ),
-        ),
       ),
       ),
     );

@@ -21,6 +21,7 @@ import 'package:ntripi/features/itineraries/domain/itinerary.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/models/user.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
@@ -99,7 +100,7 @@ class _VisibilityScreenState extends ConsumerState<VisibilityScreen> {
       saving: _submitting,
       child: Scaffold(
       backgroundColor: nt.surface,
-      body: Column(children: [
+      body: ContentColumn(child: Column(children: [
         SafeArea(
           bottom: false,
           child: EditorialTopBar(
@@ -172,7 +173,7 @@ class _VisibilityScreenState extends ConsumerState<VisibilityScreen> {
             ),
         ],
       )),
-      ]),
+      ])),
       ),
     );
   }

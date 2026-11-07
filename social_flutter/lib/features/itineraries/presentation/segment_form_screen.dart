@@ -14,7 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ntripi/core/api/api_client.dart';
-import 'package:ntripi/core/utils/platform_utils.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/features/itineraries/domain/stop.dart';
 import 'package:ntripi/features/itineraries/domain/transit_segment.dart';
 import 'package:ntripi/features/itineraries/domain/transport_leg.dart';
@@ -340,8 +340,7 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
                 ),
             ],
           ),
-          body: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
+          body: ContentColumn(
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [

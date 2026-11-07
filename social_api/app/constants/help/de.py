@@ -109,6 +109,7 @@ RELEASES: tuple[Release, ...] = (
             "**Feed und Ihr Profil an den beiden Enden der Leiste.** Die Leiste unten lautet nun Feed, Suche, Reiserouten, Gespeichert, Profil, und der Tab Profil zeigt Ihr Profilfoto, sobald Sie eines hinzugefügt haben.",
             "**Aktualisierte Nutzungsbedingungen und Datenschutzerklärung.** Sie decken jetzt Google Maps ab, das einen Teil der Karten von Ntripi und seine Ortssuche liefert. Sie werden einmal gebeten, sie anzunehmen.",
             "**Konto ohne die App löschen.** [ntripi.app/delete-account](/delete-account) schickt einen Link an die Adresse Ihres Kontos; öffnen Sie ihn und bestätigen Sie. Die aktualisierten Nutzungsbedingungen und die Datenschutzerklärung sagen, was danach bleibt — Rezensionen behalten ihren Text, ohne Ihren Namen —, und Sie werden gebeten, sie noch einmal zu akzeptieren.",
+            "**Auf breiten Bildschirmen wandern die Tabs an die Seite.** Auf einem Tablet oder in einem Browserfenster mit genug Platz stehen die fünf Tabs am linken Rand statt unten, und jeder Bildschirm bleibt mittig, in angenehmer Lesebreite. Tablets lassen sich jetzt auch quer halten.",
         ),
     ),
     Release(
@@ -162,6 +163,8 @@ Suchen Sie den Bestätigungslink in Ihrem Posteingang. Wenn Sie sich mit derselb
 - **Gespeichert** — Reisen, die Sie mit einem Lesezeichen versehen haben.
 - **Profil** — Ihr eigenes Profil und das Zahnrad, das alle Einstellungen öffnet. Sobald Sie ein Profilfoto hinzugefügt haben, zeigt der Tab es an.
 
+Auf einem breiten Bildschirm — einem Tablet oder einem Browserfenster mit genug Platz — stehen dieselben fünf Tabs stattdessen am linken Rand, von oben nach unten.
+
 Die Glocke neben dem Zahnrad in Ihrem Profil öffnet Ihre Benachrichtigungen.""",
             ),
             Block(
@@ -193,7 +196,7 @@ Neue Reisen sind **nur für Sie** sichtbar, bis Sie das ändern — Ausprobieren
             "starten",
         ),
         related=("plan-a-trip-itinerary", "share-an-itinerary-privately"),
-        updated="2026-10-31",
+        updated="2026-11-07",
         cta="Lust, etwas zu planen? Legen Sie Ihre erste Reise an.",
     ),
     Article(
@@ -278,7 +281,7 @@ Siehe [wie Sie eine Reise teilen, ohne sie zu veröffentlichen](/help/share-an-i
         title="Die Bildschirme und Symbole von Ntripi, erklärt",
         summary="Eine Führung durch die fünf Tabs, den Reiseroutenbildschirm und die Symbole, die Ihnen unterwegs begegnen.",
         category="getting-started",
-        intro="Ntripi hat fünf Tabs unten und sehr wenig darüber. Fast alles, was sich ändern lässt, liegt entweder hinter dem Zahnrad in Ihrem Profil oder hinter einem langen Druck auf das Element selbst. Diese Seite benennt jedes davon.",
+        intro="Ntripi hat fünf Tabs — unten oder, auf einem breiten Bildschirm, an der Seite — und sehr wenig drumherum. Fast alles, was sich ändern lässt, liegt entweder hinter dem Zahnrad in Ihrem Profil oder hinter einem langen Druck auf das Element selbst. Diese Seite benennt jedes davon.",
         blocks=(
             Block(
                 anchor="bottom-nav",
@@ -290,7 +293,9 @@ Siehe [wie Sie eine Reise teilen, ohne sie zu veröffentlichen](/help/share-an-i
 4. **Gespeichert** — Ihre Lesezeichen, mit einem Filterfeld.
 5. **Profil** — Ihr eigenes Profil; der Tab zeigt Ihr Profilfoto, sobald Sie eines hinzugefügt haben. Das Zahnrad öffnet alle Einstellungen, die Glocke daneben Ihre Benachrichtigungen.
 
-Ein Tippen auf den Tab, in dem Sie schon sind, bringt Sie an dessen Anfang zurück — der schnellste Weg aus einem tief verschachtelten Bildschirm.""",
+Ein Tippen auf den Tab, in dem Sie schon sind, bringt Sie an dessen Anfang zurück — der schnellste Weg aus einem tief verschachtelten Bildschirm.
+
+Auf einem breiten Bildschirm — einem Tablet oder einem Browserfenster mit Platz links und rechts der Seite — steht die Leiste stattdessen am linken Rand, mit denselben fünf Tabs von oben nach unten.""",
             ),
             Block(
                 anchor="itinerary-screen",
@@ -335,9 +340,12 @@ Bei der Reise einer anderen Person bietet dieselbe Geste Melden oder Blockieren 
             "oberfläche",
             "aufbau",
             "bildschirme",
+            "seitenleiste",
+            "tablet",
+            "ipad",
         ),
         related=("getting-started", "app-settings"),
-        updated="2026-10-31",
+        updated="2026-11-07",
         cta="Sehen Sie selbst — öffnen Sie Ntripi.",
     ),
     Article(

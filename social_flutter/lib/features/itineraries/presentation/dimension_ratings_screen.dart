@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/reload_report.dart';
@@ -17,7 +18,6 @@ import 'package:ntripi/features/itineraries/domain/ratings_page.dart';
 import 'package:ntripi/features/itineraries/presentation/ratings_page_screen.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
-import 'package:ntripi/core/utils/platform_utils.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 
 class DimensionRatingsScreen extends ConsumerWidget {
@@ -75,9 +75,7 @@ class DimensionRatingsScreen extends ConsumerWidget {
           ),
           Container(height: 1, color: nt.border),
           Expanded(
-            child: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
+            child: ContentColumn(
           child: RefreshIndicator(
             onRefresh: () => reportReloads(context, [
               ref.read(ratingsPageProvider(itineraryId).notifier).refresh(),
@@ -220,7 +218,6 @@ class DimensionRatingsScreen extends ConsumerWidget {
           ],
         ),
       ),
-          ),
         ),
           ),
         ],

@@ -45,8 +45,8 @@ import 'package:ntripi/features/itineraries/presentation/visibility_screen.dart'
 import 'package:ntripi/features/itineraries/providers/edit_lock_provider.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
-import 'package:ntripi/core/utils/platform_utils.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:ntripi/shared/widgets/keyboard_avoidance.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
@@ -541,10 +541,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
         saving: _saving,
         child: Scaffold(
       backgroundColor: nt.surface,
-      body: Center(
-        child: ConstrainedBox(
-        constraints: BoxConstraints(
-            maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
+      body: ContentColumn(
         child: Column(children: [
         SafeArea(
           bottom: false,
@@ -806,7 +803,6 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
         ),
         ),
         ]),
-        ),
       ),
         ),
       ),
@@ -827,7 +823,7 @@ class _CannotEditNotice extends StatelessWidget {
   Widget build(BuildContext context) {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
+    return ContentPage(child: Scaffold(
       backgroundColor: nt.surface,
       appBar: AppBar(
         backgroundColor: nt.surface,
@@ -852,7 +848,7 @@ class _CannotEditNotice extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ));
   }
 }
 

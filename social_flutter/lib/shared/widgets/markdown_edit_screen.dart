@@ -10,9 +10,9 @@ import 'package:flutter/material.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
-import 'package:ntripi/core/utils/platform_utils.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/moderation_hint.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
 import 'package:ntripi/shared/widgets/saving_overlay.dart';
@@ -148,7 +148,7 @@ class _MarkdownEditScreenState extends State<MarkdownEditScreen> {
       },
       child: SavingOverlay(
         saving: _saving,
-        child: Scaffold(
+        child: ContentPage(child: Scaffold(
         backgroundColor: nt.surface,
         appBar: AppBar(
           backgroundColor: nt.surface,
@@ -184,12 +184,7 @@ class _MarkdownEditScreenState extends State<MarkdownEditScreen> {
               ),
           ],
         ),
-        body: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-                maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
-            child: SingleChildScrollView(
+        body: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
               // Every caller edits prose here (description, bio) — a future
               // title-type field must opt out: place names false-positive.
@@ -204,9 +199,7 @@ class _MarkdownEditScreenState extends State<MarkdownEditScreen> {
                 ),
               ),
             ),
-          ),
-        ),
-        ),
+        )),
       ),
     );
   }

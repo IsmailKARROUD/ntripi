@@ -6,11 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
-import 'package:ntripi/core/utils/platform_utils.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
 import 'package:ntripi/features/itineraries/providers/saved_itineraries_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/reload_report.dart';
 
@@ -51,11 +51,7 @@ class _SavedItinerariesScreenState
     return Scaffold(
       backgroundColor: nt.surface,
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity,
-            ),
+        child: ContentColumn(
             child: savedAsync.when(
               loading: () => const Center(child: NTripiItineraryLoader()),
               error: (error, _) => Center(
@@ -78,7 +74,6 @@ class _SavedItinerariesScreenState
               ),
               data: (items) => _buildList(context, nt, l10n, items),
             ),
-          ),
         ),
       ),
     );

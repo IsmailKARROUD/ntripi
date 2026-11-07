@@ -85,6 +85,7 @@ import 'package:ntripi/features/itineraries/presentation/widgets/parallel_stop_g
 import 'package:ntripi/features/itineraries/presentation/widgets/segment_card.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/share_link_action.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/arrange_trip_view.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/field_help.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
@@ -95,7 +96,6 @@ import 'package:ntripi/shared/widgets/offline_gate.dart';
 import 'package:ntripi/shared/widgets/reload_report.dart';
 import 'package:ntripi/shared/widgets/saving_overlay.dart';
 import 'package:ntripi/shared/widgets/shadow_divider.dart';
-import 'package:ntripi/core/utils/platform_utils.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/leg_form_dialog.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/edit_lock_banner.dart';
 import 'package:ntripi/features/itineraries/providers/edit_lock_provider.dart';
@@ -789,11 +789,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
           message: _exitPending ? l10n.editModeLeaveAfterSave : null,
           child: SafeArea(
           top: false, // cover hero extends behind status bar
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                  maxWidth:
-                      isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
+          child: ContentColumn(
               child: itineraryAsync.when(
                 loading: () => const Center(child: NTripiRouteLoader()),
                 // A trip you may not see, or one that is gone, is an answer —
@@ -1718,7 +1714,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                   );
                 },
               ),
-            ),
           ),
         ),
         ),

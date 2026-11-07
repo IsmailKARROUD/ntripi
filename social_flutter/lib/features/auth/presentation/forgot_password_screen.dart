@@ -8,6 +8,7 @@ import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/features/auth/providers/auth_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
 import 'package:ntripi/shared/widgets/saving_overlay.dart';
@@ -63,7 +64,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     return SavingOverlay(
       saving: _isLoading,
       tint: nt.surface,
-      child: Scaffold(
+      child: ContentPage(child: Scaffold(
         backgroundColor: nt.surface,
         appBar: AppBar(
           backgroundColor: nt.surface,
@@ -76,7 +77,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             child: _sent ? _buildSent(l10n) : _buildForm(l10n),
           ),
         ),
-      ),
+      )),
     );
   }
 

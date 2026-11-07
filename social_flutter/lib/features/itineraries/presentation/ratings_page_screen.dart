@@ -22,12 +22,12 @@ import 'package:ntripi/features/itineraries/presentation/widgets/markdown_notes_
 import 'package:ntripi/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
 import 'package:ntripi/shared/widgets/appeal_sheet.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/expandable_text.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/moderation_hidden_banner.dart';
 import 'package:ntripi/shared/widgets/reload_report.dart';
 import 'package:ntripi/shared/widgets/user_avatar.dart';
-import 'package:ntripi/core/utils/platform_utils.dart';
 import 'package:ntripi/features/translation/presentation/translatable_text.dart';
 import 'package:ntripi/features/translation/providers/translation_providers.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
@@ -49,7 +49,7 @@ class RatingsHubScreen extends ConsumerWidget {
     final myRating = ref.watch(myRatingProvider(itineraryId)).value;
     final page = ratingsAsync.value;
 
-    return Scaffold(
+    return ContentPage(child: Scaffold(
       backgroundColor: nt.surface,
       appBar: AppBar(
         backgroundColor: nt.surface,
@@ -59,11 +59,7 @@ class RatingsHubScreen extends ConsumerWidget {
         ),
         title: Text(AppLocalizations.of(context)!.ratingsTitle),
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-              maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
-          child: RefreshIndicator(
+      body: RefreshIndicator(
             onRefresh: () => reportReloads(context, [
               ref.read(ratingsPageProvider(itineraryId).notifier).refresh(),
             ]),
@@ -178,9 +174,7 @@ class RatingsHubScreen extends ConsumerWidget {
               ],
             ),
           ),
-        ),
-      ),
-    );
+    ));
   }
 }
 

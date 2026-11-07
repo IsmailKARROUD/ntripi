@@ -47,8 +47,8 @@ import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/toggle_feedback.dart';
-import 'package:ntripi/core/utils/platform_utils.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/duration_picker_sheet.dart';
 import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:ntripi/shared/widgets/device_location_dot.dart';
@@ -1329,12 +1329,8 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
         saving: _saving,
         child: Scaffold(
           backgroundColor: nt.surface,
-          body: Align(
+          body: ContentColumn(
             alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity,
-              ),
               child: Column(children: [
           SafeArea(
             bottom: false,
@@ -2196,7 +2192,6 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
               ),
               ),
               ]),
-            ),
           ),
         ),
       ),

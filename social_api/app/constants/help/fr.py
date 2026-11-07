@@ -109,6 +109,7 @@ RELEASES: tuple[Release, ...] = (
             "**Le Fil et votre profil aux deux bouts de la barre.** La barre du bas se lit désormais Fil, Recherche, Itinéraires, Enregistrés, Profil, et l’onglet Profil affiche votre photo de profil une fois que vous en avez ajouté une.",
             "**Conditions et Politique de confidentialité mises à jour.** Elles couvrent désormais Google Maps, qui dessine une partie des cartes de Ntripi et sa recherche de lieux. Il vous sera demandé de les accepter une fois.",
             "**Supprimer votre compte sans l’application.** [ntripi.app/delete-account](/delete-account) envoie un lien à l’adresse de votre compte ; ouvrez-le et confirmez. Les Conditions et la Politique de confidentialité mises à jour disent ce qui reste ensuite — les avis gardent leur texte, sans votre nom — et il vous sera demandé de les accepter une nouvelle fois.",
+            "**Les onglets passent sur le côté sur un grand écran.** Sur une tablette, ou dans une fenêtre de navigateur assez large, les cinq onglets s’affichent sur le côté gauche plutôt qu’en bas, et chaque écran reste centré, à une largeur confortable à lire. Les tablettes peuvent désormais être tournées à l’horizontale.",
         ),
     ),
     Release(
@@ -162,6 +163,8 @@ Cherchez le lien de vérification dans votre boîte de réception. Si vous vous 
 - **Enregistrés** — les voyages que vous avez mis en favori.
 - **Profil** — votre propre profil, et l’icône d’engrenage qui ouvre tous les paramètres. Une fois votre photo de profil ajoutée, l’onglet l’affiche.
 
+Sur un grand écran — une tablette, ou une fenêtre de navigateur assez large — ces cinq onglets passent sur le côté gauche, de haut en bas.
+
 La cloche à côté de l’engrenage, sur votre profil, ouvre vos notifications.""",
             ),
             Block(
@@ -194,7 +197,7 @@ Les nouveaux voyages ne sont visibles que par **vous seul** tant que vous ne cha
             "prise en main",
         ),
         related=("plan-a-trip-itinerary", "share-an-itinerary-privately"),
-        updated="2026-10-31",
+        updated="2026-11-07",
         cta="Envie de planifier quelque chose ? Lancez votre premier voyage.",
     ),
     Article(
@@ -279,7 +282,7 @@ Voir [comment partager un voyage sans le rendre public](/help/share-an-itinerary
         title="Les écrans et les icônes de Ntripi, expliqués",
         summary="Une visite guidée des cinq onglets, de l’écran d’itinéraire et des icônes que vous croiserez en chemin.",
         category="getting-started",
-        intro="Ntripi a cinq onglets en bas et très peu d’habillage au-dessus. Presque tout ce que vous pouvez changer se trouve soit derrière l’engrenage de votre profil, soit derrière un appui long sur l’élément lui-même. Cette page nomme chaque chose.",
+        intro="Ntripi a cinq onglets — en bas, ou sur le côté sur un grand écran — et très peu d’habillage autour. Presque tout ce que vous pouvez changer se trouve soit derrière l’engrenage de votre profil, soit derrière un appui long sur l’élément lui-même. Cette page nomme chaque chose.",
         blocks=(
             Block(
                 anchor="bottom-nav",
@@ -291,7 +294,9 @@ Voir [comment partager un voyage sans le rendre public](/help/share-an-itinerary
 4. **Enregistrés** — les voyages mis en favori, avec un champ de filtre.
 5. **Profil** — votre propre profil ; l’onglet affiche votre photo de profil une fois que vous en avez ajouté une. L’engrenage ouvre tous les paramètres ; la cloche à côté ouvre vos notifications.
 
-Appuyer sur l’onglet où vous êtes déjà vous ramène en haut de celui-ci, c’est le moyen le plus rapide de sortir d’un écran profond.""",
+Appuyer sur l’onglet où vous êtes déjà vous ramène en haut de celui-ci, c’est le moyen le plus rapide de sortir d’un écran profond.
+
+Sur un grand écran — une tablette, ou une fenêtre de navigateur avec de la place des deux côtés de la page — la barre passe sur le côté gauche, avec les mêmes cinq onglets de haut en bas.""",
             ),
             Block(
                 anchor="itinerary-screen",
@@ -336,9 +341,12 @@ Sur le voyage de quelqu’un d’autre, le même geste propose de signaler ou de
             "interface",
             "disposition",
             "écrans",
+            "barre latérale",
+            "tablette",
+            "ipad",
         ),
         related=("getting-started", "app-settings"),
-        updated="2026-10-31",
+        updated="2026-11-07",
         cta="Voyez par vous-même — ouvrez Ntripi.",
     ),
     Article(

@@ -15,7 +15,6 @@ import 'package:ntripi/core/api/api_error_codes.dart';
 import 'package:ntripi/core/router/navigation_ext.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
-import 'package:ntripi/core/utils/platform_utils.dart';
 import 'package:ntripi/features/auth/providers/auth_provider.dart';
 import 'package:ntripi/features/feed/providers/feed_providers.dart';
 import 'package:ntripi/features/follows/presentation/follow_actions.dart';
@@ -44,6 +43,7 @@ import 'package:ntripi/features/reports/presentation/ugc_actions.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/models/user.dart';
 import 'package:ntripi/shared/widgets/appeal_sheet.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/field_help.dart';
 import 'package:ntripi/shared/widgets/fullscreen_image_viewer.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
@@ -117,12 +117,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: nt.surface,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth:
-                isDesktopWeb() ? kDesktopMaxWidth : double.infinity,
-          ),
+      body: ContentColumn(
           child: profileAsync.when(
             loading: () => const Center(child: NTripiCompassLoader()),
             // A 404 means the account is gone — deleted, banned, or blocked in
@@ -177,7 +172,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   )
                 : _buildProfileView(user),
           ),
-        ),
       ),
     );
   }

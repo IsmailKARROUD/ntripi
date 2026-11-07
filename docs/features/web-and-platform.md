@@ -320,19 +320,20 @@ Railway env vars, and the full optional-integration matrix, are listed in
 ProviderScope
 └── BetterFeedback              ← ABOVE MaterialApp (see bug-reports.md)
     └── MaterialApp.router
-        └── builder: AnnotatedRegion
-            └── TosGate
-                └── NotificationPoller
-                    └── PushGateway
-                        └── ShakeToReport
-                            └── child (the routed screen)
+        └── builder: Theme           ← columnSnackBars (snackbars as wide as the column)
+            └── AnnotatedRegion
+                └── TosGate
+                    └── NotificationPoller
+                        └── PushGateway
+                            └── ShakeToReport
+                                └── child (the routed screen)
 ```
 
 - `initFirebase()` runs **before** `runApp` so the background message handler is
   registered first; it swallows a missing config so the app still launches.
-- **The router** (`core/router/app_router.dart`, 588 lines) has a
+- **The router** (`core/router/app_router.dart`, 766 lines) has a
   `StatefulShellRoute.indexedStack` with **five branches** — `/feed`,
-  `/search`, `/itineraries`, `/saved`, `/profile/me`, in the bottom bar's order
+  `/search`, `/itineraries`, `/saved`, `/profile/me`, in the tabs' bar's order
   (a branch's index is its tab's position) — which keeps each tab's widget
   tree alive. Root-level routes (`/splash`, `/login`, `/register`,
   `/forgot-password`, `/suspended`, and every `/itineraries/:id/...` detail route)
@@ -341,6 +342,39 @@ ProviderScope
   safe navigation: `popOr` to leave a screen that may be the only route, and
   `pushOverHome` / `openFromOutside` to enter one from outside the app — see
   [notifications.md](notifications.md#flutter-surface).
+- **Width decides the layout, never the platform** (`core/ui/app_layout.dart`,
+  since 2026-11-07). Every screen keeps its content in one centred column of at
+  most `kContentMaxWidth` (600 px): a phone fills it; a tablet, a browser window
+  or a tablet in Split View centres it with plain space on both sides. Screens
+  take it through `ContentColumn` — or `ContentPage`, which puts the whole
+  Scaffold in the column and paints the sides, when an `AppBar` or a floating
+  button sits in the Scaffold's own slots (`shared/widgets/content_column.dart`).
+  Full-window screens — splash, the map picker, the full-screen locations map,
+  the photo viewer, the cover crop editor — and the suspended screen's own
+  420 px box are the listed exceptions, each with its reason, in
+  `test/content_column_guard_test.dart`, which also fails on the old
+  desktop-only cap (`isDesktopWeb()` / `kDesktopMaxWidth = 480`, removed).
+  Modal sheets are capped at the same width (`bottomSheetTheme.constraints`),
+  and on a window wider than the column a snackbar is as wide as its content
+  (`columnSnackBars` in `app_theme.dart`, applied in `main.dart`'s builder).
+- **The tabs' bar moves down the side once it fits beside the column**:
+  `sideBarFits` — a window at least the column plus a `kSideBarWidth` (80 px)
+  bar on each side, 760 px — puts the shell's `_SideBar` (a `NavigationRail`)
+  against the window's leading edge (the right in Arabic) and leaves a matching
+  gap on the trailing side, so the column stays centred on the window, exactly
+  where a root-level page (which has no bar) puts it. Below 760 px the
+  `_BottomBar` stays. Both bars are drawn from one list of the five tabs: same
+  order, icons, `ProfileTabIcon` and reset-on-tap; the side bar is the bottom
+  bar turned on its side (`navigationRailTheme`: labels under icons, no pill,
+  the open tab green, a hairline on the edge that faces the content), 80 px
+  wide however long a label, and it scrolls when the window is too short for
+  five tabs. It decides live: resizing a window, turning or splitting a tablet
+  moves the bar without remounting the open tab — its three Row slots exist in
+  both layouts, and go_router's branch keys would carry the state across
+  anyway. Beside the side bar nothing reserves the home-indicator inset, so the
+  tabs keep it; under a banner the side bar, like the tabs, drops the status-bar
+  inset the banner took. The bar is still on the shell's screens only: trip,
+  stop, form and other-profile pages stay full-screen with their back arrow.
 - **Shared links are the router's other way in.** Its `onEnter`
   (`appLinkOnEnter`) and the first step of its redirect (`appLinkLaunchRedirect`),
   both in `core/router/app_links.dart`, intercept a `/share/i/…` or `/share/u/…`
@@ -386,7 +420,18 @@ ProviderScope
   network switch may be dead. The web build hands requests to the browser, which
   keeps its own connections. See
   [decisions.md](../decisions.md#2026-10-25--the-app-keeps-its-connection-to-the-api-open-for-two-minutes).
-- The app is **locked to portrait**.
+- **Phones are portrait-only; a tablet turns and resizes** (since 2026-11-07).
+  `OrientationPolicy` (`core/ui/orientation_policy.dart`) locks portrait when
+  the app's shortest side is under 600 logical px — Android's sw600dp — and
+  frees every orientation from there, re-deciding when the size changes (a
+  foldable opened up) but asking the OS only when its answer moves; before the
+  first size arrives it asks nothing, so a tablet held sideways never flips.
+  `MainActivity.kt` requests portrait in `onCreate` on the same line, so a
+  phone's launch screen is never sideways; the manifest no longer locks
+  anything. The web is never locked. Tablets could not be held to portrait in
+  any case: Android 16 ignores the lock on large screens for apps targeting SDK
+  36, and iPad ignores it while the app can multitask (`UIRequiresFullScreen`
+  is not set).
 - **Build-time config is `--dart-define`**: `API_BASE_URL`, `SHARE_BASE_URL`.
   The Maps Embed key left the build on 2026-10-31: it is the backend's
   `GOOGLE_MAPS_EMBED_API_KEY`, used inside `/embed/*`.

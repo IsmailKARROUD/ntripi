@@ -15,6 +15,7 @@ import 'package:ntripi/features/profile/presentation/profile_screen.dart';
 import 'package:ntripi/features/profile/presentation/widgets/profile_unavailable_view.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 
 class ProfileByUsernameScreen extends ConsumerWidget {
@@ -30,8 +31,8 @@ class ProfileByUsernameScreen extends ConsumerWidget {
     final me = ref.watch(myProfileProvider);
     void leave() => context.popOr('/profile/me');
 
-    Widget page(Widget body) =>
-        Scaffold(backgroundColor: nt.surface, body: body);
+    Widget page(Widget body) => Scaffold(
+        backgroundColor: nt.surface, body: ContentColumn(child: body));
     final loading = page(const Center(child: NTripiCompassLoader()));
 
     return resolved.when(

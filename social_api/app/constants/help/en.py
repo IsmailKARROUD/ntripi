@@ -186,6 +186,10 @@ RELEASES: tuple[Release, ...] = (
             "account's address; open it and confirm. The updated Terms and Privacy "
             "Policy say what stays afterwards — reviews keep their text, without "
             "your name — and you'll be asked to accept them once more.",
+            "**The tabs move to the side on a wide screen.** On a tablet, or "
+            "in a browser window with room to spare, the five tabs run down the "
+            "left side instead of along the bottom, and every screen stays "
+            "centred at a readable width. Tablets can now be turned sideways.",
         ),
     ),
     Release(
@@ -219,7 +223,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="getting-started",
         schema=SCHEMA_HOWTO,
-        updated="2026-10-31",
+        updated="2026-11-07",
         keywords=(
             "sign up", "signup", "register", "registration", "new account",
             "first time", "beginner", "tour", "basics", "onboarding", "start",
@@ -277,6 +281,9 @@ ARTICLES: tuple[Article, ...] = (
                     "- **Saved** — trips you bookmarked.\n"
                     "- **Profile** — your own profile, and the gear icon that opens "
                     "every setting. Once you add a profile photo, the tab shows it.\n\n"
+                    "On a wide screen — a tablet, or a browser window with room "
+                    "to spare — the same five tabs run down the left side "
+                    "instead, from top to bottom.\n\n"
                     "The bell beside the gear on your profile opens your "
                     "notifications."
                 ),
@@ -426,16 +433,18 @@ ARTICLES: tuple[Article, ...] = (
             "you will meet along the way."
         ),
         category="getting-started",
-        updated="2026-10-31",
+        updated="2026-11-07",
         keywords=(
             "icons", "buttons", "menu", "navigation", "tabs", "where is",
-            "what does this button do", "interface", "layout",
+            "what does this button do", "interface", "layout", "sidebar",
+            "side bar", "tablet", "ipad",
         ),
         related=("getting-started", "app-settings"),
         cta="See it for yourself — open Ntripi.",
         intro=(
-            "Ntripi has five tabs along the bottom and very little chrome above "
-            "them. Almost everything you can change lives either behind the gear "
+            "Ntripi has five tabs — along the bottom, or down the side on a wide "
+            "screen — and very little chrome around them. Almost everything you "
+            "can change lives either behind the gear "
             "on your profile or behind a long press on the thing itself. This "
             "page names each one."
         ),
@@ -457,7 +466,10 @@ ARTICLES: tuple[Article, ...] = (
                     "profile photo once you add one. The gear opens every "
                     "setting; the bell beside it opens your notifications.\n\n"
                     "Tapping the tab you are already on returns you to the top of "
-                    "it, which is the fastest way out of a deep screen."
+                    "it, which is the fastest way out of a deep screen.\n\n"
+                    "On a wide screen — a tablet, or a browser window with room "
+                    "on both sides of the page — the bar runs down the left side "
+                    "instead, the same five tabs from top to bottom."
                 ),
             ),
             Block(

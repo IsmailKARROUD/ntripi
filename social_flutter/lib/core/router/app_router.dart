@@ -47,6 +47,7 @@ import 'package:ntripi/features/profile/presentation/widgets/profile_unavailable
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/features/search/presentation/search_screen.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/profile_tab_icon.dart';
 
 /// Routes that require no authentication check — the only screens a signed-out
@@ -414,14 +415,16 @@ final GoRouter appRouter = GoRouter(
       builder:
           (context, s) => Scaffold(
             backgroundColor: context.nt.surface,
-            body: s.pathParameters['kind'] == 'profile'
-                ? ProfileUnavailableView(
-                    onBack: () => context.popOr('/profile/me'),
-                  )
-                : ItineraryUnavailableView(
-                    reason: ItineraryUnavailable.notAvailable,
-                    onBack: () => context.popOr('/profile/me'),
-                  ),
+            body: ContentColumn(
+              child: s.pathParameters['kind'] == 'profile'
+                  ? ProfileUnavailableView(
+                      onBack: () => context.popOr('/profile/me'),
+                    )
+                  : ItineraryUnavailableView(
+                      reason: ItineraryUnavailable.notAvailable,
+                      onBack: () => context.popOr('/profile/me'),
+                    ),
+            ),
           ),
     ),
   ],
@@ -433,7 +436,11 @@ final GoRouter appRouter = GoRouter(
 Widget appShellForTesting(StatefulNavigationShell navigationShell) =>
     _AppShell(navigationShell: navigationShell);
 
-/// Shell with persistent bottom navigation bar.
+/// One tab of the shell's bar, as both bars draw it.
+typedef _Tab = ({Widget icon, Widget activeIcon, String label});
+
+/// Shell with the tabs' bar: along the bottom, or down the side once the
+/// window is wide enough for it beside the column (`sideBarFits`).
 class _AppShell extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
   const _AppShell({required this.navigationShell});
@@ -449,9 +456,15 @@ class _AppShellState extends ConsumerState<_AppShell> {
   // reappears on the next visit as a soft reminder.
   bool _showDownloadBanner = kIsWeb;
 
+  void _openTab(int i) => widget.navigationShell.goBranch(
+        i,
+        // Tapping the active tab resets its navigation stack.
+        initialLocation: i == widget.navigationShell.currentIndex,
+      );
+
   @override
   Widget build(BuildContext context) {
-    final nt = context.nt;
+    final l10n = AppLocalizations.of(context)!;
     // Single source of truth for connectivity — see ConnectivityService.
     // Default to "online" while the stream is still seeding (optimistic).
     final isOffline =
@@ -466,6 +479,45 @@ class _AppShellState extends ConsumerState<_AppShell> {
     final photo = avatarUrl == null || avatarUrl.isEmpty
         ? null
         : ref.watch(cachedImageProvider)(avatarUrl);
+    // The five tabs in branch order — the one list both bars are drawn from.
+    final List<_Tab> tabs = [
+      (
+        icon: const Icon(Icons.dynamic_feed_outlined),
+        activeIcon: const Icon(Icons.dynamic_feed),
+        label: l10n.navFeed,
+      ),
+      (
+        // person_search, not plain search: this tab only searches users.
+        icon: const Icon(Icons.person_search_outlined),
+        activeIcon: const Icon(Icons.person_search),
+        label: l10n.navSearch,
+      ),
+      (
+        icon: const Icon(Icons.article_outlined),
+        activeIcon: const Icon(Icons.article),
+        label: l10n.navItineraries,
+      ),
+      (
+        icon: const Icon(Icons.bookmark_border),
+        activeIcon: const Icon(Icons.bookmark),
+        label: l10n.navSaved,
+      ),
+      (
+        icon: ProfileTabIcon(photo: photo),
+        activeIcon: ProfileTabIcon(photo: photo, selected: true),
+        label: l10n.navProfile,
+      ),
+    ];
+    final media = MediaQuery.of(context);
+    final bannerShown = _showDownloadBanner || isOffline;
+    final startInset = Directionality.of(context) == TextDirection.rtl
+        ? media.padding.right
+        : media.padding.left;
+    // Width alone decides, live: a resized window, a turned or split tablet.
+    final sideBar = sideBarFits(media.size.width - 2 * startInset);
+    // The gap opposite the side bar matches it, so the tabs — and the column
+    // in them — are centred on the window, exactly where a trip page puts it.
+    final sideWidth = sideBar ? kSideBarWidth + startInset : 0.0;
     return Scaffold(
       // Resizes (the default) to lift the tabs above the keyboard, and hands them
       // no keyboard inset — so a tab's own Scaffold has nothing left to lift.
@@ -482,72 +534,133 @@ class _AppShellState extends ConsumerState<_AppShell> {
           // below the status bar. Strip the top inset when a banner shows.
           // removeBottom: the BottomNavigationBar already reserves the home-
           // indicator inset; without this the child SafeArea re-adds it and
-          // leaves an empty strip of surface above the bar.
+          // leaves an empty strip of surface above the bar. The side bar
+          // reserves none, so there the tabs keep it.
           Expanded(
-            child: MediaQuery(
-              // Built from this context, above the Scaffold, so the keyboard
-              // inset it consumed must go too or every tab lifts a second time.
-              data: MediaQuery.of(context)
-                  .removePadding(
-                    removeTop: _showDownloadBanner || isOffline,
-                    removeBottom: true,
-                  )
-                  .removeViewInsets(removeBottom: true),
-              child: widget.navigationShell,
+            // Three slots in every layout, so crossing the threshold leaves the
+            // tabs where they are — scroll positions and typed text stay —
+            // without leaning on go_router's keys to carry them across.
+            child: Row(
+              children: [
+                SizedBox(
+                  width: sideWidth,
+                  child: sideBar
+                      ? MediaQuery(
+                          data: media.removePadding(removeTop: bannerShown),
+                          child: _SideBar(
+                            tabs: tabs,
+                            currentIndex: widget.navigationShell.currentIndex,
+                            onTap: _openTab,
+                          ),
+                        )
+                      : null,
+                ),
+                Expanded(
+                  child: MediaQuery(
+                    // Built from this context, above the Scaffold, so the keyboard
+                    // inset it consumed must go too or every tab lifts a second time.
+                    data: media
+                        .removePadding(
+                          removeTop: bannerShown,
+                          removeBottom: !sideBar,
+                          // The side bar and the gap opposite it hold the side insets.
+                          removeLeft: sideBar,
+                          removeRight: sideBar,
+                        )
+                        .removeViewInsets(removeBottom: true),
+                    child: widget.navigationShell,
+                  ),
+                ),
+                SizedBox(width: sideWidth),
+              ],
             ),
           ),
         ],
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: nt.surface,
-          border: Border(top: BorderSide(color: nt.border)),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: widget.navigationShell.currentIndex,
-          elevation: 0,
-          backgroundColor: nt.surface,
-          selectedItemColor: nt.forest,
-          unselectedItemColor: nt.text3,
-          onTap: (i) {
-            widget.navigationShell.goBranch(
-              i,
-              // Tapping the active tab resets its navigation stack.
-              initialLocation: i == widget.navigationShell.currentIndex,
-            );
-          },
-          items: [
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.dynamic_feed_outlined),
-              activeIcon: const Icon(Icons.dynamic_feed),
-              label: AppLocalizations.of(context)!.navFeed,
+      bottomNavigationBar: sideBar
+          ? null
+          : _BottomBar(
+              tabs: tabs,
+              currentIndex: widget.navigationShell.currentIndex,
+              onTap: _openTab,
             ),
+    );
+  }
+}
+
+class _BottomBar extends StatelessWidget {
+  final List<_Tab> tabs;
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+  const _BottomBar({
+    required this.tabs,
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    return Container(
+      decoration: BoxDecoration(
+        color: nt.surface,
+        border: Border(top: BorderSide(color: nt.border)),
+      ),
+      child: BottomNavigationBar(
+        currentIndex: currentIndex,
+        elevation: 0,
+        backgroundColor: nt.surface,
+        selectedItemColor: nt.forest,
+        unselectedItemColor: nt.text3,
+        onTap: onTap,
+        items: [
+          for (final tab in tabs)
             BottomNavigationBarItem(
-              // person_search, not plain search: this tab only searches users.
-              icon: const Icon(Icons.person_search_outlined),
-              activeIcon: const Icon(Icons.person_search),
-              label: AppLocalizations.of(context)!.navSearch,
+              icon: tab.icon,
+              activeIcon: tab.activeIcon,
+              label: tab.label,
             ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.article_outlined),
-              activeIcon: const Icon(Icons.article),
-              label: AppLocalizations.of(context)!.navItineraries,
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.bookmark_border),
-              activeIcon: const Icon(Icons.bookmark),
-              label: AppLocalizations.of(context)!.navSaved,
-            ),
-            BottomNavigationBarItem(
-              icon: ProfileTabIcon(photo: photo),
-              activeIcon: ProfileTabIcon(photo: photo, selected: true),
-              label: AppLocalizations.of(context)!.navProfile,
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
+}
+
+/// The bottom bar turned on its side: the same tabs, icons and colors, with
+/// its hairline on the edge that faces the content.
+class _SideBar extends StatelessWidget {
+  final List<_Tab> tabs;
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+  const _SideBar({
+    required this.tabs,
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+        // Foreground: the rail paints its own background over a background one.
+        position: DecorationPosition.foreground,
+        decoration: BoxDecoration(
+          border: BorderDirectional(end: BorderSide(color: context.nt.border)),
+        ),
+        child: NavigationRail(
+          selectedIndex: currentIndex,
+          onDestinationSelected: onTap,
+          minWidth: kSideBarWidth,
+          // A window too short for five tabs scrolls them instead of overflowing.
+          scrollable: true,
+          destinations: [
+            for (final tab in tabs)
+              NavigationRailDestination(
+                icon: tab.icon,
+                selectedIcon: tab.activeIcon,
+                label: Text(tab.label, textAlign: TextAlign.center),
+              ),
+          ],
+        ),
+      );
 }
 
 class _OfflineBanner extends StatelessWidget {

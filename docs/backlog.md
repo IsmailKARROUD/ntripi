@@ -326,6 +326,23 @@ so 48 px more room. The login screen avoids it by giving the pickers their own
 row. Under test the row overflows on anything narrower than 393 px at normal
 text, because the test font draws "Tripi" at 102 px rather than 44.
 
+### idea — the side bar on reading pages
+
+On a wide window the tabs' side bar shows on the shell's screens only; a trip,
+a stop, ratings and another person's profile stay full-screen pages with a back
+arrow, as on a phone (decided 2026-11-07). Keeping the bar there would let a
+reader move between tabs without going back. It needs navigation above the
+router — those routes sit outside the shell on purpose, since nesting them
+froze the app — and guards so a click cannot leave a trip in edit mode or a
+form with unsaved text. → [features/web-and-platform.md](features/web-and-platform.md)
+
+### idea — a wide trip layout with the map beside the stops
+
+Every screen keeps to the 600 px column (2026-11-07). The trip page is the one
+screen a wide window could serve better — its Map view beside the stops instead
+of behind a toggle — and that belongs in a layout of its own, not in a wider
+column for every screen. → [features/web-and-platform.md](features/web-and-platform.md)
+
 ---
 
 ## Dead and unread code
