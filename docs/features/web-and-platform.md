@@ -360,10 +360,13 @@ ProviderScope
   `test/content_column_guard_test.dart`, which also fails on the old
   desktop-only cap (`isDesktopWeb()` / `kDesktopMaxWidth = 480`, removed).
   Two things leave the column on purpose (since 2026-11-07, the owner's call):
-  **New itinerary** stands in the screen's far corner once the room beside the
-  list holds it (`ColumnFabLocation`; at the column's corner, over the list,
-  otherwise), and the profile's **Passport / Lives in / Speaks** row runs from
-  the side bar — or the window's edge — to the screen's far edge.
+  **New itinerary** stands in the screen's far corner whenever it clears the
+  column there — the list keeps its own 16 px inside the column, so no second
+  margin is asked for (`ColumnFabLocation`; at the column's corner, over the
+  list, otherwise) — and the profile's **Passport / Lives in / Speaks** row may
+  run wider than the column, out toward the side bar and the screen's far edge,
+  centred on the window once it is the wider (start-aligned in the column, as
+  on a phone, otherwise).
   Modal sheets are capped at the same width (`bottomSheetTheme.constraints`)
   and **every sheet opens on the root navigator** (`useRootNavigator: true`,
   held by the guard test): on a tab's own navigator a sheet was laid out in the
@@ -380,9 +383,14 @@ ProviderScope
   unchanged. It decides at every layout from the children's own intrinsic
   widths, so their style, the text scaler and bold text are all counted — no
   breakpoint, no `TextPainter` guess — and a child may not hold a
-  `LayoutBuilder`, which cannot answer that question. The Itineraries tab puts
-  its title and All / Mine / Shared side by side through it, and a profile its
-  name and the Followers / Following counts.
+  `LayoutBuilder`, which cannot answer that question. `expandEnd` gives the end
+  piece all the room the start piece leaves, to spread its own pieces out;
+  `stackedEnd` gives the end piece a different form for the stacked layout.
+  Both forms stay built and only the one shown is painted, hit and read out,
+  so neither may hold a control that takes keyboard focus. The Itineraries tab
+  puts its title and All / Mine / Shared side by side through it, and a profile
+  its name and the Followers / Following counts — inline and spread beside the
+  name, each count above its label below it.
 - **The tabs' bar moves down the side once it fits beside the column**:
   `sideBarFits` — a window at least the column plus a `kSideBarWidth` (80 px)
   bar on each side, 760 px — puts the shell's `SideTabBar`

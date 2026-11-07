@@ -13,7 +13,15 @@ import 'package:ntripi/shared/models/user.dart';
 class ProfileIdentityFacts extends StatelessWidget {
   final User user;
 
-  const ProfileIdentityFacts({super.key, required this.user});
+  /// Where each line of chips sits: at the start in the column, centred when
+  /// the row runs wider than it.
+  final WrapAlignment alignment;
+
+  const ProfileIdentityFacts({
+    super.key,
+    required this.user,
+    this.alignment = WrapAlignment.start,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +63,7 @@ class ProfileIdentityFacts extends StatelessWidget {
         : null;
 
     return Wrap(
+      alignment: alignment,
       spacing: 6,
       runSpacing: 6,
       children: [

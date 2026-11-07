@@ -18,16 +18,25 @@ import 'package:ntripi/shared/widgets/fullscreen_image_viewer.dart';
 import 'package:ntripi/shared/widgets/side_by_side_when_fits.dart';
 import 'package:ntripi/shared/widgets/user_avatar.dart';
 
+/// How far above the identity row's foot the name block ends — and so do the
+/// counts beside it, which stand level with the @handle.
+const double _identityFoot = 6;
+
+/// The least room between the name and the first count, and between the two
+/// counts, when they share the name's row.
+const double _countsGap = 24;
+
 /// Renders the OSM map hero (260 px) with the avatar + name/handle row
-/// overlapping it by 36 px at the bottom, and [tallies] at the end of that row
-/// when both fit, below it otherwise. Used for both self and other-user
-/// profiles via [isSelf].
+/// overlapping it by 36 px at the bottom, and the Followers / Following counts
+/// in that row when they fit — inline, spread evenly — or below it as on a
+/// phone. Used for both self and other-user profiles via [isSelf].
 class ProfileHeroAndIdentity extends StatelessWidget {
   final User user;
   final int totalStops;
 
-  /// The Followers / Following counts.
-  final Widget tallies;
+  /// Opens the Followers / Following lists.
+  final VoidCallback? onFollowersTap;
+  final VoidCallback? onFollowingTap;
   final bool isSelf;
   final bool isContentHidden;
   final String? headerLabel;
@@ -63,7 +72,8 @@ class ProfileHeroAndIdentity extends StatelessWidget {
     super.key,
     required this.user,
     required this.totalStops,
-    required this.tallies,
+    this.onFollowersTap,
+    this.onFollowingTap,
     this.isSelf = true,
     this.isContentHidden = false,
     this.headerLabel,
@@ -84,9 +94,20 @@ class ProfileHeroAndIdentity extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final nt = context.nt;
+    final l10n = AppLocalizations.of(context)!;
     const heroH = 260.0;
     // The avatar overlaps the hero's bottom edge by this much.
     const overlap = 36.0;
+    Tally followers({bool inline = false}) => Tally(
+        n: user.followersCount,
+        label: l10n.followers,
+        onTap: onFollowersTap,
+        inline: inline);
+    Tally following({bool inline = false}) => Tally(
+        n: user.followingCount,
+        label: l10n.following,
+        onTap: onFollowingTap,
+        inline: inline);
 
     return Stack(
         clipBehavior: Clip.none,
@@ -122,9 +143,35 @@ class ProfileHeroAndIdentity extends StatelessWidget {
             padding: const EdgeInsets.only(top: heroH - overlap),
             child: SideBySideWhenFits(
               crossAxisAlignment: CrossAxisAlignment.end,
-              end: tallies,
+              // The counts take the rest of the row and spread out, so the
+              // name, Followers and Following stand evenly apart.
+              spacing: 0,
+              expandEnd: true,
+              end: Padding(
+                padding: const EdgeInsetsDirectional.only(end: overlap),
+                child: Row(
+                  children: [
+                    const Expanded(child: SizedBox(width: _countsGap)),
+                    followers(inline: true),
+                    const Expanded(child: SizedBox(width: _countsGap)),
+                    following(inline: true),
+                  ],
+                ),
+              ),
+              // Below the name, each count stands above its label, as on a phone.
+              stackedEnd: Padding(
+                padding: const EdgeInsets.fromLTRB(25, 10, 25, 5),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    const SizedBox(width: 24), // align past avatar edge
+                    followers(),
+                    following(),
+                  ],
+                ),
+              ),
               start: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsetsDirectional.only(start: 16),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -140,7 +187,7 @@ class ProfileHeroAndIdentity extends StatelessWidget {
                 ),
                 const SizedBox(width: 14),
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.only(bottom: _identityFoot),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
@@ -659,11 +706,43 @@ class Tally extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
 
-  const Tally({super.key, required this.n, required this.label, this.onTap});
+  /// The count and its label on one line, the count in bold — beside the name
+  /// on a wide window. Otherwise the count stands above its label.
+  final bool inline;
+
+  const Tally({
+    super.key,
+    required this.n,
+    required this.label,
+    this.onTap,
+    this.inline = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final nt = context.nt;
+    if (inline) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Padding(
+          // Its text ends where the @handle's does, level with it.
+          padding: const EdgeInsets.symmetric(vertical: _identityFoot),
+          child: Text.rich(
+            TextSpan(children: [
+              TextSpan(
+                text: '$n',
+                style: const TextStyle(fontSize: 18,fontWeight: FontWeight.w900),
+              ),
+              TextSpan(text: ' $label',
+              style: const TextStyle(fontWeight: FontWeight.w500),),
+            ]),
+            maxLines: 1,
+            style: TextStyle(fontSize: 15, color: nt.bark, height: 1.2),
+          ),
+        ),
+      );
+    }
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,

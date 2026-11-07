@@ -202,29 +202,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const <VisitedLocation>[])
         : const <VisitedLocation>[];
 
-    // Beside the name when both fit, below it otherwise (ProfileHeroAndIdentity).
-    final tallies = Padding(
-      padding: const EdgeInsets.fromLTRB(25, 10, 25, 5),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          const SizedBox(width: 24), // align past avatar edge
-          Tally(
-            n: user.followersCount,
-            label: l10n.followers,
-            onTap: () => context
-                .push('${widget.profileBaseRoute}/${user.id}/followers'),
-          ),
-          Tally(
-            n: user.followingCount,
-            label: l10n.following,
-            onTap: () => context
-                .push('${widget.profileBaseRoute}/${user.id}/following'),
-          ),
-        ],
-      ),
-    );
-
     return RefreshIndicator(
       // Awaited: fired and forgotten, the spinner vanished at once while the
       // data was still on its way.
@@ -252,7 +229,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ProfileHeroAndIdentity(
                   user: user,
                   totalStops: totalStops,
-                  tallies: tallies,
+                  onFollowersTap: () => context
+                      .push('${widget.profileBaseRoute}/${user.id}/followers'),
+                  onFollowingTap: () => context
+                      .push('${widget.profileBaseRoute}/${user.id}/following'),
                   isSelf: widget.isSelf,
                   isContentHidden: isContentHidden,
                   headerLabel:
@@ -356,13 +336,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
 
           // Passport, Lives in and Speaks keep no column: their row runs from
-          // the side bar (or the window's edge) to the screen's far edge.
+          // the side bar (or the window's edge) toward the screen's far edge,
+          // centred on the window — as the column is — once it is the wider.
           if (!isContentHidden)
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-                child: ProfileIdentityFacts(user: user),
-              ),
+              child: LayoutBuilder(builder: (context, box) {
+                final inset = SideBarInset.of(context);
+                return Padding(
+                  padding: EdgeInsetsDirectional.fromSTEB(16, 10, 16 + inset, 0),
+                  child: ProfileIdentityFacts(
+                    user: user,
+                    alignment: box.maxWidth - inset > kContentMaxWidth
+                        ? WrapAlignment.center
+                        : WrapAlignment.start,
+                  ),
+                );
+              }),
             ),
 
           SliverContentColumn(

@@ -100,9 +100,9 @@ class SliverContentColumn extends StatelessWidget {
 }
 
 /// The floating button of a Scaffold that spans the screen while its content
-/// keeps to the column: in the screen's far corner when the room beside the
-/// column holds it, otherwise at the column's own corner — over the content,
-/// as on a phone.
+/// keeps to the column: in the screen's far corner when it clears the column
+/// there, otherwise at the column's own corner — over the content, as on a
+/// phone.
 class ColumnFabLocation extends StandardFabLocation with FabFloatOffsetY {
   const ColumnFabLocation([this.inset = 0]);
 
@@ -118,8 +118,9 @@ class ColumnFabLocation extends StandardFabLocation with FabFloatOffsetY {
     final safeEnd = rtl ? geometry.minInsets.left : geometry.minInsets.right;
     final besideColumn = columnGaps(width, inset).end;
     // Distance from the end edge: the screen's corner when the button clears
-    // the column there, else the column's corner, never inside the safe area.
-    final fromEnd = besideColumn >= button + 2 * margin + safeEnd
+    // the column there — the content keeps its own margin inside the column —
+    // else the column's corner, never inside the safe area.
+    final fromEnd = besideColumn >= button + margin + safeEnd
         ? margin + safeEnd
         : math.max(besideColumn + margin, margin + safeEnd);
     return rtl ? fromEnd - adjustment : width - fromEnd - button + adjustment;

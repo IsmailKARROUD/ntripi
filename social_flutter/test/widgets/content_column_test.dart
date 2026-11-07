@@ -219,6 +219,27 @@ void main() {
   });
 
   testWidgets(
+      'Given room beside the column for the button and one margin, Then it '
+      'stands in the far corner, clear of the column — the content keeps its '
+      'own margin inside the column', (tester) async {
+    // The button's width under the test font, measured where it has room.
+    _window(tester, const Size(1440, 900));
+    await _pump(tester, _besideSideBar(_fabScreen(kSideBarWidth)));
+    final button = tester.getSize(find.byKey(_content)).width;
+
+    // A window whose room beside the column is the button, one margin and
+    // 4 px over.
+    final room = button + 16 + 4;
+    final window = kContentMaxWidth + 2 * room;
+    _window(tester, Size(window, 900));
+    await _pump(tester, _besideSideBar(_fabScreen(kSideBarWidth)));
+
+    final rect = tester.getRect(find.byKey(_content));
+    expect(rect.right, window - 16);
+    expect(rect.left, window - room + 4);
+  });
+
+  testWidgets(
       'Given too little room beside the column, Then the button stands at the '
       'column\'s own corner, over the content', (tester) async {
     _window(tester, const Size(1024, 768));

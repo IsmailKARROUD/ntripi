@@ -3067,3 +3067,52 @@ it stays centred.
   edge: the owner asked for the edge.
 - **Leaving sheets on the tabs' own navigators**: beside the side bar they sat
   40 px off the column's centre, with the bar tappable under them.
+
+### 2026-11-07 — The counts beside the name read inline and spread evenly; the travel identity row is centred; New itinerary takes the corner whenever it clears the list
+
+**Context.** On a tablet the owner looked at
+[the wide-window round](#2026-11-07--wide-windows-put-side-by-side-what-a-phone-stacks-and-two-things-leave-the-column)
+and asked for three changes:
+- the Passport / Lives in / Speaks row should be centred;
+- beside the name, each count and its label should sit on one line (pointing
+  at Instagram's "124,464 posts   7M followers   5 following"), spread so the
+  spaces between them are even, with the least room between a count and its
+  label;
+- New itinerary still sat on the list on the 960 px tablet.
+
+That last one was the button rule: it asked for a 16 px margin on both sides of
+the button, and the 180 px beside the list held the 155 px button plus one.
+
+**Decision.**
+- **New itinerary.** `ColumnFabLocation` puts the button in the far corner
+  whenever it clears the column. The list keeps its cards 16 px inside the
+  column, so the second margin bought nothing.
+- **The counts.** `SideBySideWhenFits` gains two options:
+  - `expandEnd`: the end piece takes all the room left in the row, so its two
+    flexible gaps of at least 24 px space the name, Followers and Following
+    evenly;
+  - `stackedEnd`: the phone keeps each count above its label, a form the shared
+    row does not use.
+
+  Both forms stay built. Only the one shown is painted, hit-tested and read out.
+- **Counts and @handle level.** Both stand `_identityFoot` (6 px) above the
+  row's foot. Baseline alignment was not used: the avatar's lock badge and its
+  placeholder icon carry baselines of their own, so the counts would have lined
+  up with the avatar, not the name.
+- **The travel identity row.** It is centred on the window once it is wider
+  than the column, with its band mirroring the side bar's width so the centre
+  matches the column's. In the column, on a phone, it keeps its start
+  alignment.
+
+**Consequences.**
+- On a phone nothing changes.
+- On a wide window the profile header reads as one line: name, counts.
+- The button reaches the corner from a window about 50 px narrower than before.
+
+**Alternatives rejected.**
+- **Inline counts on phones too**: not asked for, and the phone's row of
+  numbers above labels is how the profile has always looked.
+- **Aligning the counts on the name's baseline**: see the avatar's baselines
+  above.
+- **Centring the identity row on its own band rather than the window**: beside
+  the side bar it would sit 40 px right of the cover and the name above it.
