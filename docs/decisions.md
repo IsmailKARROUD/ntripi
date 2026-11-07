@@ -3171,3 +3171,79 @@ scanner stubbed, showed:
   keeps the existing timing.
 - **Converting HEIC in the browser**: a decoder library for a format the help
   article can explain ("save it as a JPEG").
+
+### 2026-11-07 — A picked picture's format is read from its first bytes and an unsupported one is named at once; in a browser an AVIF is re-encoded by the browser
+
+**Context.** The owner reported two failures the same evening:
+- a HEIC picked on the web still loaded before failing: the cover field's
+  loader through the NSFW model's wait (up to 5 s), then the crop editor's own
+  loader, then the generic *"Could not load image"*
+  ([the entry above](#2026-11-07--the-nsfw-pre-check-decides-once-for-every-platform-within-5-s-the-web-loads-its-model-as-a-graph-model-a-picture-the-crop-editor-cannot-decode-is-reported));
+- an AVIF never opened in Edge: the full-screen crop editor's loader spun
+  forever.
+
+Reproduced in Edge 157, headless and in a normal window, with six AVIF files
+(Pillow 8-bit, with alpha and 4032×3024; heif-enc 8-bit and 10-bit; ffmpeg
+libaom) and a heif-enc HEIC:
+- WebCodecs' `ImageDecoder` refuses every AVIF at once: `tracks.ready` rejects
+  with *"InvalidStateError: Failed to retrieve track metadata."*, though
+  `isTypeSupported('image/avif')` answers true. Flutter 3.44.2's web engine sends
+  AVIF there in a Chromium browser (`skiaInstantiateImageCodec` →
+  `CkBrowserImageDecoder`), so `instantiateImageCodec` throws in 0–2 ms;
+- `createImageBitmap`, drawn on an `OffscreenCanvas` and encoded to PNG, opens
+  all six in 40–1545 ms; `<img>` opens them too, which is why the NSFW
+  pre-check let them through;
+- nothing in Edge opens the HEIC;
+- nothing hung. With `94f5497` the crop editor closes on the AVIF and says
+  *"Could not load image"* (after 101 ms headless, 394 ms in a window). The
+  spinner the owner saw came from the build before it: production serves
+  `/app/main.dart.js` with `Cache-Control: max-age=14400` (Cloudflare's browser
+  TTL; the origin sends none for static files), so the browser was still running
+  that build ([backlog.md](backlog.md)).
+
+**Decision.**
+- **`pickImageToCrop` (`core/media/image_pick.dart`) is the one way the app
+  picks a picture.** The cover field and the profile photo share it, and
+  `test/image_pick_guard_test.dart` fails on an `image_picker` import anywhere
+  else.
+- **The format is read from the file's first bytes** (`sniffImageFormat`,
+  `core/media/image_format.dart`), never its name. The list is fixed and the
+  same everywhere (the owner's choice): JPEG, PNG, WebP, GIF and BMP, which
+  Flutter decodes itself, and AVIF (the owner: "everywhere"). Anything else is
+  refused before the size check, the NSFW model or the crop editor, naming the
+  format when the bytes say it — *"HEIC images can't be opened here. Choose a
+  JPEG, PNG or WebP image."* (`imageFormatUnsupported`, `imageFormatUnknown`).
+- **In a browser, an AVIF is re-encoded to PNG by the browser's own decoder**
+  before the NSFW check and the editor (`browser_reencode_web.dart`, capped at
+  the phones' 2400 px). A browser that cannot open it refuses it as AVIF. On a
+  phone the picker has already re-encoded it.
+
+**Consequences.**
+- Through Edge's real file chooser, a HEIC is named 250 ms after it is picked.
+  Each of the six AVIF files opens in the editor, and Done hands the field a PNG
+  cover.
+- Safari 17+ can decode HEIC itself and refuses it now, like every other
+  browser.
+- On a phone nothing changes: the picker re-encodes HEIC and AVIF on Android
+  12+ and iOS 16+. An older Android hands an AVIF over as it is, and the editor
+  says it cannot load it.
+- The profile photo still has no size cap; only the cover field caps the file
+  as picked (10 MB).
+- A damaged file — the right first bytes, a broken body — still reaches the
+  editor, which says *"Could not load image"*.
+
+**Alternatives rejected.**
+- **The name or the MIME type**: Android's picker writes a JPEG under the
+  original `.heic` name.
+- **Test-opening what is not on the list**: it would keep HEIC in Safari, but
+  the answer would depend on the browser; the owner chose one list.
+- **The picker's `accept` attribute**: image_picker has no parameter for it, and
+  a file hidden in the dialog says nothing about why.
+- **Converting HEIC in the browser**: still rejected (the entry above).
+- **Refusing AVIF in a browser**: the browser opens it itself, and the owner
+  wants it everywhere.
+- **Re-encoding every web pick**: every picture would wait on a decode and an
+  encode it does not need, the timing change the entry above rejected.
+- **A time budget on the editor's decode** (planned, dropped): no decode was
+  found that never answers. The spinner was a stale build, and a timeout with no
+  failure behind it is not a fix.

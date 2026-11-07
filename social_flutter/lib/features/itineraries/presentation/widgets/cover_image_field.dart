@@ -29,10 +29,9 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:ntripi/core/cache/image_cache.dart';
+import 'package:ntripi/core/media/image_pick.dart';
 import 'package:ntripi/core/moderation/nsfw_precheck.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
@@ -42,8 +41,9 @@ const _maxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
 
 /// Launches the full-screen crop overlay with the given source bytes and
 /// target dimensions. Returns the cropped PNG bytes, or null if cancelled.
-/// Throws when [sourceBytes] cannot be decoded — a HEIC photo in a web
-/// browser — once the overlay has closed itself, so the caller says why.
+/// Throws when [sourceBytes] cannot be decoded — a damaged file whose first
+/// bytes pass `pickImageToCrop`'s format check — once the overlay has closed
+/// itself, so the caller says why.
 ///
 /// Used by [CoverImageField] and by ad-hoc avatar pickers that don't want
 /// the full picker chrome — they only need the crop step after their own
@@ -92,7 +92,8 @@ Future<Uint8List?> openImageCropOverlay(
       },
       onCancel: () => historyEntry.remove(),
       // Left open, an undecodable image spun the editor's loader forever with
-      // Done disabled — the web's "keeps loading" (2026-11-07).
+      // Done disabled — the web's "keeps loading" (2026-11-07). An unsupported
+      // format no longer gets this far; a damaged file still can.
       onDecodeFailed: (error, stack) {
         if (closed) return;
         closed = true;
@@ -181,33 +182,16 @@ class _CoverImageFieldState extends State<CoverImageField> {
       _error = null;
     });
     try {
-      // On web, image_picker_web runs maxWidth/imageQuality through a Canvas
-      // API that can throw on certain images. Skip pre-processing on web —
-      // the crop screen outputs 1200×630 regardless of input size.
-      final picked = await ImagePicker().pickImage(
-        source: ImageSource.gallery,
-        maxWidth: kIsWeb ? null : 2400,
-        imageQuality: kIsWeb ? null : 90,
-      );
-      if (picked == null || !mounted) return;
-      final bytes = await picked.readAsBytes();
-      if (bytes.length > _maxFileSizeBytes) {
-        if (mounted) {
-          setState(
-              () => _error = AppLocalizations.of(context)!.imageTooLarge);
-        }
-        return;
+      // Format, size and the NSFW pre-check are vetted before the editor
+      // opens, so a refused picture is named instead of loading.
+      final pick = await pickImageToCrop(maxBytes: _maxFileSizeBytes);
+      if (pick == null || !mounted) return;
+      switch (pick) {
+        case PickRefused():
+          setState(() => _error = pick.message(AppLocalizations.of(context)!));
+        case PickedImage(:final bytes, :final name):
+          await _openCrop(bytes, name);
       }
-      // Client-side NSFW pre-check — instant reject before any upload. Returns
-      // false on any failure (backend image scan is the real authority).
-      if (await isLikelyNsfw(bytes)) {
-        if (mounted) {
-          setState(
-              () => _error = AppLocalizations.of(context)!.imageBlockedNsfw);
-        }
-        return;
-      }
-      await _openCrop(bytes, picked.name);
     } catch (e) {
       if (mounted)
         setState(

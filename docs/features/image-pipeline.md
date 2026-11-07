@@ -160,24 +160,53 @@ builds already installed, and go once no build in testing calls them
   overlay, outside `MaterialApp` — see [bug-reports.md](bug-reports.md).
   Regression test: `test/widgets/cover_crop_overlay_test.dart`.
 - The crop editor can rotate a picked image 90° (`71f8c44`).
+- **Every picture is picked through `pickImageToCrop`**
+  (`core/media/image_pick.dart`): the cover field (a trip's or a profile's cover)
+  and the profile photo. It opens the gallery — on a phone with
+  `maxWidth: 2400` and `imageQuality: 90`, so the picker re-encodes; on the web
+  the file as it is — and vets the pick cheapest first (`vetPickedImage`):
+  1. **The format, read from the file's first bytes**
+     (`core/media/image_format.dart` `sniffImageFormat`), never its name:
+     Android's picker re-encodes a HEIC photo to JPEG and keeps the `.heic`
+     name. JPEG, PNG, WebP, GIF, BMP and AVIF are accepted on every platform.
+     HEIC, TIFF, SVG and anything unrecognised are refused at once: *"HEIC
+     images can't be opened here. Choose a JPEG, PNG or WebP image."*
+     (`imageFormatUnsupported`), or `imageFormatUnknown` when the bytes name no
+     format.
+  2. The size: the cover field's 10 MB, on the file as picked. The profile photo
+     has no cap.
+  3. **In a browser, an AVIF is re-encoded to PNG by the browser itself**
+     (`core/media/browser_reencode_web.dart`: `createImageBitmap`, an
+     `OffscreenCanvas` capped at 2400 px, `convertToBlob('image/png')`). Flutter
+     3.44's web engine decodes AVIF through WebCodecs' `ImageDecoder`, which
+     Edge 157 refuses for every AVIF. A browser that cannot open the AVIF at all
+     refuses it as AVIF. On a phone the picker has already re-encoded it.
+  4. The NSFW pre-check, on the bytes the editor will get.
+
+  A refusal is said where the pick was made — under a cover field, in a snackbar
+  for the profile photo — and the crop editor never opens.
+  `test/image_pick_guard_test.dart` fails on an `image_picker` import anywhere
+  else. Tests: `test/core/media/`, `test/widgets/undecodable_image_pick_test.dart`.
 - **A picture the platform cannot decode closes the crop editor.**
   `_CropScreen` reports the failed decode (`onDecodeFailed`),
   `openImageCropOverlay` removes the overlay and throws, and the picker says
   *"Could not load image. Please try another."* (`couldNotLoadImage`) — under a
-  cover field, in a snackbar for the profile photo. On the web the picker hands
-  over the file as it is (no resize, no re-encode), so a HEIC photo reaches the
-  editor; until 2026-11-07 its loader spun forever with Done disabled, and the
-  profile photo's picker swallowed the error. Regression tests:
-  `test/widgets/cover_crop_overlay_test.dart`,
+  cover field, in a snackbar for the profile photo. Since the format check only
+  a damaged file — the right first bytes, a broken body — gets this far. Until
+  2026-11-07 a HEIC picked on the web reached the editor, whose loader spun
+  forever with Done disabled, and the profile photo's picker swallowed the
+  error. Regression tests: `test/widgets/cover_crop_overlay_test.dart`,
   `test/widgets/undecodable_image_pick_test.dart`.
 - `_CropScreen` is private to `cover_image_field.dart`.
 - `core/cache/image_cache.dart` — the project-wide image cache; `?v=` is what
   gives it cross-device freshness.
-- `image_picker` for selection; `UserAvatar` and
-  `itinerary_cover_placeholder.dart` render the `nt.sand` placeholders.
-- `core/moderation/nsfw_precheck*.dart` — the client pre-check, run on the
-  picked file before the crop editor opens; one decision and a 5 s budget for
-  every platform. See [image-moderation.md](image-moderation.md#the-client-pre-check).
+- `image_picker` for selection, imported by `core/media/image_pick.dart` alone;
+  `UserAvatar` and `itinerary_cover_placeholder.dart` render the `nt.sand`
+  placeholders.
+- `core/moderation/nsfw_precheck*.dart` — the client pre-check, run by
+  `pickImageToCrop` after the format and size checks and before the crop editor
+  opens; one decision and a 5 s budget for every platform. See
+  [image-moderation.md](image-moderation.md#the-client-pre-check).
 
 ## Known gaps / TODOs
 

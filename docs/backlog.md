@@ -392,7 +392,28 @@ as "for future API consumers" in `api_endpoints.dart:199` and
 
 ---
 
+### idea — the browser AVIF re-encode can go once Flutter decodes AVIF in Chromium
+
+`core/media/browser_reencode_web.dart` re-encodes a picked AVIF to PNG because
+Flutter 3.44.2's web engine sends AVIF to WebCodecs' `ImageDecoder`, which Edge
+157 refuses outright ([decisions.md](decisions.md)). Re-test after every Flutter
+upgrade by picking an AVIF in Edge with the re-encode bypassed: `a09e37c28f9`,
+which landed after 3.44.2, rewrites web image decoding. Until then the re-encode
+stays. → [features/image-pipeline.md](features/image-pipeline.md)
+
 ## Operations and compliance
+
+### idea — a deploy reaches returning web browsers up to four hours late
+
+`/app/main.dart.js` and `flutter_bootstrap.js` carry no content hash, and the
+origin sends static files no `Cache-Control`, so Cloudflare's browser TTL
+(`max-age=14400`) applies. A browser that loaded the app in the four hours before
+a deploy keeps running the previous build until its copy expires. On 2026-11-07
+the owner tested an AVIF on a build from before `94f5497` this way, after it had
+been deployed. `_SPAStaticFiles` (`main.py`) sends `no-cache` for `index.html`
+only; its comment assumes content-hashed assets, which Flutter's web build does
+not produce. `Cache-Control: no-cache` on the app's static files (ETag
+revalidation answers 304 when nothing changed) would close it.
 
 ### planned — `media_pipeline_spec.md` §5: eight unticked operator steps
 

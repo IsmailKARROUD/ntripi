@@ -1075,6 +1075,15 @@
   "viewMore": "... view more",
   "imageTooLarge": "Image is too large (max 10 MB).",
   "couldNotLoadImage": "Could not load image. Please try another.",
+  "imageFormatUnsupported": "{format} images can't be opened here. Choose a JPEG, PNG or WebP image.",
+  "@imageFormatUnsupported": {
+    "placeholders": {
+      "format": {
+        "type": "String"
+      }
+    }
+  },
+  "imageFormatUnknown": "This file can't be opened as an image. Choose a JPEG, PNG or WebP image.",
   "pinchToZoomHint": "Pinch to zoom · Drag to reposition",
   "rotateImageTooltip": "Rotate 90°",
   "addCoverImage": "Add a cover image",

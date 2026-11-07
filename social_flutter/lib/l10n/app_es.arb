@@ -683,6 +683,15 @@
   "viewMore": "... ver más",
   "imageTooLarge": "La imagen es demasiado grande (máx. 10 MB).",
   "couldNotLoadImage": "No se pudo cargar la imagen. Prueba con otra.",
+  "imageFormatUnsupported": "Las imágenes {format} no se pueden abrir aquí. Elige una imagen JPEG, PNG o WebP.",
+  "@imageFormatUnsupported": {
+    "placeholders": {
+      "format": {
+        "type": "String"
+      }
+    }
+  },
+  "imageFormatUnknown": "Este archivo no se puede abrir como imagen. Elige una imagen JPEG, PNG o WebP.",
   "pinchToZoomHint": "Pellizca para ampliar · Arrastra para reposicionar",
   "rotateImageTooltip": "Girar 90°",
   "addCoverImage": "Añade una imagen de portada",

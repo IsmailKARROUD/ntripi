@@ -2385,6 +2385,15 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible de charger l\'image. Veuillez en essayer une autre.';
 
   @override
+  String imageFormatUnsupported(String format) {
+    return 'Les images $format ne peuvent pas être ouvertes ici. Choisissez une image JPEG, PNG ou WebP.';
+  }
+
+  @override
+  String get imageFormatUnknown =>
+      'Ce fichier ne peut pas être ouvert comme image. Choisissez une image JPEG, PNG ou WebP.';
+
+  @override
   String get pinchToZoomHint =>
       'Pincez pour zoomer · Faites glisser pour repositionner';
 

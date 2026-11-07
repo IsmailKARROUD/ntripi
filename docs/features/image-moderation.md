@@ -195,10 +195,14 @@ email an hour per situation:
 
 `lib/core/moderation/nsfw_precheck*.dart` is a **UX and cost optimisation only —
 the backend is the authority.** It runs on every platform, on the picked file,
-before the crop editor opens. A picture it refuses never reaches the editor or
-the network: a cover field (a trip's, or a profile's) says *"This image appears
-to contain content that isn't allowed."* (`imageBlockedNsfw`) under the
-picture; the profile photo says it in a snackbar.
+before the crop editor opens — last among `pickImageToCrop`'s checks
+(`core/media/image_pick.dart`), so a picture in a format the app cannot open is
+named without waiting on the model, and an AVIF picked in a browser is checked as
+the PNG the browser re-encoded it to ([image-pipeline.md](image-pipeline.md)). A
+picture it refuses never reaches the editor or the network: a cover field (a
+trip's, or a profile's) says *"This image appears to contain content that isn't
+allowed."* (`imageBlockedNsfw`) under the picture; the profile photo says it in a
+snackbar.
 
 - **One model on both platforms**, committed since 2026-07-28 (`f9a8ceb`): the
   GantMan MobileNetV2 (input `[1,224,224,3]` float32 RGB `/255`, a softmax over

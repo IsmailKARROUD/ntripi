@@ -2231,6 +2231,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get couldNotLoadImage => '无法加载图片。请尝试另一张。';
 
   @override
+  String imageFormatUnsupported(String format) {
+    return '此处无法打开 $format 图片。请选择 JPEG、PNG 或 WebP 图片。';
+  }
+
+  @override
+  String get imageFormatUnknown => '无法将此文件作为图片打开。请选择 JPEG、PNG 或 WebP 图片。';
+
+  @override
   String get pinchToZoomHint => '双指缩放 · 拖动以重新定位';
 
   @override

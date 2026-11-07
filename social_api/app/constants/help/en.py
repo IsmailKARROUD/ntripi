@@ -199,9 +199,10 @@ RELEASES: tuple[Release, ...] = (
             "Wherever there isn't room, everything stacks as it does on a phone.",
             "**Pictures that aren't allowed are stopped on the web too.** As on a "
             "phone, a picture that plainly breaks the community guidelines is "
-            "refused as soon as you pick it, with a message saying why. Picking "
-            "one your browser cannot open — some HEIC photos, for example — now "
-            "says so too, instead of loading forever.",
+            "refused as soon as you pick it, with a message saying why. A "
+            "picture in a format Ntripi can't open — a HEIC photo in a web "
+            "browser, for example — is named the moment you pick it, instead "
+            "of loading, and AVIF pictures now open in the browser too.",
         ),
     ),
     Release(
@@ -1030,7 +1031,8 @@ ARTICLES: tuple[Article, ...] = (
         updated="2026-11-07",
         keywords=(
             "cover", "photo", "image", "picture", "upload", "crop", "banner",
-            "thumbnail", "rejected", "too small", "not allowed", "heic",
+            "thumbnail", "rejected", "too small", "not allowed", "heic", "avif",
+            "format",
         ),
         related=("plan-a-trip-itinerary", "share-a-trip-link"),
         cta="Give your trip a face.",
@@ -1059,10 +1061,12 @@ ARTICLES: tuple[Article, ...] = (
                     "An image can be refused for three reasons:\n\n"
                     "- **Too small.** Anything under 600 pixels on its shortest "
                     "side will look soft on a modern screen.\n"
-                    "- **An unsupported format.** JPEG, PNG and the usual photo "
-                    "formats are fine. A picture that cannot be opened — some HEIC "
-                    "photos in a web browser, for example — is turned away as soon "
-                    "as you pick it; save it as a JPEG and pick it again.\n"
+                    "- **An unsupported format.** JPEG, PNG, WebP and AVIF work "
+                    "everywhere, as do GIF and BMP. A picture in any other format — "
+                    "a HEIC photo in a web browser, for example — is turned away as "
+                    "soon as you pick it, with a message naming its format; save it "
+                    "as a JPEG and pick it again. On a phone, HEIC photos are "
+                    "converted for you.\n"
                     "- **Content.** Uploads are checked automatically against the "
                     "[community guidelines](/guidelines) before they are stored. A "
                     "picture that plainly breaks them is refused as soon as you "

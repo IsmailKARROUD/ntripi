@@ -683,6 +683,15 @@
   "viewMore": "... mehr anzeigen",
   "imageTooLarge": "Das Bild ist zu groß (max. 10 MB).",
   "couldNotLoadImage": "Bild konnte nicht geladen werden. Bitte versuche ein anderes.",
+  "imageFormatUnsupported": "{format}-Bilder können hier nicht geöffnet werden. Wähle ein JPEG-, PNG- oder WebP-Bild.",
+  "@imageFormatUnsupported": {
+    "placeholders": {
+      "format": {
+        "type": "String"
+      }
+    }
+  },
+  "imageFormatUnknown": "Diese Datei lässt sich nicht als Bild öffnen. Wähle ein JPEG-, PNG- oder WebP-Bild.",
   "pinchToZoomHint": "Zum Zoomen zusammenziehen · Zum Verschieben ziehen",
   "rotateImageTooltip": "Um 90° drehen",
   "addCoverImage": "Füge ein Titelbild hinzu",

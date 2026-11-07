@@ -111,7 +111,7 @@ RELEASES: tuple[Release, ...] = (
             "**Elimina tu cuenta sin la aplicación.** [ntripi.app/delete-account](/delete-account) envía un enlace a la dirección de tu cuenta; ábrelo y confirma. Las Condiciones y la Política de privacidad actualizadas dicen qué se conserva después —las reseñas conservan su texto, sin tu nombre— y se te pedirá que las aceptes una vez más.",
             "**Las pestañas pasan al lateral en una pantalla ancha.** En una tableta, o en una ventana del navegador con espacio de sobra, las cinco pestañas aparecen en el lado izquierdo en lugar de abajo, y cada pantalla queda centrada, con un ancho cómodo de leer. Ahora las tabletas también se pueden girar en horizontal.",
             "**Las pantallas anchas aprovechan su espacio.** Las pestañas del lateral ocupan toda la altura de la pantalla. **Nuevo itinerario** pasa al extremo derecho, fuera de tu lista, y el título **Mis itinerarios** comparte fila con **Todos**, **Míos** y **Compartidos**. En un perfil, el nombre se coloca junto a los contadores de **Seguidores** y **Siguiendo**, y **Pasaporte**, **Vive en** y **Habla** se alinean en una sola fila, de lado a lado de la pantalla. Cuando no hay sitio, todo se apila como en un teléfono.",
-            "**Las imágenes no permitidas también se detienen en la web.** Como en el móvil, una imagen que claramente incumple las normas de la comunidad se rechaza en cuanto la eliges, y se indica el motivo. Si eliges una imagen que tu navegador no puede abrir (algunas fotos HEIC, por ejemplo), la aplicación ahora lo indica, en lugar de quedarse cargando sin fin.",
+            "**Las imágenes no permitidas también se detienen en la web.** Como en el móvil, una imagen que claramente incumple las normas de la comunidad se rechaza en cuanto la eliges, y se indica el motivo. Una imagen en un formato que Ntripi no puede abrir (una foto HEIC en un navegador web, por ejemplo) se indica en cuanto la eliges, en lugar de quedarse cargando, y las imágenes AVIF ahora también se abren en el navegador.",
         ),
     ),
     Release(
@@ -737,7 +737,7 @@ El recorte es apaisado, porque esa es la forma que usa una vista previa de enlac
                 body="""Una imagen puede rechazarse por tres motivos:
 
 - **Demasiado pequeña.** Por debajo de 600 píxeles en su lado más corto se verá borrosa en una pantalla moderna.
-- **Un formato no admitido.** JPEG, PNG y los formatos de foto habituales van bien. Una imagen que no se puede abrir (algunas fotos HEIC en un navegador web, por ejemplo) se descarta en cuanto la eliges; guárdala como JPEG y vuelve a elegirla.
+- **Un formato no admitido.** JPEG, PNG, WebP y AVIF funcionan en todas partes, igual que GIF y BMP. Una imagen en cualquier otro formato (una foto HEIC en un navegador web, por ejemplo) se descarta en cuanto la eliges, con un mensaje que indica su formato; guárdala como JPEG y vuelve a elegirla. En el móvil, las fotos HEIC se convierten solas.
 - **El contenido.** Las subidas se comprueban automáticamente frente a las [normas de la comunidad](/guidelines) antes de guardarse. Una imagen que claramente las incumple se rechaza en cuanto la eliges, en el móvil o en la web; las demás se comprueban al guardar.
 
 Una foto rechazada al guardar detiene todo el guardado: no se conserva nada de él, ni tus otros cambios ni un viaje que estuvieras creando. La pantalla se queda como la dejaste: elige otra foto, o quítala, y vuelve a guardar.
@@ -771,6 +771,8 @@ Aun así conviene poner una de verdad antes de compartirlo públicamente: en un 
             "demasiado pequeña",
             "no permitida",
             "heic",
+            "avif",
+            "formato",
         ),
         related=("plan-a-trip-itinerary", "share-a-trip-link"),
         updated="2026-11-07",

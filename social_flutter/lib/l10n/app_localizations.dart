@@ -4162,6 +4162,18 @@ abstract class AppLocalizations {
   /// **'Could not load image. Please try another.'**
   String get couldNotLoadImage;
 
+  /// No description provided for @imageFormatUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'{format} images can\'t be opened here. Choose a JPEG, PNG or WebP image.'**
+  String imageFormatUnsupported(String format);
+
+  /// No description provided for @imageFormatUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'This file can\'t be opened as an image. Choose a JPEG, PNG or WebP image.'**
+  String get imageFormatUnknown;
+
   /// No description provided for @pinchToZoomHint.
   ///
   /// In en, this message translates to:

@@ -993,6 +993,15 @@
   "viewMore": "... عرض المزيد",
   "imageTooLarge": "الصورة كبيرة جدًا (الحد الأقصى 10 ميغابايت).",
   "couldNotLoadImage": "تعذّر تحميل الصورة. يرجى تجربة أخرى.",
+  "imageFormatUnsupported": "لا يمكن فتح صور {format} هنا. اختر صورة بصيغة JPEG أو PNG أو WebP.",
+  "@imageFormatUnsupported": {
+    "placeholders": {
+      "format": {
+        "type": "String"
+      }
+    }
+  },
+  "imageFormatUnknown": "لا يمكن فتح هذا الملف كصورة. اختر صورة بصيغة JPEG أو PNG أو WebP.",
   "pinchToZoomHint": "اقرص للتكبير · اسحب لتغيير الموضع",
   "rotateImageTooltip": "تدوير 90°",
   "addCoverImage": "أضف صورة غلاف",

@@ -1,11 +1,10 @@
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/media/image_pick.dart';
 import 'package:ntripi/core/moderation/nsfw_precheck.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
@@ -92,27 +91,23 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
   Future<void> _pickAvatar() async {
     if (_saving) return;
     try {
-      final picked = await ImagePicker().pickImage(
-        source: ImageSource.gallery,
-        maxWidth: kIsWeb ? null : 2400,
-        imageQuality: kIsWeb ? null : 90,
-      );
-      if (picked == null || !mounted) return;
-      final raw = await picked.readAsBytes();
-      if (!mounted) return;
-      // Client-side NSFW pre-check — block before crop/upload. Returns false on
-      // any failure (backend image scan is the real authority).
-      if (await isLikelyNsfw(raw)) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.imageBlockedNsfw)),
-        );
-        return;
+      // Format and the NSFW pre-check are vetted before the editor opens, so a
+      // refused picture is named instead of loading. No size cap here.
+      final pick = await pickImageToCrop();
+      if (pick == null || !mounted) return;
+      final PickedImage picked;
+      switch (pick) {
+        case PickRefused():
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(pick.message(AppLocalizations.of(context)!))),
+          );
+          return;
+        case PickedImage():
+          picked = pick;
       }
-      if (!mounted) return;
       final cropped = await openImageCropOverlay(
         context,
-        sourceBytes: raw,
+        sourceBytes: picked.bytes,
         targetWidth: 800,
         targetHeight: 800,
       );
@@ -124,7 +119,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
       });
     } catch (_) {
       // Say so, as the cover field does: a file the crop editor cannot decode
-      // (a HEIC photo in a web browser) otherwise looked like an ignored tap.
+      // (a damaged one) otherwise looked like an ignored tap.
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context)!.couldNotLoadImage)),
