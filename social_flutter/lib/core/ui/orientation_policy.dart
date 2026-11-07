@@ -23,8 +23,9 @@ List<DeviceOrientation> allowedOrientations(double shortestSide) =>
         ? const [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]
         : const [];
 
-/// Applies [allowedOrientations] now and whenever the app's size changes — a
-/// foldable opened up is a tablet.
+/// Applies [allowedOrientations] to the screen's shortest side — the device's
+/// size, what Android's sw600dp measures — now and whenever the metrics change:
+/// a foldable opened up is a tablet.
 class OrientationPolicy with WidgetsBindingObserver {
   OrientationPolicy._();
 
@@ -47,10 +48,15 @@ class OrientationPolicy with WidgetsBindingObserver {
 
   Future<void> _apply() async {
     final view = WidgetsBinding.instance.platformDispatcher.implicitView;
+    if (view == null) return;
+    // The screen, never the window: a tablet's window loses its taskbar
+    // (Android 12L+) or shrinks in split screen, and a portrait lock read off
+    // it letterboxes the app into a phone-sized window it can never leave.
+    final display = view.display;
     // No size before the first metrics: guessing "phone" would flip a tablet
     // held sideways to portrait and back.
-    if (view == null || view.physicalSize.isEmpty) return;
-    final shortest = view.physicalSize.shortestSide / view.devicePixelRatio;
+    if (display.size.isEmpty) return;
+    final shortest = display.size.shortestSide / display.devicePixelRatio;
     final tablet = shortest >= kTabletShortestSide;
     // Metrics change on every keyboard frame; the answer rarely does.
     if (tablet == _tablet) return;

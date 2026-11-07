@@ -1,6 +1,10 @@
 // test/core/ui/orientation_policy_test.dart — phones stay portrait, a tablet
 // turns: the line is a shortest side of 600, Android's sw600dp.
 //
+// The line is measured on the screen, never the app's window: on a tablet the
+// window loses the taskbar (Android 12L+) or shrinks in split screen, and a
+// lock read off it letterboxed a Nexus 7 into a phone-sized window for good.
+//
 // The policy re-reads the size on every metrics change (a foldable opened up
 // is a tablet), but asks the OS only when its answer changes: metrics change
 // on every frame of a keyboard animation.
@@ -39,8 +43,10 @@ void main() {
     addTearDown(() => tester.binding.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, null));
     tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.display.size = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
+    addTearDown(tester.view.display.reset);
 
     final policy = (await OrientationPolicy.start())!;
     addTearDown(policy.stop);
@@ -54,6 +60,7 @@ void main() {
     // goes first: each setter is a metrics change of its own here, where a
     // device reports both at once.
     tester.view.devicePixelRatio = 2.625;
+    tester.view.display.size = const Size(1840, 2208);
     tester.view.physicalSize = const Size(1840, 2208);
     await tester.pump();
     expect(asked, [_portrait, <String>[]]);
@@ -75,15 +82,50 @@ void main() {
     addTearDown(() => tester.binding.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, null));
     tester.view.devicePixelRatio = 2;
-    tester.view.physicalSize = Size.zero;
+    tester.view.display.size = Size.zero;
     addTearDown(tester.view.reset);
+    addTearDown(tester.view.display.reset);
 
     final policy = (await OrientationPolicy.start())!;
     addTearDown(policy.stop);
     expect(asked, isEmpty);
 
     // An iPad held sideways: 1024 × 768.
-    tester.view.physicalSize = const Size(2048, 1536);
+    tester.view.display.size = const Size(2048, 1536);
+    await tester.pump();
+    expect(asked, [<String>[]]);
+  });
+
+  testWidgets(
+      'Given a 600 dp tablet launched sideways under a taskbar, Then it may '
+      'turn — the window is 540 dp tall, the screen 600; and a split-screen '
+      'window does not lock it either', (tester) async {
+    final asked = <Object?>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'SystemChrome.setPreferredOrientations') {
+          asked.add(call.arguments);
+        }
+        return null;
+      },
+    );
+    addTearDown(() => tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, null));
+    // A Nexus 7 on Android 12L, landscape: 1920 × 1200 at 2, its taskbar
+    // taking 120 px off the app's window.
+    tester.view.devicePixelRatio = 2;
+    tester.view.display.size = const Size(1920, 1200);
+    tester.view.physicalSize = const Size(1920, 1080);
+    addTearDown(tester.view.reset);
+    addTearDown(tester.view.display.reset);
+
+    final policy = (await OrientationPolicy.start())!;
+    addTearDown(policy.stop);
+    expect(asked, [<String>[]]);
+
+    // Half of the screen in split screen: a phone-sized window, still a tablet.
+    tester.view.physicalSize = const Size(956, 1080);
     await tester.pump();
     expect(asked, [<String>[]]);
   });

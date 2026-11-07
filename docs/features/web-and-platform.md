@@ -422,7 +422,8 @@ ProviderScope
   [decisions.md](../decisions.md#2026-10-25--the-app-keeps-its-connection-to-the-api-open-for-two-minutes).
 - **Phones are portrait-only; a tablet turns and resizes** (since 2026-11-07).
   `OrientationPolicy` (`core/ui/orientation_policy.dart`) locks portrait when
-  the app's shortest side is under 600 logical px — Android's sw600dp — and
+  the screen's shortest side (`FlutterView.display`, never the app's window) is
+  under 600 logical px — Android's sw600dp — and
   frees every orientation from there, re-deciding when the size changes (a
   foldable opened up) but asking the OS only when its answer moves; before the
   first size arrives it asks nothing, so a tablet held sideways never flips.

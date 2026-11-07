@@ -2980,3 +2980,28 @@ the app can multitask (`UIRequiresFullScreen` is not set).
 - **Hairlines down the column's sides**: cards already carry their own.
 - **Forcing portrait on tablets** (`UIRequiresFullScreen`, Android's SDK 36
   opt-out): both are going away, and the first takes Split View from iPad users.
+
+### 2026-11-07 — The orientation line is measured on the screen, not the window
+
+**Context.** A Nexus 7 emulator (Android 12L, 1920 × 1200 at 2 — exactly
+sw600dp) opened sideways showed the app as a phone, letterboxed in the middle of
+the screen. `MainActivity.kt` read `smallestScreenWidthDp` (600) and left it
+free, but `OrientationPolicy` read the app's window, and Android 12L's taskbar
+takes 120 px off it: 540 dp, a "phone", so it locked portrait. Once locked,
+Android letterboxes the app into a phone-sized window, so the policy could never
+see a tablet again.
+
+**Decision.** `OrientationPolicy` measures `FlutterView.display` — on Android
+the maximum window metrics, the whole screen, refreshed on every configuration
+change (a foldable opening) — the same thing `smallestScreenWidthDp` measures.
+
+**Consequences.** The Dart and native halves agree on every device. A tablet in
+split screen, under a taskbar or letterboxed is still a tablet. The layout is
+unchanged: it still follows the window's width (`sideBarFits`).
+
+**Alternatives rejected.**
+- **Leaving the decision to `MainActivity.kt` on Android**: iOS would still need
+  the Dart half, and two deciders measuring two different things is how this
+  happened.
+- **Subtracting the system insets from the window**: a split-screen window would
+  still read as a phone.
