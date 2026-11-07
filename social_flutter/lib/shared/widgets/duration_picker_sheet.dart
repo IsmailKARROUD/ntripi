@@ -58,6 +58,7 @@ Future<DurationParts?> showDurationPickerSheet({
   // No backgroundColor: bottomSheetTheme already paints nt.surface, the one ground.
   return showModalBottomSheet<DurationParts>(
     context: context,
+    useRootNavigator: true,
     builder:
         (_) => _DurationPickerSheet(
           title: title,

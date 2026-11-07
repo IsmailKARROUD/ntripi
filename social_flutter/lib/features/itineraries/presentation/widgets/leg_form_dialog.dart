@@ -63,6 +63,7 @@ class LegFormDialog extends ConsumerStatefulWidget {
   }) {
     return showModalBottomSheet<Map<String, dynamic>>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
@@ -218,6 +219,7 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
     final currentMode = _mode;
     final picked = await showModalBottomSheet<TransportMode>(
       context: context,
+      useRootNavigator: true,
       showDragHandle: true,
       builder: (ctx) => SafeArea(
         child: Padding(

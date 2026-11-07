@@ -174,6 +174,7 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
   Future<void> _editDays(PeriodWindow window) async {
     final result = await showModalBottomSheet<({int? fromDay, int? toDay})>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       builder: (_) => _ExactDaysSheet(window: window),
     );

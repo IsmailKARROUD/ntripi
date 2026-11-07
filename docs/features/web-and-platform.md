@@ -331,7 +331,7 @@ ProviderScope
 
 - `initFirebase()` runs **before** `runApp` so the background message handler is
   registered first; it swallows a missing config so the app still launches.
-- **The router** (`core/router/app_router.dart`, 766 lines) has a
+- **The router** (`core/router/app_router.dart`, 735 lines) has a
   `StatefulShellRoute.indexedStack` with **five branches** — `/feed`,
   `/search`, `/itineraries`, `/saved`, `/profile/me`, in the tabs' bar's order
   (a branch's index is its tab's position) — which keeps each tab's widget
@@ -348,33 +348,69 @@ ProviderScope
   or a tablet in Split View centres it with plain space on both sides. Screens
   take it through `ContentColumn` — or `ContentPage`, which puts the whole
   Scaffold in the column and paints the sides, when an `AppBar` or a floating
-  button sits in the Scaffold's own slots (`shared/widgets/content_column.dart`).
+  button sits in the Scaffold's own slots, or `SliverContentColumn`, one sliver
+  at a time, when something in a scroll view may be wider
+  (`shared/widgets/content_column.dart`). The column is centred on the
+  *window*, not on the screen: beside the tabs' side bar a screen reaches the
+  window's far edge, and `SideBarInset` (the bar's width, set by the shell)
+  makes the column leave as much free at its own end.
   Full-window screens — splash, the map picker, the full-screen locations map,
   the photo viewer, the cover crop editor — and the suspended screen's own
   420 px box are the listed exceptions, each with its reason, in
   `test/content_column_guard_test.dart`, which also fails on the old
   desktop-only cap (`isDesktopWeb()` / `kDesktopMaxWidth = 480`, removed).
-  Modal sheets are capped at the same width (`bottomSheetTheme.constraints`),
-  and on a window wider than the column a snackbar is as wide as its content
-  (`columnSnackBars` in `app_theme.dart`, applied in `main.dart`'s builder).
+  Two things leave the column on purpose (since 2026-11-07, the owner's call):
+  **New itinerary** stands in the screen's far corner once the room beside the
+  list holds it (`ColumnFabLocation`; at the column's corner, over the list,
+  otherwise), and the profile's **Passport / Lives in / Speaks** row runs from
+  the side bar — or the window's edge — to the screen's far edge.
+  Modal sheets are capped at the same width (`bottomSheetTheme.constraints`)
+  and **every sheet opens on the root navigator** (`useRootNavigator: true`,
+  held by the guard test): on a tab's own navigator a sheet was laid out in the
+  tab, which beside the side bar is not centred on the window, and the bar
+  stayed tappable under it. On a phone a sheet opened from a tab now covers
+  the bottom bar, as a trip page's sheets always did. On a window wider than
+  the column a snackbar is as wide as its content (`columnSnackBars` in
+  `app_theme.dart`, applied in `main.dart`'s builder).
+- **What a phone stacks sits side by side once it fits**
+  (`shared/widgets/side_by_side_when_fits.dart`, since 2026-11-07):
+  `SideBySideWhenFits` lays two pieces in one row when both fit at their
+  natural widths — the start piece at the start edge, the end piece at the end
+  edge — and otherwise stacks them, each as wide as the box: the phone layout,
+  unchanged. It decides at every layout from the children's own intrinsic
+  widths, so their style, the text scaler and bold text are all counted — no
+  breakpoint, no `TextPainter` guess — and a child may not hold a
+  `LayoutBuilder`, which cannot answer that question. The Itineraries tab puts
+  its title and All / Mine / Shared side by side through it, and a profile its
+  name and the Followers / Following counts.
 - **The tabs' bar moves down the side once it fits beside the column**:
   `sideBarFits` — a window at least the column plus a `kSideBarWidth` (80 px)
-  bar on each side, 760 px — puts the shell's `_SideBar` (a `NavigationRail`)
-  against the window's leading edge (the right in Arabic) and leaves a matching
-  gap on the trailing side, so the column stays centred on the window, exactly
-  where a root-level page (which has no bar) puts it. Below 760 px the
-  `_BottomBar` stays. Both bars are drawn from one list of the five tabs: same
-  order, icons, `ProfileTabIcon` and reset-on-tap; the side bar is the bottom
-  bar turned on its side (`navigationRailTheme`: labels under icons, no pill,
-  the open tab green, a hairline on the edge that faces the content), 80 px
-  wide however long a label, and it scrolls when the window is too short for
-  five tabs. It decides live: resizing a window, turning or splitting a tablet
-  moves the bar without remounting the open tab — its three Row slots exist in
-  both layouts, and go_router's branch keys would carry the state across
-  anyway. Beside the side bar nothing reserves the home-indicator inset, so the
-  tabs keep it; under a banner the side bar, like the tabs, drops the status-bar
-  inset the banner took. The bar is still on the shell's screens only: trip,
-  stop, form and other-profile pages stay full-screen with their back arrow.
+  bar on each side, 760 px — puts the shell's `SideTabBar`
+  (`core/router/side_tab_bar.dart`) against the window's leading edge (the
+  right in Arabic). The tabs take the rest of the window, to its far edge, and
+  pass the bar's width down as `SideBarInset`, so the column in them stays
+  centred on the window, exactly where a root-level page (which has no bar)
+  puts it. Below 760 px the `_BottomBar` stays. Both bars are drawn from one
+  list of the five tabs (`ShellTab`): same order, icons, `ProfileTabIcon` and
+  reset-on-tap. The side bar is the bottom bar turned on its side, styled by
+  `navigationRailTheme` (labels under icons, no pill, the open tab green, a
+  hairline on the edge that faces the content): each tab takes an equal share
+  of the bar's whole height, as each takes an equal share of the bottom bar's
+  width, with its icon and label in the middle of the share; a window too short
+  for that scrolls the tabs. It is drawn by hand because `NavigationRail`
+  cannot share out its height — its tabs sit in a column only as tall as they
+  are — and it announces each tab the rail's way ("Tab 2 of 5", selected). It
+  is 80 px wide however long a label. It decides live: resizing a window,
+  turning or splitting a tablet moves the bar without remounting the open tab
+  — the shell's Row keeps its two slots in both layouts, and go_router's branch
+  keys would carry the state across anyway. The tabs are a semantics container
+  of their own: every page in a tab sits on a route barrier that hides from
+  screen readers whatever was painted before it in the same container, and
+  until 2026-11-07 that was the whole side bar. Beside the side bar nothing
+  reserves the home-indicator inset, so the tabs keep it; under a banner the
+  side bar, like the tabs, drops the status-bar inset the banner took. The bar
+  is still on the shell's screens only: trip, stop, form and other-profile
+  pages stay full-screen with their back arrow.
 - **Shared links are the router's other way in.** Its `onEnter`
   (`appLinkOnEnter`) and the first step of its redirect (`appLinkLaunchRedirect`),
   both in `core/router/app_links.dart`, intercept a `/share/i/…` or `/share/u/…`

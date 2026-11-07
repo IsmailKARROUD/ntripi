@@ -31,6 +31,7 @@ Future<bool> showAppealSheet(
 
   final violations = await showModalBottomSheet<List<Violation>>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,

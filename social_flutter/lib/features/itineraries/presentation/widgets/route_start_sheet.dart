@@ -14,6 +14,7 @@ import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 Future<RouteStart?> showRouteStartSheet(BuildContext context) {
   return showModalBottomSheet<RouteStart>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,

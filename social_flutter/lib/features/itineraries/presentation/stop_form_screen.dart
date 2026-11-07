@@ -2203,6 +2203,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     final nt = context.nt;
     final picked = await showModalBottomSheet<Object>(
       context: context,
+      useRootNavigator: true,
       builder:
           (ctx) => SafeArea(
             child: Padding(

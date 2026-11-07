@@ -157,6 +157,15 @@ itinerary_id, stop_id}]}` — derived from the user's stops, filtered by
   | `userLocationsProvider` | `AsyncNotifierProvider.family` | the visited-locations map |
 - **Model** — `User` (`shared/models/user.dart`), manual
   `fromJson`/`toJson`/`copyWith`.
+- **A profile on a wide window** (since 2026-11-07). The Followers / Following
+  counts join the name's row when both fit, and drop below it — the phone
+  layout — when they do not (`ProfileHeroAndIdentity` takes them as `tallies`,
+  through `SideBySideWhenFits`). Passport, Lives in and Speaks are the one part
+  of a profile not held to the column: `ProfileScreen` scrolls across the whole
+  screen and applies the column to each section (`SliverContentColumn`), while
+  their row runs from the side bar — or the window's edge — to the screen's far
+  edge, wrapping only when even that is too narrow. Loading, an error and the
+  edit form keep to the column.
 - **The Profile tab shows your photo** (since 2026-10-31) — `ProfileTabIcon`
   (`shared/widgets/profile_tab_icon.dart`), the last tab of the bar — along
   the bottom, or down the side on a wide window, where it keeps the same 24 px

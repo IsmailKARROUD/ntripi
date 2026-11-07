@@ -32,6 +32,7 @@ Future<GoogleConsentResult?> showGoogleTosConsentSheet(
 }) async {
   return showModalBottomSheet<GoogleConsentResult>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     // Not dismissible by tapping away: closing it is a decision, and the only
     // ways out are the explicit Cancel button and the system back gesture.

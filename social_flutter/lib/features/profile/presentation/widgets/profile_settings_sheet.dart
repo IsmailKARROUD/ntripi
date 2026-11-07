@@ -23,6 +23,7 @@ void showProfileSettingsSheet(
 }) {
   showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder:
@@ -67,6 +68,7 @@ class _SettingsSheet extends ConsumerWidget {
 
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       showDragHandle: true,
       builder:
           (ctx) => SafeArea(
@@ -196,6 +198,7 @@ class _SettingsSheet extends ConsumerWidget {
 
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       showDragHandle: true,
       builder:
           (ctx) => SafeArea(

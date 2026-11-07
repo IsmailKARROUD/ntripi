@@ -7,7 +7,9 @@
 // from the profile TosGate already loads, under TosGate's gate — so signed
 // out, nothing is read at all. Width alone decides where the bar is: crossing
 // the line must never remount the open tab, or a resized window would lose its
-// scroll position and whatever was being typed.
+// scroll position and whatever was being typed. Down the side, the tabs share
+// the bar's height as they share the bottom bar's width, and the tabs' screens
+// reach the window's far edge while their column stays centred on the window.
 
 import 'dart:ui' as ui;
 
@@ -19,11 +21,13 @@ import 'package:go_router/go_router.dart';
 import 'package:ntripi/core/cache/image_cache.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
 import 'package:ntripi/core/router/app_router.dart';
+import 'package:ntripi/core/router/side_tab_bar.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/features/auth/providers/auth_provider.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/models/user.dart';
+import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/profile_tab_icon.dart';
 
 const _photoUrl = 'https://images.example/avatars/u1.jpg?v=3';
@@ -181,6 +185,15 @@ Future<void> _resize(WidgetTester tester, Size size) async {
   await tester.pumpAndSettle();
 }
 
+/// The side bar's five tabs, each the whole share it answers taps in.
+List<Rect> _sideTabs(WidgetTester tester) => [
+      for (final element in find
+          .descendant(
+              of: find.byType(SideTabBar), matching: find.byType(InkResponse))
+          .evaluate())
+        tester.getRect(find.byElementPredicate((e) => e == element)),
+    ];
+
 void main() {
   test(
       'Given the app router, Then its tabs are Feed, Search, Itineraries, '
@@ -265,12 +278,52 @@ void main() {
         'Given 760 px, Then they are down the side', (tester) async {
       await _pumpShell(tester, signedIn: false, size: const Size(759, 800));
       expect(find.byType(BottomNavigationBar), findsOneWidget);
-      expect(find.byType(NavigationRail), findsNothing);
+      expect(find.byType(SideTabBar), findsNothing);
 
       await _resize(tester, const Size(760, 800));
       expect(find.byType(BottomNavigationBar), findsNothing);
-      expect(find.byType(NavigationRail), findsOneWidget);
-      expect(tester.getSize(find.byType(NavigationRail)).width, kSideBarWidth);
+      expect(find.byType(SideTabBar), findsOneWidget);
+      expect(tester.getSize(find.byType(SideTabBar)).width, kSideBarWidth);
+    });
+
+    testWidgets(
+        'Given the side bar, Then the five tabs share its whole height evenly, '
+        'each with its icon and label in the middle of its share',
+        (tester) async {
+      await _pumpShell(tester, signedIn: false, size: _laptop);
+
+      final tabs = _sideTabs(tester);
+      expect(tabs, hasLength(5));
+      final share = _laptop.height / 5;
+      for (var i = 0; i < 5; i++) {
+        expect(tabs[i].top, moreOrLessEquals(i * share));
+        expect(tabs[i].height, moreOrLessEquals(share));
+        expect(tabs[i].width, kSideBarWidth);
+      }
+      // Icon and label together, centred in the share: Feed is the first.
+      final feed = tester
+          .getRect(find.byIcon(Icons.dynamic_feed))
+          .expandToInclude(tester.getRect(find.text('Feed')));
+      expect(feed.center.dy, moreOrLessEquals(tabs[0].center.dy, epsilon: 0.5));
+    });
+
+    testWidgets(
+        'Given the side bar, Then a screen reader hears each tab as the bar\'s '
+        'nth of five, and which one is open', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await _pumpShell(tester, signedIn: false, size: _laptop);
+
+      expect(
+        tester.getSemantics(find.text('Feed')),
+        isSemantics(
+            label: 'Feed\nTab 1 of 5', isSelected: true, hasTapAction: true),
+      );
+      expect(
+        tester.getSemantics(find.text('Saved')),
+        isSemantics(
+            label: 'Saved\nTab 4 of 5', isSelected: false, hasTapAction: true),
+      );
+      semantics.dispose();
     });
 
     testWidgets(
@@ -308,27 +361,37 @@ void main() {
       expect(find.text('deep 0'), findsNothing);
     });
 
-    testWidgets(
-        'Given the side bar, Then the tabs are centred on the window, so the '
-        'column sits where a page without the bar puts it', (tester) async {
-      await _pumpShell(
-        tester,
-        signedIn: false,
-        size: _laptop,
-        tab: (i) => SizedBox.expand(key: ValueKey('tab $i')),
-      );
+    for (final arabic in [false, true]) {
+      testWidgets(
+          'Given the side bar${arabic ? ' in Arabic' : ''}, Then a tab reaches '
+          'the window\'s far edge while its column stays centred on the '
+          'window, where a page without the bar puts it', (tester) async {
+        await _pumpShell(
+          tester,
+          signedIn: false,
+          size: _laptop,
+          locale: arabic ? const Locale('ar') : null,
+          tab: (i) => Stack(children: [
+            SizedBox.expand(key: ValueKey('tab $i')),
+            ContentColumn(child: SizedBox.expand(key: ValueKey('column $i'))),
+          ]),
+        );
 
-      final tabs = tester.getRect(find.byKey(const ValueKey('tab 0')));
-      expect(tabs.left, kSideBarWidth);
-      expect(tabs.center.dx, _laptop.width / 2);
-    });
+        final tab = tester.getRect(find.byKey(const ValueKey('tab 0')));
+        expect(tab.width, _laptop.width - kSideBarWidth);
+        expect(arabic ? tab.left : tab.right, arabic ? 0 : _laptop.width);
+        final column = tester.getRect(find.byKey(const ValueKey('column 0')));
+        expect(column.width, kContentMaxWidth);
+        expect(column.center.dx, _laptop.width / 2);
+      });
+    }
 
     testWidgets('Given Arabic, Then the side bar is on the right',
         (tester) async {
       await _pumpShell(tester,
           signedIn: false, size: _laptop, locale: const Locale('ar'));
 
-      expect(tester.getRect(find.byType(NavigationRail)).right, _laptop.width);
+      expect(tester.getRect(find.byType(SideTabBar)).right, _laptop.width);
     });
 
     testWidgets(
@@ -382,7 +445,7 @@ void main() {
             tester.state<_TabBodyState>(find.byType(_TabBody)).scroll.offset,
             300);
       }
-      expect(find.byType(NavigationRail), findsOneWidget);
+      expect(find.byType(SideTabBar), findsOneWidget);
     });
 
     testWidgets(
@@ -395,7 +458,7 @@ void main() {
         find.text('Profile'),
         40,
         scrollable: find.descendant(
-          of: find.byType(NavigationRail),
+          of: find.byType(SideTabBar),
           matching: find.byType(Scrollable),
         ),
       );
@@ -409,12 +472,17 @@ void main() {
         'Given a banner over the tabs, Then the side bar does not leave room '
         'for the status bar a second time', (tester) async {
       tester.view.padding = const FakeViewPadding(top: 24);
+      addTearDown(tester.view.resetPadding);
       await _pumpShell(tester, signedIn: false, size: _laptop, online: false);
 
-      final bannerBottom =
-          tester.getRect(find.byIcon(Icons.wifi_off_rounded)).bottom;
-      final firstTab = tester.getRect(find.byIcon(Icons.dynamic_feed)).top;
-      expect(firstTab - bannerBottom, lessThan(24));
+      // The banner's own bottom edge: the bar starts right under it.
+      final banner = find
+          .ancestor(
+            of: find.byIcon(Icons.wifi_off_rounded),
+            matching: find.byType(SafeArea),
+          )
+          .first;
+      expect(_sideTabs(tester).first.top, tester.getRect(banner).bottom);
     });
   });
 }

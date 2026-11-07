@@ -410,6 +410,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   Future<void> _showCurrencyPicker() async {
     final picked = await showModalBottomSheet<String>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (ctx) => _CurrencyPickerSheet(

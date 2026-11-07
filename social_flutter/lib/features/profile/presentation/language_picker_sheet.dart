@@ -23,6 +23,7 @@ Future<List<String>?> showLanguagePickerSheet(
 }) {
   return showModalBottomSheet<List<String>>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: Colors.transparent,

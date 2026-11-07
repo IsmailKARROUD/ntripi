@@ -42,6 +42,7 @@ String legalDocTitle(LegalDoc doc, AppLocalizations l10n) => switch (doc) {
 void showLegalDocSheet(BuildContext context, LegalDoc doc) {
   showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     builder: (_) => _LegalDocSheet(doc: doc),
   );

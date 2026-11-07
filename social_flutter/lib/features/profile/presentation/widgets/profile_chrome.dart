@@ -15,14 +15,19 @@ import 'package:ntripi/features/profile/domain/visited_location.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/models/user.dart';
 import 'package:ntripi/shared/widgets/fullscreen_image_viewer.dart';
+import 'package:ntripi/shared/widgets/side_by_side_when_fits.dart';
 import 'package:ntripi/shared/widgets/user_avatar.dart';
 
-/// Renders the OSM map hero (260 px) with the avatar + name/handle
-/// row overlapping it by 36 px at the bottom. Used for both self
-/// and other-user profiles via [isSelf].
+/// Renders the OSM map hero (260 px) with the avatar + name/handle row
+/// overlapping it by 36 px at the bottom, and [tallies] at the end of that row
+/// when both fit, below it otherwise. Used for both self and other-user
+/// profiles via [isSelf].
 class ProfileHeroAndIdentity extends StatelessWidget {
   final User user;
   final int totalStops;
+
+  /// The Followers / Following counts.
+  final Widget tallies;
   final bool isSelf;
   final bool isContentHidden;
   final String? headerLabel;
@@ -58,6 +63,7 @@ class ProfileHeroAndIdentity extends StatelessWidget {
     super.key,
     required this.user,
     required this.totalStops,
+    required this.tallies,
     this.isSelf = true,
     this.isContentHidden = false,
     this.headerLabel,
@@ -79,18 +85,13 @@ class ProfileHeroAndIdentity extends StatelessWidget {
   Widget build(BuildContext context) {
     final nt = context.nt;
     const heroH = 260.0;
-    // Avatar total display height inside the row = 92 px (88 radius×2 + ring 4)
-    // Identity row height ≈ 92 px. Overlap = 36 px.
-    // Total section height = heroH + (92 − 36) = 316 px.
-    const identityH = 92.0;
+    // The avatar overlaps the hero's bottom edge by this much.
     const overlap = 36.0;
-    const totalH = heroH + identityH - overlap;
 
-    return SizedBox(
-      height: totalH,
-      child: Stack(
+    return Stack(
         clipBehavior: Clip.none,
         children: [
+          // First, so the identity row overlapping its bottom is drawn over it.
           Positioned(
             top: 0,
             left: 0,
@@ -115,10 +116,15 @@ class ProfileHeroAndIdentity extends StatelessWidget {
               shareButtonKey: shareButtonKey,
             ),
           ),
-          Positioned(
-            top: heroH - overlap,
-            left: 16,
-            right: 16,
+          // Not positioned: the Stack takes its height from this, so counts
+          // that drop below the name make room for themselves.
+          Padding(
+            padding: const EdgeInsets.only(top: heroH - overlap),
+            child: SideBySideWhenFits(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              end: tallies,
+              start: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -162,9 +168,10 @@ class ProfileHeroAndIdentity extends StatelessWidget {
                 ),
               ],
             ),
+              ),
+            ),
           ),
         ],
-      ),
     );
   }
 }

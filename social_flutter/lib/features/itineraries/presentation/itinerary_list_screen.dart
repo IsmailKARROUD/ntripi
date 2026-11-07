@@ -27,6 +27,7 @@ import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/saving_overlay.dart';
+import 'package:ntripi/shared/widgets/side_by_side_when_fits.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
 import 'package:ntripi/shared/widgets/reload_report.dart';
@@ -131,11 +132,12 @@ class _ItineraryListScreenState extends ConsumerState<ItineraryListScreen> {
     return SavingOverlay(
       saving: _deleting,
       tint: nt.surface,
-      // The whole Scaffold is the column, so New itinerary sits at its corner.
-      child: ContentPage(
+      // As wide as the screen while the list keeps to the column, so New
+      // itinerary can stand beside the list when there is room for it.
       child: Scaffold(
       backgroundColor: nt.surface,
-      body: SafeArea(
+      body: ContentColumn(
+      child: SafeArea(
             child: RefreshIndicator(
                 onRefresh: () async {
                   // Offline: skip entirely — evicting covers would delete
@@ -152,30 +154,26 @@ class _ItineraryListScreenState extends ConsumerState<ItineraryListScreen> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
                   children: [
-                    // Title row — names the tab, not the active scope.
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              l10n.myItineraries,
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w700,
-                                color: nt.bark,
-                                letterSpacing: -0.3,
-                              ),
-                            ),
+                    // Title — it names the tab, not the active scope — and the
+                    // scope filter beside it when both fit; otherwise the
+                    // filter takes its own full-width row, as on a phone, where
+                    // three labels in German or Arabic do not fit beside a 22px
+                    // heading.
+                    SideBySideWhenFits(
+                      start: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Text(
+                          l10n.myItineraries,
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: nt.bark,
+                            letterSpacing: -0.3,
                           ),
-                        ],
+                        ),
                       ),
+                      end: _ScopeSelector(scope: scope),
                     ),
-
-                    // Scope filter — its own full-width row rather than beside
-                    // the title: three labels in German or Arabic will not fit
-                    // next to a 22px heading on a narrow phone.
-                    _ScopeSelector(scope: scope),
                     const SizedBox(height: 12),
 
                     // Loading and error live BELOW the selector, inside the
@@ -281,6 +279,9 @@ class _ItineraryListScreenState extends ConsumerState<ItineraryListScreen> {
                 ),
               ),
       ),
+      ),
+      floatingActionButtonLocation:
+          ColumnFabLocation(SideBarInset.of(context)),
       floatingActionButton: OfflineGate(
         // FABs have no native disabled style — dim explicitly when offline.
         builder: (online) => Opacity(
@@ -299,13 +300,13 @@ class _ItineraryListScreenState extends ConsumerState<ItineraryListScreen> {
         ),
       ),
     ),
-    ),
     );
   }
 }
 
 // All / Mine / Shared. Labels only, no icons — three segments with icons
-// overflow once the labels are translated.
+// overflow once the labels are translated. No width of its own: beside the
+// title it keeps its natural width, below it the row gives it the full width.
 class _ScopeSelector extends ConsumerWidget {
   final ItineraryScope scope;
 
@@ -314,9 +315,7 @@ class _ScopeSelector extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    return SizedBox(
-      width: double.infinity,
-      child: SegmentedButton<ItineraryScope>(
+    return SegmentedButton<ItineraryScope>(
         style: const ButtonStyle(
           visualDensity: VisualDensity.compact,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -339,7 +338,6 @@ class _ScopeSelector extends ConsumerWidget {
         showSelectedIcon: false,
         onSelectionChanged: (s) =>
             ref.read(itineraryScopeProvider.notifier).set(s.first),
-      ),
     );
   }
 }

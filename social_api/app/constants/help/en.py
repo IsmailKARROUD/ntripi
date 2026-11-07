@@ -190,6 +190,13 @@ RELEASES: tuple[Release, ...] = (
             "in a browser window with room to spare, the five tabs run down the "
             "left side instead of along the bottom, and every screen stays "
             "centred at a readable width. Tablets can now be turned sideways.",
+            "**Wide screens put their room to use.** The side tabs share the "
+            "screen's whole height. **New Itinerary** moves to the far right, "
+            "clear of your list, and the **My Itineraries** title shares its row "
+            "with **All**, **Mine** and **Shared**. On a profile, the name sits "
+            "beside the **Followers** and **Following** counts, and **Passport**, "
+            "**Lives in** and **Speaks** line up in one row across the screen. "
+            "Wherever there isn't room, everything stacks as it does on a phone.",
         ),
     ),
     Release(

@@ -3005,3 +3005,65 @@ unchanged: it still follows the window's width (`sideBarFits`).
   happened.
 - **Subtracting the system insets from the window**: a split-screen window would
   still read as a phone.
+
+### 2026-11-07 — Wide windows put side by side what a phone stacks, and two things leave the column
+
+**Context.** With the column and the side bar in place
+([the entry above](#2026-11-07--width-decides-the-layout-one-centred-column-and-the-tabs-move-down-the-side-when-they-fit)),
+the owner looked at a wide window and asked for five changes, adding that they
+"may not respect the fixed width": the side bar's tabs spread over its whole
+height; New itinerary at the far right, off the list, unless there is no room;
+the Itineraries title and All / Mine / Shared in one row, unless there is no
+room; the profile's name and its Followers / Following counts in one row,
+unless there is no room; and Passport, Lives in and Speaks not held to the
+column — "a row from the side bar to the end of the screen". Reaching the
+screen's real edge meant giving the tabs the 80 px strip that mirrored the side
+bar; asked, the owner chose that, with every sheet opening over the whole app so
+it stays centred.
+
+**Decision.**
+- **The side bar is drawn by hand** (`core/router/side_tab_bar.dart`): each tab
+  an equal share of its height, as each is an equal share of the bottom bar's
+  width, scrolling when the window is too short; announced the rail's way.
+- **"Unless there is no room" is one widget**, `SideBySideWhenFits`
+  (`shared/widgets/side_by_side_when_fits.dart`), deciding from the children's
+  own intrinsic widths at every layout. Stacked, it is the phone layout
+  unchanged.
+- **The tabs reach the window's far edge.** The shell passes the bar's width
+  down as `SideBarInset`; `ContentColumn` leaves as much free at its end, so the
+  column is still centred on the window. `SliverContentColumn` holds one sliver
+  to the column, for a scroll view that spans the screen; `ColumnFabLocation`
+  puts a floating button in the far corner when the room beside the column
+  holds it, at the column's corner otherwise.
+- **Every sheet opens on the root navigator** (`useRootNavigator: true`, held by
+  the guard test).
+- **The profile scrolls across the whole screen**, the column applied to each
+  section, so its Passport / Lives in / Speaks row can run from the side bar to
+  the far edge.
+- **The tabs are their own semantics container.** Every page in a tab sits on a
+  route barrier that drops, for screen readers, what was painted before it in
+  the same container; since `dc9858f` that had been the whole side bar.
+
+**Consequences.**
+- On a phone nothing moves but the four sheets opened from a tab (Settings, the
+  language picker, Report, Appeal): they now cover the bottom bar, as a trip
+  page's sheets always did, and the bar can no longer be tapped under them.
+- On the web the profile's scrollbar sits at the window's edge, and its
+  pull-to-refresh spinner centres on the tab area — 40 px right of the column's
+  centre beside the side bar.
+- New itinerary, at the far corner, can be 400 px from the list on a very wide
+  window: the owner's call.
+- A full-window page pushed inside a tab (the photo viewer, the visited-places
+  map) now reaches the window's far edge instead of stopping 80 px short.
+
+**Alternatives rejected.**
+- **`NavigationRail` with padding computed to spread its tabs**: the padding
+  depends on each tab's height under the text scale, which only layout knows.
+- **Width breakpoints, or measuring strings with `TextPainter`**: a breakpoint
+  is wrong in German and at a large text size; a re-measured string misses the
+  inherited style, the scaler and bold text — the mistake `ExpandableText`
+  already cost once.
+- **Keeping the 80 px strip** and stopping the button and the row short of the
+  edge: the owner asked for the edge.
+- **Leaving sheets on the tabs' own navigators**: beside the side bar they sat
+  40 px off the column's centre, with the bar tappable under them.

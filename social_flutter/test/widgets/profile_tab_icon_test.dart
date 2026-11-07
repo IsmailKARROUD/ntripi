@@ -13,6 +13,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ntripi/core/router/side_tab_bar.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/shared/widgets/profile_tab_icon.dart';
 
@@ -177,28 +178,39 @@ void main() {
   });
 
   testWidgets(
-      'Given the photo in a real side bar, Then it keeps the icon\'s 24 px box, '
-      'the Profile label sits as far below it as Feed\'s does below its icon, '
-      'and the open tab rings it in the bar\'s color', (tester) async {
+      'Given the photo in the real side bar, Then it keeps the icon\'s 24 px '
+      'box, the Profile label sits as far below it as Feed\'s does below its '
+      'icon, and the open tab rings it in the bar\'s color', (tester) async {
     final image = await _photo(tester);
+    final theme = buildNtripiTheme();
     await tester.pumpWidget(MaterialApp(
-      theme: buildNtripiTheme(),
+      theme: theme.copyWith(
+        navigationRailTheme: theme.navigationRailTheme.copyWith(
+          selectedIconTheme: const IconThemeData(color: _barColor, size: 24),
+        ),
+      ),
       home: Scaffold(
         body: Row(
           children: [
-            NavigationRail(
-              selectedIndex: 1,
-              selectedIconTheme: const IconThemeData(color: _barColor),
-              destinations: [
-                const NavigationRailDestination(
-                    icon: Icon(Icons.dynamic_feed_outlined), label: Text('Feed')),
-                NavigationRailDestination(
-                  icon: ProfileTabIcon(photo: _ReadyImage(image)),
-                  selectedIcon:
-                      ProfileTabIcon(photo: _ReadyImage(image), selected: true),
-                  label: const Text('Profile'),
-                ),
-              ],
+            SizedBox(
+              width: kSideBarWidth,
+              child: SideTabBar(
+                currentIndex: 1,
+                onTap: (_) {},
+                tabs: [
+                  (
+                    icon: const Icon(Icons.dynamic_feed_outlined),
+                    activeIcon: const Icon(Icons.dynamic_feed),
+                    label: 'Feed',
+                  ),
+                  (
+                    icon: ProfileTabIcon(photo: _ReadyImage(image)),
+                    activeIcon:
+                        ProfileTabIcon(photo: _ReadyImage(image), selected: true),
+                    label: 'Profile',
+                  ),
+                ],
+              ),
             ),
           ],
         ),

@@ -110,6 +110,7 @@ RELEASES: tuple[Release, ...] = (
             "**Condiciones y Política de privacidad actualizadas.** Ahora cubren Google Maps, que dibuja parte de los mapas de Ntripi y su búsqueda de lugares. Se te pedirá aceptarlas una vez.",
             "**Elimina tu cuenta sin la aplicación.** [ntripi.app/delete-account](/delete-account) envía un enlace a la dirección de tu cuenta; ábrelo y confirma. Las Condiciones y la Política de privacidad actualizadas dicen qué se conserva después —las reseñas conservan su texto, sin tu nombre— y se te pedirá que las aceptes una vez más.",
             "**Las pestañas pasan al lateral en una pantalla ancha.** En una tableta, o en una ventana del navegador con espacio de sobra, las cinco pestañas aparecen en el lado izquierdo en lugar de abajo, y cada pantalla queda centrada, con un ancho cómodo de leer. Ahora las tabletas también se pueden girar en horizontal.",
+            "**Las pantallas anchas aprovechan su espacio.** Las pestañas del lateral ocupan toda la altura de la pantalla. **Nuevo itinerario** pasa al extremo derecho, fuera de tu lista, y el título **Mis itinerarios** comparte fila con **Todos**, **Míos** y **Compartidos**. En un perfil, el nombre se coloca junto a los contadores de **Seguidores** y **Siguiendo**, y **Pasaporte**, **Vive en** y **Habla** se alinean en una sola fila, de lado a lado de la pantalla. Cuando no hay sitio, todo se apila como en un teléfono.",
         ),
     ),
     Release(

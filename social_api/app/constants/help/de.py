@@ -110,6 +110,7 @@ RELEASES: tuple[Release, ...] = (
             "**Aktualisierte Nutzungsbedingungen und Datenschutzerklärung.** Sie decken jetzt Google Maps ab, das einen Teil der Karten von Ntripi und seine Ortssuche liefert. Sie werden einmal gebeten, sie anzunehmen.",
             "**Konto ohne die App löschen.** [ntripi.app/delete-account](/delete-account) schickt einen Link an die Adresse Ihres Kontos; öffnen Sie ihn und bestätigen Sie. Die aktualisierten Nutzungsbedingungen und die Datenschutzerklärung sagen, was danach bleibt — Rezensionen behalten ihren Text, ohne Ihren Namen —, und Sie werden gebeten, sie noch einmal zu akzeptieren.",
             "**Auf breiten Bildschirmen wandern die Tabs an die Seite.** Auf einem Tablet oder in einem Browserfenster mit genug Platz stehen die fünf Tabs am linken Rand statt unten, und jeder Bildschirm bleibt mittig, in angenehmer Lesebreite. Tablets lassen sich jetzt auch quer halten.",
+            "**Breite Bildschirme nutzen ihren Platz.** Die Tabs am Rand verteilen sich über die ganze Höhe des Bildschirms. **Neue Reiseroute** rückt ganz nach rechts, weg von Ihrer Liste, und der Titel **Meine Reiserouten** teilt sich seine Zeile mit **Alle**, **Meine** und **Geteilt**. Im Profil steht der Name neben den Zählern **Follower** und **Gefolgt**, und **Reisepass**, **Wohnt in** und **Spricht** stehen in einer Zeile quer über den Bildschirm. Wo der Platz nicht reicht, steht alles untereinander wie auf dem Telefon.",
         ),
     ),
     Release(

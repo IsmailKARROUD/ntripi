@@ -8,6 +8,7 @@ import 'package:ntripi/core/cache/image_cache.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
 import 'package:ntripi/core/router/app_links.dart';
 import 'package:ntripi/core/router/navigation_ext.dart';
+import 'package:ntripi/core/router/side_tab_bar.dart';
 import 'package:ntripi/core/storage/secure_storage.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -436,9 +437,6 @@ final GoRouter appRouter = GoRouter(
 Widget appShellForTesting(StatefulNavigationShell navigationShell) =>
     _AppShell(navigationShell: navigationShell);
 
-/// One tab of the shell's bar, as both bars draw it.
-typedef _Tab = ({Widget icon, Widget activeIcon, String label});
-
 /// Shell with the tabs' bar: along the bottom, or down the side once the
 /// window is wide enough for it beside the column (`sideBarFits`).
 class _AppShell extends ConsumerStatefulWidget {
@@ -480,7 +478,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
         ? null
         : ref.watch(cachedImageProvider)(avatarUrl);
     // The five tabs in branch order — the one list both bars are drawn from.
-    final List<_Tab> tabs = [
+    final List<ShellTab> tabs = [
       (
         icon: const Icon(Icons.dynamic_feed_outlined),
         activeIcon: const Icon(Icons.dynamic_feed),
@@ -510,13 +508,10 @@ class _AppShellState extends ConsumerState<_AppShell> {
     ];
     final media = MediaQuery.of(context);
     final bannerShown = _showDownloadBanner || isOffline;
-    final startInset = Directionality.of(context) == TextDirection.rtl
-        ? media.padding.right
-        : media.padding.left;
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    final startInset = rtl ? media.padding.right : media.padding.left;
     // Width alone decides, live: a resized window, a turned or split tablet.
     final sideBar = sideBarFits(media.size.width - 2 * startInset);
-    // The gap opposite the side bar matches it, so the tabs — and the column
-    // in them — are centred on the window, exactly where a trip page puts it.
     final sideWidth = sideBar ? kSideBarWidth + startInset : 0.0;
     return Scaffold(
       // Resizes (the default) to lift the tabs above the keyboard, and hands them
@@ -537,9 +532,9 @@ class _AppShellState extends ConsumerState<_AppShell> {
           // leaves an empty strip of surface above the bar. The side bar
           // reserves none, so there the tabs keep it.
           Expanded(
-            // Three slots in every layout, so crossing the threshold leaves the
-            // tabs where they are — scroll positions and typed text stay —
-            // without leaning on go_router's keys to carry them across.
+            // The same two slots in every layout, so crossing the threshold
+            // leaves the tabs where they are — scroll positions and typed text
+            // stay — without leaning on go_router's keys to carry them across.
             child: Row(
               children: [
                 SizedBox(
@@ -547,7 +542,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
                   child: sideBar
                       ? MediaQuery(
                           data: media.removePadding(removeTop: bannerShown),
-                          child: _SideBar(
+                          child: SideTabBar(
                             tabs: tabs,
                             currentIndex: widget.navigationShell.currentIndex,
                             onTap: _openTab,
@@ -556,22 +551,33 @@ class _AppShellState extends ConsumerState<_AppShell> {
                       : null,
                 ),
                 Expanded(
-                  child: MediaQuery(
-                    // Built from this context, above the Scaffold, so the keyboard
-                    // inset it consumed must go too or every tab lifts a second time.
-                    data: media
-                        .removePadding(
-                          removeTop: bannerShown,
-                          removeBottom: !sideBar,
-                          // The side bar and the gap opposite it hold the side insets.
-                          removeLeft: sideBar,
-                          removeRight: sideBar,
-                        )
-                        .removeViewInsets(removeBottom: true),
-                    child: widget.navigationShell,
+                  // A container of its own: every page in a tab sits on a
+                  // route barrier that hides from screen readers whatever was
+                  // painted before it in the same container — the side bar.
+                  child: Semantics(
+                    container: true,
+                    // The tabs reach the window's far edge; a tab's column
+                    // leaves the bar's width free at its end, so it stays
+                    // centred on the window, exactly where a trip page puts it.
+                    child: SideBarInset(
+                      width: sideWidth,
+                      child: MediaQuery(
+                        // Built from this context, above the Scaffold, so the keyboard
+                        // inset it consumed must go too or every tab lifts a second time.
+                        data: media
+                            .removePadding(
+                              removeTop: bannerShown,
+                              removeBottom: !sideBar,
+                              // The side bar holds the inset on its own side.
+                              removeLeft: sideBar && !rtl,
+                              removeRight: sideBar && rtl,
+                            )
+                            .removeViewInsets(removeBottom: true),
+                        child: widget.navigationShell,
+                      ),
+                    ),
                   ),
                 ),
-                SizedBox(width: sideWidth),
               ],
             ),
           ),
@@ -589,7 +595,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
 }
 
 class _BottomBar extends StatelessWidget {
-  final List<_Tab> tabs;
+  final List<ShellTab> tabs;
   final int currentIndex;
   final ValueChanged<int> onTap;
   const _BottomBar({
@@ -624,43 +630,6 @@ class _BottomBar extends StatelessWidget {
       ),
     );
   }
-}
-
-/// The bottom bar turned on its side: the same tabs, icons and colors, with
-/// its hairline on the edge that faces the content.
-class _SideBar extends StatelessWidget {
-  final List<_Tab> tabs;
-  final int currentIndex;
-  final ValueChanged<int> onTap;
-  const _SideBar({
-    required this.tabs,
-    required this.currentIndex,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-        // Foreground: the rail paints its own background over a background one.
-        position: DecorationPosition.foreground,
-        decoration: BoxDecoration(
-          border: BorderDirectional(end: BorderSide(color: context.nt.border)),
-        ),
-        child: NavigationRail(
-          selectedIndex: currentIndex,
-          onDestinationSelected: onTap,
-          minWidth: kSideBarWidth,
-          // A window too short for five tabs scrolls them instead of overflowing.
-          scrollable: true,
-          destinations: [
-            for (final tab in tabs)
-              NavigationRailDestination(
-                icon: tab.icon,
-                selectedIcon: tab.activeIcon,
-                label: Text(tab.label, textAlign: TextAlign.center),
-              ),
-          ],
-        ),
-      );
 }
 
 class _OfflineBanner extends StatelessWidget {

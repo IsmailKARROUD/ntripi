@@ -18,6 +18,7 @@ Future<void> showOpenInMapsSheet({
 }) {
   return showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     showDragHandle: true,
     builder: (_) => _OpenInMapsSheet(lat: lat, lng: lng, label: label),

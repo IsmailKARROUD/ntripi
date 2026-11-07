@@ -110,6 +110,7 @@ RELEASES: tuple[Release, ...] = (
             "**Conditions et Politique de confidentialité mises à jour.** Elles couvrent désormais Google Maps, qui dessine une partie des cartes de Ntripi et sa recherche de lieux. Il vous sera demandé de les accepter une fois.",
             "**Supprimer votre compte sans l’application.** [ntripi.app/delete-account](/delete-account) envoie un lien à l’adresse de votre compte ; ouvrez-le et confirmez. Les Conditions et la Politique de confidentialité mises à jour disent ce qui reste ensuite — les avis gardent leur texte, sans votre nom — et il vous sera demandé de les accepter une nouvelle fois.",
             "**Les onglets passent sur le côté sur un grand écran.** Sur une tablette, ou dans une fenêtre de navigateur assez large, les cinq onglets s’affichent sur le côté gauche plutôt qu’en bas, et chaque écran reste centré, à une largeur confortable à lire. Les tablettes peuvent désormais être tournées à l’horizontale.",
+            "**Les grands écrans tirent parti de leur place.** Les onglets sur le côté occupent toute la hauteur de l’écran. **Nouvel itinéraire** passe tout à droite, à l’écart de votre liste, et le titre **Mes itinéraires** partage sa ligne avec **Tous**, **Les miens** et **Partagés**. Sur un profil, le nom se place à côté des compteurs **Abonnés** et **Abonnements**, et **Passeport**, **Réside à** et **Parle** s’alignent sur une seule ligne, d’un bord à l’autre de l’écran. Quand la place manque, tout s’empile comme sur un téléphone.",
         ),
     ),
     Release(

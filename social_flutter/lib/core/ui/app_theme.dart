@@ -701,15 +701,11 @@ ThemeData _buildTheme(NtripiColors nt, ColorScheme scheme) {
       elevation: 0,
     ),
 
-    // The tabs' side bar on a wide window (the shell's _SideBar): the bottom
-    // bar's look turned on its side — labels under icons, no pill behind the
-    // open tab, which turns green like the bar's.
+    // The tabs' side bar on a wide window (core/router/side_tab_bar.dart reads
+    // these): the bottom bar's look turned on its side — labels under icons,
+    // no pill behind the open tab, which turns green like the bar's.
     navigationRailTheme: NavigationRailThemeData(
       backgroundColor: nt.surface,
-      elevation: 0,
-      labelType: NavigationRailLabelType.all,
-      useIndicator: false,
-      groupAlignment: -1,
       selectedIconTheme: IconThemeData(color: nt.forest, size: 24),
       unselectedIconTheme: IconThemeData(color: nt.text3, size: 24),
       selectedLabelTextStyle: GoogleFonts.dmSans(

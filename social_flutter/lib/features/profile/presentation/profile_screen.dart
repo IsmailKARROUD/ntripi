@@ -117,13 +117,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: nt.surface,
-      body: ContentColumn(
-          child: profileAsync.when(
-            loading: () => const Center(child: NTripiCompassLoader()),
+      // The profile itself spans the screen (_buildProfileView); every other
+      // state keeps to the column.
+      body: profileAsync.when(
+            loading: () => const ContentColumn(
+                child: Center(child: NTripiCompassLoader())),
             // A 404 means the account is gone — deleted, banned, or blocked in
             // either direction. Retrying can never change that, so it gets its
             // own screen instead of the generic message + Retry.
-            error: (error, _) => isGoneError(error)
+            error: (error, _) => ContentColumn(child: isGoneError(error)
                 ? ProfileUnavailableView(
                     onBack: widget.isSelf ? null : _leave,
                   )
@@ -161,18 +163,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ],
                       ),
                     ),
-                  ),
+                  )),
             data: (user) => widget.isSelf && _isEditing
-                ? ProfileEditForm(
+                ? ContentColumn(child: ProfileEditForm(
                     user: user,
                     onCancel: () => setState(() => _isEditing = false),
                     onSaved: () => setState(() => _isEditing = false),
                     onDeleteAccount: () =>
                         context.push('/settings/delete-account'),
-                  )
+                  ))
                 : _buildProfileView(user),
           ),
-      ),
     );
   }
 
@@ -201,6 +202,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const <VisitedLocation>[])
         : const <VisitedLocation>[];
 
+    // Beside the name when both fit, below it otherwise (ProfileHeroAndIdentity).
+    final tallies = Padding(
+      padding: const EdgeInsets.fromLTRB(25, 10, 25, 5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          const SizedBox(width: 24), // align past avatar edge
+          Tally(
+            n: user.followersCount,
+            label: l10n.followers,
+            onTap: () => context
+                .push('${widget.profileBaseRoute}/${user.id}/followers'),
+          ),
+          Tally(
+            n: user.followingCount,
+            label: l10n.following,
+            onTap: () => context
+                .push('${widget.profileBaseRoute}/${user.id}/following'),
+          ),
+        ],
+      ),
+    );
+
     return RefreshIndicator(
       // Awaited: fired and forgotten, the spinner vanished at once while the
       // data was still on its way.
@@ -216,15 +240,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         if (user.coverImageUrl == null)
           ref.read(userLocationsProvider(user.id).notifier).refresh(),
       ]),
+      // Across the whole screen, with the column applied to each section: the
+      // travel identity row is not held to it.
       child: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(
+          SliverContentColumn(
+            sliver: SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ProfileHeroAndIdentity(
                   user: user,
                   totalStops: totalStops,
+                  tallies: tallies,
                   isSelf: widget.isSelf,
                   isContentHidden: isContentHidden,
                   headerLabel:
@@ -316,42 +344,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   },
                 ),
 
-                // Tally row — my-profile style for both.
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(25, 10, 25, 5),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      const SizedBox(width: 24), // align past avatar edge
-                      Tally(
-                        n: user.followersCount,
-                        label: l10n.followers,
-                        onTap: () => context.push(
-                            '${widget.profileBaseRoute}/${user.id}/followers'),
-                      ),
-                      Tally(
-                        n: user.followingCount,
-                        label: l10n.following,
-                        onTap: () => context.push(
-                            '${widget.profileBaseRoute}/${user.id}/following'),
-                      ),
-                    ],
-                  ),
-                ),
-
                 // Bio below tally — my-profile style.
                 if (user.bio != null && user.bio!.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                     child: InertMarkdownBody(data: user.bio!),
                   ),
+              ],
+            ),
+            ),
+          ),
 
-                if (!isContentHidden)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-                    child: ProfileIdentityFacts(user: user),
-                  ),
+          // Passport, Lives in and Speaks keep no column: their row runs from
+          // the side bar (or the window's edge) to the screen's far edge.
+          if (!isContentHidden)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                child: ProfileIdentityFacts(user: user),
+              ),
+            ),
 
+          SliverContentColumn(
+            sliver: SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 // Self-only: the profile text is hidden from everyone else.
                 // moderation_status only ships on GET /users/me, so this can
                 // never render on someone else's profile.
@@ -434,12 +452,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 if (!isContentHidden) const SizedBox(height: 10),
               ],
             ),
+            ),
           ),
 
-          if (!isContentHidden) _ItinerariesSliver(
+          if (!isContentHidden) SliverContentColumn(sliver: _ItinerariesSliver(
             itinerariesAsync: itinerariesAsync,
             isSelf: widget.isSelf,
-          ),
+          )),
         ],
       ),
     );

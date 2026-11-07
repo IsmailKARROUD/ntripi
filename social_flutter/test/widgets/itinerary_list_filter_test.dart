@@ -108,6 +108,14 @@ class _EmptySharedRepo extends _FakeRepo {
       const [];
 }
 
+/// No trips on either list — no summary pills, whose labels outgrow a phone
+/// in the test font, where every character is 1 em wide.
+class _NoTripsRepo extends _EmptySharedRepo {
+  @override
+  Future<List<Itinerary>> getMyItineraries({bool forceRefresh = false}) async =>
+      const [];
+}
+
 /// Holds the shared list open until the test completes [gate], so the loading
 /// branch can be asserted without a real delay.
 class _PendingSharedRepo extends _FakeRepo {
@@ -124,11 +132,13 @@ Future<void> _pump(
   WidgetTester tester, {
   ItineraryRepository? repo,
   bool settle = true,
+  double width = 1200,
+  Locale? locale,
 }) async {
   // Tall enough that every card lays out at once — a ListView never builds its
   // off-screen children, so a findsNothing could otherwise pass for the wrong
   // reason.
-  tester.view.physicalSize = const Size(1200, 3200);
+  tester.view.physicalSize = Size(width, 3200);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -153,6 +163,7 @@ Future<void> _pump(
       isOnlineProvider.overrideWith((ref) => Stream.value(true)),
     ],
     child: MaterialApp.router(
+      locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: router,
@@ -161,6 +172,15 @@ Future<void> _pump(
   // pumpAndSettle would hang on a Completer that has not been completed yet.
   if (settle) await tester.pumpAndSettle();
 }
+
+Rect _title(WidgetTester tester, String text) =>
+    tester.getRect(find.text(text));
+
+Rect _filter(WidgetTester tester) =>
+    tester.getRect(find.byType(SegmentedButton<ItineraryScope>));
+
+Rect _newItinerary(WidgetTester tester) =>
+    tester.getRect(find.byType(FloatingActionButton));
 
 Future<void> _selectScope(WidgetTester tester, String label) async {
   await tester.tap(find.text(label));
@@ -287,6 +307,55 @@ void main() {
       expect(find.byType(SegmentedButton<ItineraryScope>), findsOneWidget);
       expect(find.text('Retry'), findsOneWidget);
     });
+  });
+
+  group('on a wide window', () {
+    // The test font draws every character 1 em wide, about twice DM Sans:
+    // Chinese labels are what fit beside the title in a 600 px column here.
+    testWidgets(
+        'Given room for the title and the filter, Then they share a row, the '
+        'filter against the column\'s end', (tester) async {
+      await _pump(tester, locale: const Locale('zh'));
+
+      final title = _title(tester, '我的行程');
+      final filter = _filter(tester);
+      expect(filter.center.dy, moreOrLessEquals(title.center.dy, epsilon: 1));
+      // The column is 600 px centred on 1200: 300 to 900, inset 16.
+      expect(title.left, 316);
+      expect(filter.right, 900 - 16);
+    });
+
+    testWidgets(
+        'Given no room beside the title, Then the filter takes its own row '
+        'under it, as wide as the column — the phone layout', (tester) async {
+      await _pump(tester, width: 390, repo: _NoTripsRepo());
+
+      final title = _title(tester, 'My Itineraries');
+      final filter = _filter(tester);
+      expect(filter.top, greaterThanOrEqualTo(title.bottom));
+      expect(filter.left, 16);
+      expect(filter.width, 390 - 32);
+    });
+
+    testWidgets(
+        'Given room beside the list, Then New itinerary stands at the '
+        'screen\'s far right, off the list', (tester) async {
+      await _pump(tester, width: 1440);
+
+      expect(_newItinerary(tester).right, 1440 - 16);
+      expect(_newItinerary(tester).left, greaterThan(1020));
+    });
+
+    for (final (width, columnEnd) in [(800.0, 700.0), (390.0, 390.0)]) {
+      testWidgets(
+          'Given no room beside the list at ${width.toInt()} px, Then New '
+          'itinerary stands at the list\'s corner, as on a phone',
+          (tester) async {
+        await _pump(tester, width: width, repo: _NoTripsRepo());
+
+        expect(_newItinerary(tester).right, columnEnd - 16);
+      });
+    }
   });
 
   group('loading', () {
