@@ -133,6 +133,14 @@
     .note { display: flex; gap: 10px; align-items: flex-start; }
     .note-label { font-size: 11px; font-weight: 700; letter-spacing: .4px; color: var(--text2); }
     .note-text { margin-top: 2px; font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    /* A formatted description: the renderer already turned line breaks into
+       paragraphs and <br>, so pre-wrap would double them. */
+    .note-md { white-space: normal; }
+    .note-md > :first-child { margin-top: 0; }
+    .note-md > :last-child { margin-bottom: 0; }
+    .note-md p, .note-md ul, .note-md ol { margin: 0 0 10px; }
+    .note-md ul, .note-md ol { padding-inline-start: 22px; }
+    .note-md h3, .note-md h4, .note-md h5, .note-md h6 { margin: 14px 0 6px; font-size: 15px; font-weight: 700; }
 
     .identity { padding: 28px 16px 4px; text-align: center; }
     .avatar, .avatar-initial {

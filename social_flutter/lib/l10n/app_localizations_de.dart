@@ -3497,4 +3497,20 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get apiErrorTranslationLanguageUnsupported =>
       'Übersetzungen in diese Sprache sind nicht verfügbar.';
+
+  @override
+  String textRuleNoLinks(String match) {
+    return 'Links sind hier nicht erlaubt – entferne „$match“.';
+  }
+
+  @override
+  String get apiErrorTextContainsLink => 'Links sind hier nicht erlaubt.';
+
+  @override
+  String get useAsMapLink => 'Als Google-Maps-Link dieses Stopps verwenden';
+
+  @override
+  String usernameLooksLikeLink(String match) {
+    return 'Ein Benutzername darf nicht wie eine Webadresse aussehen („$match“).';
+  }
 }

@@ -52,6 +52,7 @@ import 'package:ntripi/shared/widgets/keyboard_avoidance.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
 import 'package:ntripi/shared/widgets/saving_overlay.dart';
+import 'package:ntripi/shared/widgets/text_rules.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
 
@@ -83,6 +84,11 @@ class ItineraryFormScreen extends ConsumerStatefulWidget {
 class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
+  // The title as stored (edit mode), so an old link in it never holds Save
+  // back until it is edited — the server refuses a link only in changed text.
+  String? _storedTitle;
+  RuledField get _titleField =>
+      RuledField(_titleController, initial: _storedTitle);
   final _titleFocusNode = FocusNode();
   List<Currency> _currencies = [];
 
@@ -202,6 +208,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
     if (itinerary == null || _initialized) return;
     setState(() {
       _titleController.text = itinerary.title;
+      _storedTitle = itinerary.title;
       // Straight from the server, never validated against _currencies: that
       // list loads asynchronously and is usually still empty here, and the
       // stored value is always a real ISO code anyway. 'Other' is a create-mode
@@ -558,14 +565,17 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                 )
               else
                 OfflineGate(
-                  builder: (online) => TextButton(
-                    onPressed: online ? _save : null,
-                    child: Text(
-                      l10n.save,
-                      style: TextStyle(
-                        color: online ? nt.forest : nt.text3,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
+                  builder: (online) => TextRulesGate(
+                    fields: [_titleField],
+                    builder: (context, ok) => TextButton(
+                      onPressed: online && ok ? _save : null,
+                      child: Text(
+                        l10n.save,
+                        style: TextStyle(
+                          color: online && ok ? nt.forest : nt.text3,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
                   ),
@@ -605,30 +615,33 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          TextFormField(
-                            controller: _titleController,
-                            focusNode: _titleFocusNode,
-                            decoration: InputDecoration(
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              errorBorder: InputBorder.none,
-                              focusedErrorBorder: InputBorder.none,
-                              isDense: true,
-                              contentPadding: EdgeInsets.zero,
-                              hintText: l10n.itineraryTitleHint,
-                              hintStyle: TextStyle(
-                                  color: nt.text3, fontWeight: FontWeight.w500),
+                          TextRulesField(
+                            field: _titleField,
+                            child: TextFormField(
+                              controller: _titleController,
+                              focusNode: _titleFocusNode,
+                              decoration: InputDecoration(
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                errorBorder: InputBorder.none,
+                                focusedErrorBorder: InputBorder.none,
+                                isDense: true,
+                                contentPadding: EdgeInsets.zero,
+                                hintText: l10n.itineraryTitleHint,
+                                hintStyle: TextStyle(
+                                    color: nt.text3, fontWeight: FontWeight.w500),
+                              ),
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: nt.bark,
+                              ),
+                              validator: (v) => (v == null || v.trim().isEmpty)
+                                  ? l10n.itineraryTitleRequired
+                                  : null,
+                              textInputAction: TextInputAction.next,
                             ),
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: nt.bark,
-                            ),
-                            validator: (v) => (v == null || v.trim().isEmpty)
-                                ? l10n.itineraryTitleRequired
-                                : null,
-                            textInputAction: TextInputAction.next,
                           ),
                         ],
                       ),

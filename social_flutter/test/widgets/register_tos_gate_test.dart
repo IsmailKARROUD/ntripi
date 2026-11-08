@@ -298,4 +298,34 @@ void main() {
       expect(repo.lastLang, isNotNull);
     });
   });
+
+  group('the link rule at sign-up', () {
+    testWidgets(
+        'Given a handle ending in a real domain (anna.paris), When typed, Then '
+        'it is refused as looking like a website address', (tester) async {
+      await _pumpScreen(tester, _FakeAuthRepository());
+      final l10n =
+          AppLocalizations.of(tester.element(find.byType(RegisterScreen)))!;
+
+      await tester.enterText(find.byType(TextFormField).at(1), 'anna.paris');
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.usernameLooksLikeLink('anna.paris')), findsOneWidget);
+    });
+
+    testWidgets(
+        'Given a display name holding a link, When typed, Then the field names '
+        'the link', (tester) async {
+      await _pumpScreen(tester, _FakeAuthRepository());
+      final l10n =
+          AppLocalizations.of(tester.element(find.byType(RegisterScreen)))!;
+
+      await tester.enterText(
+          find.byType(TextFormField).at(0), 'Anna www.annatravels.com');
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.textRuleNoLinks('www.annatravels.com')),
+          findsOneWidget);
+    });
+  });
 }

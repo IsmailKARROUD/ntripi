@@ -21,6 +21,7 @@ import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:ntripi/shared/widgets/moderation_hint.dart';
+import 'package:ntripi/shared/widgets/text_rules.dart';
 
 /// Any year works — none is stored. 2024 is a leap year so 29 Feb formats, and
 /// 1 Jan 2024 was a Monday so DateTime(2024, 1, n).weekday == n for ISO 1..7.
@@ -40,6 +41,9 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
   late Set<int> _months;
   late Set<int> _weekdays;
   late final TextEditingController _noteController;
+  // The note as the server holds it to the text rules: no new link.
+  late final RuledField _noteField =
+      RuledField(_noteController, initial: widget.initial?.note);
 
   /// Exact-day refinements, keyed by the window's "fromMonth-toMonth" pair.
   ///
@@ -219,14 +223,17 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
           child: EditorialTopBar(
             title: l10n.bestTimeToVisit,
             actions: [
-              TextButton(
-                onPressed: _done,
-                child: Text(
-                  l10n.done,
-                  style: TextStyle(
-                    color: nt.forest,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
+              TextRulesGate(
+                fields: [_noteField],
+                builder: (context, ok) => TextButton(
+                  onPressed: ok ? _done : null,
+                  child: Text(
+                    l10n.done,
+                    style: TextStyle(
+                      color: ok ? nt.forest : nt.text3,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
                   ),
                 ),
               ),
@@ -333,27 +340,33 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
           SectionLabel(label: l10n.periodSectionWhy),
           _SectionCard(
             // Free prose, which is exactly the client filter's scope. It warns
-            // and nothing more: Done above stays enabled either way, and the
-            // months and weekdays are never filtered.
+            // and nothing more; only a text rule the server enforces (a link)
+            // holds Done back, and the months and weekdays are never filtered.
             child: ModerationHint(
               controller: _noteController,
-              child: TextField(
-                controller: _noteController,
-                maxLength: 200,
-                maxLines: 3,
-                minLines: 2,
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  isDense: true,
-                  contentPadding: EdgeInsets.zero,
-                  counterStyle: TextStyle(color: nt.text3, fontSize: 11),
-                  hintText: l10n.periodWhyHint,
-                  hintStyle:
-                      TextStyle(color: nt.text3, fontWeight: FontWeight.w500),
-                ),
-                style: TextStyle(fontSize: 14, color: nt.bark),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: _noteController,
+                    maxLength: 200,
+                    maxLines: 3,
+                    minLines: 2,
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                      counterStyle: TextStyle(color: nt.text3, fontSize: 11),
+                      hintText: l10n.periodWhyHint,
+                      hintStyle:
+                          TextStyle(color: nt.text3, fontWeight: FontWeight.w500),
+                    ),
+                    style: TextStyle(fontSize: 14, color: nt.bark),
+                  ),
+                  TextRulesNote(_noteField),
+                ],
               ),
             ),
           ),

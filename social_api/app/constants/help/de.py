@@ -114,6 +114,7 @@ RELEASES: tuple[Release, ...] = (
             "**Unzulässige Bilder werden jetzt auch im Web gestoppt.** Wie auf dem Telefon wird ein Bild, das offensichtlich gegen die Community-Richtlinien verstößt, schon beim Auswählen abgelehnt, mit Begründung. Ein Bild in einem Format, das Ntripi nicht öffnen kann — etwa ein HEIC-Foto in einem Webbrowser —, wird schon beim Auswählen benannt, statt zu laden, und AVIF-Bilder öffnen sich jetzt auch im Browser.",
             "**Tippen Sie auf das Titelbild einer Reise, um es ganz zu sehen.** Auf der Seite einer Reise öffnet ein Tippen das Titelbild im Vollbild, wie ein Profilfoto — zum Zoomen mit zwei Fingern aufziehen oder doppelt tippen.",
             "**Der Google-Maps-Link eines Stopps führt nur zu Google Maps.** Eine Google-Adresse, die Leser auf eine andere Website weiterleiten würde, wird abgelehnt, und bereits gespeicherte werden entfernt. Aus Google Maps kopierte Links funktionieren wie bisher.",
+            "**Keine Links in dem, was man schreibt.** Titel, Beschreibungen, Notizen, Bewertungen, Namen und Bios nehmen keine Webadressen, E-Mail-Adressen oder Seitennamen mehr an — eine rote Zeile nennt, was zu entfernen ist —, und ein in einen Text geschriebenes Bild wird nie angezeigt. Der Google-Maps-Link eines Stopps, in seinem eigenen Feld, ist der einzige verbliebene Link. Die öffentliche Seite einer Reise zeigt jetzt Fettdruck, Listen und Überschriften ihrer Beschreibung.",
         ),
     ),
     Release(
@@ -481,7 +482,9 @@ Planen Sie die Zeit ein, die Sie dort wirklich verbringen wollen, nicht das Mini
                 heading="Eigene Notizen ergänzen",
                 body="""Das Notizfeld ist freier Text — Buchungsnummern, was zu bestellen ist, welchen Eingang man nimmt, warum Sie diesen Ort dem nebenan vorgezogen haben.
 
-Für eine Warnung, die schwer zu übersehen sein soll statt nebenbei gelesen zu werden, nehmen Sie stattdessen [eine Tipp- oder Vorsicht-Notiz](/help/travel-notes-and-warnings): die erscheinen als farbige Chips.""",
+Für eine Warnung, die schwer zu übersehen sein soll statt nebenbei gelesen zu werden, nehmen Sie stattdessen [eine Tipp- oder Vorsicht-Notiz](/help/travel-notes-and-warnings): die erscheinen als farbige Chips.
+
+Eine Notiz darf keinen Link enthalten — keine Webadresse, keine E-Mail-Adresse und keinen Seitennamen wie booking.com. Nennen Sie den Ort stattdessen in Worten: Der einzige Link, den ein Stopp annimmt, ist sein Google-Maps-Link, in einem eigenen Feld.""",
             ),
         ),
         keywords=(
@@ -500,7 +503,7 @@ Für eine Warnung, die schwer zu übersehen sein soll statt nebenbei gelesen zu 
             "museum",
         ),
         related=("plan-a-trip-itinerary", "add-locations-from-google-maps", "travel-notes-and-warnings"),
-        updated="2026-10-27",
+        updated="2026-11-08",
         cta="Legen Sie eine Reise an und fügen Sie den ersten Stopp hinzu.",
     ),
     Article(
@@ -912,7 +915,7 @@ Nur der Eigentümer der Reise kann die Sichtbarkeit ändern. Wen Sie zum Bearbei
                 anchor="link-previews",
                 heading="Was erscheint, wenn ich den Link irgendwo einfüge?",
                 kind=KIND_FAQ,
-                body="""Eine öffentliche Reise erzeugt eine Vorschaukarte mit Titelbild, Titel, Dauer, Kosten und Bewertung.
+                body="""Eine öffentliche Reise erzeugt eine Vorschaukarte mit Titelbild, Titel, Bewertung und dem Anfang ihrer Beschreibung.
 
 Eine nicht öffentliche Reise erzeugt nur eine schlichte Karte mit dem Hinweis, dass es eine private Reise auf Ntripi ist — ohne Titel, Titelbild oder Eigentümer. Mehr würde die Reise allen im Chat zeigen, auch denen, die sie nicht öffnen können.""",
             ),
@@ -937,7 +940,7 @@ Eine nicht öffentliche Reise erzeugt nur eine schlichte Karte mit dem Hinweis, 
             "nicht verfügbar",
         ),
         related=("plan-a-trip-itinerary", "plan-alternative-options"),
-        updated="2026-10-18",
+        updated="2026-11-08",
         cta="Planen Sie eine Reise und teilen Sie sie genau mit den Richtigen.",
     ),
     Article(
@@ -1903,6 +1906,14 @@ Warten Sie, bis die Person fertig ist, oder übernehmen Sie, wenn sie eine Weile
 Es gibt zwei Auswege, und beide erhalten Ihre Arbeit: die Reise zurückholen und speichern, oder Ihren Text herauskopieren und einfügen, sobald die andere Person fertig ist. Nichts wird verworfen, bevor Sie den Bildschirm selbst verlassen.""",
             ),
             Block(
+                anchor="links-not-allowed",
+                heading="„Links sind hier nicht erlaubt“",
+                kind=KIND_FAQ,
+                body="""Ntripi nimmt keine Links in dem an, was Sie schreiben — Titel, Beschreibungen, Notizen, Bewertungen, Namen und Bios: keine Webadresse, keine E-Mail-Adresse und keinen Seitennamen wie booking.com. Die rote Zeile unter dem Feld zitiert, was gefunden wurde, und Speichern bleibt ausgegraut, solange es da ist. Sind zwei Wörter um einen Punkt zusammengerutscht (lunch.Tours), genügt ein Leerzeichen.
+
+Der einzige Link, den ein Stopp annimmt, ist sein Google-Maps-Link, in einem eigenen Feld — fügen Sie einen in die Ortssuche ein, und Ntripi bietet an, ihn dort einzutragen. Auch ein Benutzername darf nicht wie eine Webadresse aussehen: anna.paris endet wie eine, anna_paris dagegen passt.""",
+            ),
+            Block(
                 anchor="image-rejected",
                 heading="Mein Foto wurde beim Hochladen abgelehnt",
                 kind=KIND_FAQ,
@@ -1956,9 +1967,13 @@ Der Balken verschwindet von selbst, sobald die Verbindung zurück ist — es gib
             "bug",
             "beheben",
             "hilfe",
+            "link",
+            "links",
+            "webseite",
+            "ausgegraut",
         ),
         related=("contact", "getting-started"),
-        updated="2026-09-01",
+        updated="2026-11-08",
     ),
     Article(
         slug="report-a-bug",

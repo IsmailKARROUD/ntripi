@@ -23,6 +23,7 @@ import 'package:ntripi/shared/widgets/moderation_hint.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
 import 'package:ntripi/shared/widgets/saving_overlay.dart';
+import 'package:ntripi/shared/widgets/text_rules.dart';
 
 /// Opens the rating bottom sheet and returns when the user saves or dismisses.
 Future<void> showRateItineraryDialog(
@@ -70,6 +71,9 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
   late int? _familyFriendly;
   late int? _crowdedness;
   final _noteController = TextEditingController();
+  // No new link in the review (text_rules.dart); an old one never blocks Save.
+  late final _noteField =
+      RuledField(_noteController, initial: widget.current?.note);
 
   bool _saving = false;
   // Shown inline rather than via a snackbar: the sheet stays open on failure, so
@@ -190,11 +194,14 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
             const SizedBox(width: 12),
             Expanded(
               child: OfflineGate(
-                builder: (online) => FilledButton(
-                  onPressed: (canSave && online) ? _save : null,
-                  child: _saving
-                      ? const NTripiRingLoader(size: 18)
-                      : Text(l10n.saveButton),
+                builder: (online) => TextRulesGate(
+                  fields: [_noteField],
+                  builder: (context, ok) => FilledButton(
+                    onPressed: (canSave && ok && online) ? _save : null,
+                    child: _saving
+                        ? const NTripiRingLoader(size: 18)
+                        : Text(l10n.saveButton),
+                  ),
                 ),
               ),
             ),
@@ -248,15 +255,22 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-                // Advisory only — the hint can never disable Submit.
+                // The hint is advisory and never disables Submit; only a text
+                // rule the server enforces (a link) holds it back.
                 child: ModerationHint(
                   controller: _noteController,
-                  child: MarkdownNotesEditor(
-                    controller: _noteController,
-                    readOnly: false,
-                    label: l10n.yourImpressionLabel,
-                    helpTitle: l10n.yourImpressionLabel,
-                    helpMessage: l10n.yourImpressionHelp,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      MarkdownNotesEditor(
+                        controller: _noteController,
+                        readOnly: false,
+                        label: l10n.yourImpressionLabel,
+                        helpTitle: l10n.yourImpressionLabel,
+                        helpMessage: l10n.yourImpressionHelp,
+                      ),
+                      TextRulesNote(_noteField),
+                    ],
                   ),
                 ),
               ),

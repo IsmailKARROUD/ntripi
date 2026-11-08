@@ -1107,5 +1107,9 @@
   "translationRateLimited": "Du hast das Übersetzungslimit erreicht. Bitte versuche es später erneut.",
   "translationFailed": "Übersetzung fehlgeschlagen. Prüfe deine Verbindung und versuche es erneut.",
   "translationTranslatedMarker": "Übersetzter Titel",
-  "apiErrorTranslationLanguageUnsupported": "Übersetzungen in diese Sprache sind nicht verfügbar."
+  "apiErrorTranslationLanguageUnsupported": "Übersetzungen in diese Sprache sind nicht verfügbar.",
+  "textRuleNoLinks": "Links sind hier nicht erlaubt – entferne „{match}“.",
+  "apiErrorTextContainsLink": "Links sind hier nicht erlaubt.",
+  "useAsMapLink": "Als Google-Maps-Link dieses Stopps verwenden",
+  "usernameLooksLikeLink": "Ein Benutzername darf nicht wie eine Webadresse aussehen („{match}“)."
 }

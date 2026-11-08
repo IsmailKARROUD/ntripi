@@ -14,9 +14,9 @@ from __future__ import annotations
 import json
 from functools import lru_cache
 
-from markdown_it import MarkdownIt
 from markupsafe import Markup
 
+from app.services.markdown_render import HELP_MD, plain_text
 from app.constants.help.models import (
     KIND_FAQ,
     KIND_STEP,
@@ -28,14 +28,10 @@ from app.constants.help.models import (
     Category,
 )
 
-# html=False escapes raw HTML instead of passing it through. The content is
-# ours, but a renderer able to emit arbitrary HTML is one careless paste away
-# from being an XSS sink, and the site's CSP is frame-ancestors only — it would
-# not catch an injected inline script. Pinned by test_help_content.
-_MD = (
-    MarkdownIt("commonmark", {"html": False, "linkify": False, "typographer": True})
-    .enable("table")
-)
+# The help centre's renderer, built in services/markdown_render.py beside the
+# one for user text: html=False there escapes raw HTML instead of passing it
+# through. Pinned by test_help_content.
+_MD = HELP_MD
 
 
 @lru_cache(maxsize=4096)
@@ -52,25 +48,9 @@ def render_markdown(source: str) -> Markup:
 @lru_cache(maxsize=4096)
 def plaintext(source: str) -> str:
     """Markdown -> bare text, for the search index, meta descriptions and the
-    `text` fields of FAQPage / HowTo, which must not carry markup.
-
-    Walks the token stream rather than stripping tags off the rendered HTML:
-    a link's *label* has to survive while its URL must not, and a regex over
-    HTML cannot tell those apart.
-    """
-    parts: list[str] = []
-    for token in _MD.parse(source):
-        if token.type == "inline":
-            for child in token.children or ():
-                if child.type in ("text", "code_inline"):
-                    parts.append(child.content)
-                elif child.type == "softbreak":
-                    parts.append(" ")
-        elif token.type == "fence":
-            parts.append(token.content)
-        elif token.type.endswith("_close") and token.block:
-            parts.append("\n")
-    return " ".join(" ".join(parts).split())
+    `text` fields of FAQPage / HowTo, which must not carry markup
+    (markdown_render.plain_text walks the token stream)."""
+    return plain_text(_MD, source)
 
 
 # ---------------------------------------------------------------------------

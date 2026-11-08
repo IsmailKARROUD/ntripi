@@ -1,6 +1,6 @@
 # API error codes
 
-Every machine-readable error code the backend raises. **68 codes.**
+Every machine-readable error code the backend raises. **69 codes.**
 
 ## How the mechanism works
 
@@ -28,8 +28,10 @@ Two service layers raise their own exception types that routers convert to
 2. Dio transport errors → "no internet".
 3. `code == 'text_moderation_rejected'` → `moderationRejectionMessage()`, which
    turns the `categories` in `extra` into plain language.
+   `code == 'text_contains_link'` → `textRuleNoLinks(match)`, quoting the link
+   the server found (`usernameLooksLikeLink` when `field` is `username`).
 4. `localizedApiError(code, l10n)` (`lib/core/api/api_error_codes.dart`) — a
-   localized string for **56 of the 68 codes** (re-counted 2026-11-03).
+   localized string for **57 of the 69 codes** (re-counted 2026-11-08).
 5. Fall back to the server's `detail` string — **English, untranslated**.
 6. Fall back to a generic message.
 
@@ -199,11 +201,21 @@ in `extra`: it is a question, not an error. Across a block in either direction
 |---|---|---|---|
 | `image_moderation_rejected` | **422** | `itineraries.py:336` `_cover_refusal`, shared by `POST /image` and both form routes; `users.py` ×2 | localized |
 | `text_moderation_rejected` | **422** | `text_moderation_service.py:237` | special: `moderationRejectionMessage()` |
+| `text_contains_link` | **422** | `validators/links.py` `refuse_new_links`: every itinerary text write (`_scan_itinerary_text`), ratings, `PATCH /users/me`, `/auth/register` | special: `textRuleNoLinks(match)`; `localizedApiError` → `apiErrorTextContainsLink` |
 
 `text_moderation_rejected` ships a `categories` list in `extra`. The client maps
 each raw classifier id (`sexual/minors`, `illicit/violent`, …) to a plain-language
 phrase and falls back to a generic message for unknown ids, rather than leaking
 an internal identifier. **No compose form clears its field on this error.**
+
+`text_contains_link` ships `field` and `match` in `extra`: the field whose new
+value holds a link and the exact text found, which the client quotes. **422, not
+400**, though it is a policy refusal: the user fixes it by editing one field —
+the field-error case the age gate's "shape 422, policy 400" line exists to keep
+apart — and both content refusals raised from a route body
+(`text_moderation_rejected`, `image_url_not_allowed`) are 422 too. The app's
+`text_rules.dart` refuses the same text before Save, so a current build meets
+this code only for a field it does not check.
 
 ### Reports
 

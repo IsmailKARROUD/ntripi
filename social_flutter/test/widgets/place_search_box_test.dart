@@ -86,6 +86,7 @@ Future<_Box> _pump(
   bool googleFallback = true,
   bool googleSearch = true,
   double textScale = 1,
+  List<String>? handedLinks,
 }) async {
   tester.view.physicalSize = const Size(400, 900);
   tester.view.devicePixelRatio = 1.0;
@@ -122,6 +123,7 @@ Future<_Box> _pump(
               onOsmPick: (suggestion) => osmPicks.add(suggestion.displayName),
               onGooglePick: (suggestion, text) =>
                   picks.add('${suggestion.placeId} $text'),
+              onMapLink: handedLinks?.add,
             ),
           ),
         ),
@@ -394,6 +396,46 @@ void main() {
 
       expect(find.byKey(PlaceSearchBox.osmListKey), findsOneWidget);
       expect(box.geocoding.queries, ['louvre']);
+    });
+  });
+
+  group('a link in the search (no search text may hold one)', () {
+    testWidgets(
+        'Given a Google Maps link pasted in the search, When submitted, Then '
+        "nothing is searched and it is offered as the stop's own link",
+        (tester) async {
+      final geocoding = _Geocoding((_) => [_louvre]);
+      final handed = <String>[];
+      final box = await _pump(tester, geocoding: geocoding, handedLinks: handed);
+      const link = 'https://maps.app.goo.gl/abc123';
+
+      await _submit(tester, link);
+      await tester.pumpAndSettle();
+      expect(geocoding.queries, isEmpty);
+      expect(box.googleAsked, 0);
+
+      await tester.tap(find.byKey(PlaceSearchBox.useAsMapLinkKey));
+      await tester.pumpAndSettle();
+      expect(handed, [link]);
+      expect(box.controller.text, isEmpty);
+    });
+
+    testWidgets(
+        'Given any other link, When submitted, Then nothing is searched and '
+        'the link is named as the thing to remove', (tester) async {
+      final geocoding = _Geocoding((_) => [_louvre]);
+      final box = await _pump(tester, geocoding: geocoding, handedLinks: []);
+
+      await _submit(tester, 'cafe near booking.com');
+      await tester.pumpAndSettle();
+
+      expect(geocoding.queries, isEmpty);
+      expect(find.byKey(PlaceSearchBox.useAsMapLinkKey), findsNothing);
+      expect(
+          find.descendant(
+              of: find.byKey(PlaceSearchBox.linkNoticeKey),
+              matching: find.text(box.l10n.textRuleNoLinks('booking.com'))),
+          findsOneWidget);
     });
   });
 }

@@ -18,6 +18,7 @@ String? localizedApiError(String code, AppLocalizations l10n) {
       'google_token_invalid' => l10n.apiErrorGoogleTokenInvalid,
       'google_account_mismatch' => l10n.apiErrorGoogleAccountMismatch,
       'underage' => l10n.errorUnderage,
+      'text_contains_link' => l10n.apiErrorTextContainsLink,
       'dob_required' => l10n.errorDobRequired,
       'invalid_grant' => l10n.apiErrorInvalidGrant,
       'stop_not_found' => l10n.apiErrorStopNotFound,

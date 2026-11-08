@@ -26,6 +26,7 @@ import 'package:ntripi/shared/widgets/locale_picker_button.dart';
 import 'package:ntripi/shared/widgets/theme_picker_button.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
 import 'package:ntripi/shared/widgets/saving_overlay.dart';
+import 'package:ntripi/shared/widgets/text_rules.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -175,7 +176,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return null;
                     if (v.trim().length > 50) return l10n.displayNameTooLong;
-                    return null;
+                    // The server refuses a link in a new name (text_rules.dart).
+                    return textRuleBreak(v, TextRules.userText)?.message(l10n);
                   },
                 ),
                 const SizedBox(height: 14),
@@ -225,6 +227,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     if (trimmed.length > 30) return l10n.usernameTooLong;
                     if (!UsernameValidator.isValidFormat(trimmed)) return l10n.usernameInvalidFormat;
                     if (UsernameValidator.hasConsecutiveSpecial(trimmed)) return l10n.usernameConsecutiveSpecial;
+                    // A dotted handle ending in a real domain (anna.paris) is
+                    // a site name to the server's link rule.
+                    if (textRuleBreak(trimmed, TextRules.userText) != null) {
+                      return l10n.usernameLooksLikeLink(trimmed);
+                    }
                     return null;
                   },
                 ),

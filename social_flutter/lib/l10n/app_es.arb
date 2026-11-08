@@ -1107,5 +1107,9 @@
   "translationRateLimited": "Has alcanzado el límite de traducciones. Inténtalo de nuevo más tarde.",
   "translationFailed": "No se pudo traducir. Comprueba tu conexión e inténtalo de nuevo.",
   "translationTranslatedMarker": "Título traducido",
-  "apiErrorTranslationLanguageUnsupported": "La traducción a este idioma no está disponible."
+  "apiErrorTranslationLanguageUnsupported": "La traducción a este idioma no está disponible.",
+  "textRuleNoLinks": "Aquí no se pueden añadir enlaces: quita «{match}».",
+  "apiErrorTextContainsLink": "Aquí no se pueden añadir enlaces.",
+  "useAsMapLink": "Usar como enlace de Google Maps de la parada",
+  "usernameLooksLikeLink": "Un nombre de usuario no puede parecer una dirección web («{match}»)."
 }

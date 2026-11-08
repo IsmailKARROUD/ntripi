@@ -203,6 +203,53 @@ moment; giving each provider a `refresh()` and calling it would close the gap.
 
 ---
 
+## Moderation coverage (the 2026-11-08 audit)
+
+Found while writing down the rule that the server moderates everything users
+write (decisions.md 2026-11-08). The owner chose to fix them in their own change,
+right after the long-texts work.
+
+### planned — the follow-up moderation change
+
+Each with a test, in one change:
+
+- **The Google sign-up username** is built from the e-mail's local part
+  (`auth_service.py`, `generate_username_from`) and never scanned, unlike a
+  registration's; it cannot be changed later. Scan it — and hold it to the link
+  rule, since `anna.paris` is a site name — falling back to the existing
+  `traveler` + number on a refusal; never block the sign-up.
+- **The Google sign-up photo** is stored as Google's URL (`avatar_url=picture`):
+  no image scan, no EXIF strip, outside the CDN so Cloudflare's CSAM scan never
+  sees it — the bypass `validators/image_url.py` refuses on `PATCH /users/me`.
+  Copy it once through `process_and_store`; refused or unreachable → no photo.
+  Existing Google avatars need the same copy.
+- **The words in a stop's map link** (a search link's text shows in the map's
+  search box) are not scanned: send them with the stop's other text, in the same
+  request.
+- **A trip's currency** accepts any 3 characters, shown on every card: accept
+  only ISO 4217 codes.
+- **A hidden, removed or deleted trip's title** still shows in the notification
+  feed and a push (`notifications.py`, `notification_service.py` read the title
+  with no takedown check): drop it, as a hidden profile's name already falls back.
+
+### idea — a flagged @username cannot be hidden
+
+Moderation blanks a profile's display name and bio (`user_service.py`
+`public_profile_text`), never its username, and nobody can change a username, so
+only a ban takes an offensive handle off the site. A design question for the
+owner: a moderator forcing a new handle, or a neutral one shown while the
+profile is hidden.
+
+### idea — an automatic spam check
+
+OpenAI's moderation has no spam category, so nothing flags spam until four
+people report it (`REPORT_HIDE_THRESHOLDS`, `spam:4`). Not built: typed links
+can no longer be stored or tapped anywhere, which is what spam is for. A
+starting point if it is ever needed: send a text with heavy repetition to the
+review queue (flag, never refuse).
+
+---
+
 ## Policy calls left by the 2026-09-28 sweep
 
 Found while debugging and verified in the code, but each is a decision rather

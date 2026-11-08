@@ -44,6 +44,12 @@ Google's route through the stops on screen.
   `autoDispose` providers and go with the form — Google's with the Google Maps
   segment too — so the next form never opens on the last search. Only the map
   picker's pin, which did not come from the list, empties the form's box.
+- **A link in the form's search box is never searched** (since 2026-11-08): a
+  Google pick keeps the box's text as `google_place_query`, which may hold no
+  link (the link rule, [text-moderation.md](text-moderation.md)). A pasted
+  Google Maps link is offered as **Use as this stop's Google Maps link**, which
+  empties the box, switches to the Google Maps segment and fills the link field
+  (`PlaceSearchBox.onMapLink`); any other link is named as the thing to remove.
 
 ### What a stop may store
 

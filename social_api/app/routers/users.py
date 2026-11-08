@@ -62,6 +62,7 @@ from app.services.text_moderation_service import (
 from app.services.moderation_actions import escalate_if_flagged
 from app.storage.factory import storage
 from app.errors import ApiError
+from app.validators.links import refuse_new_links
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -160,12 +161,15 @@ def update_my_profile(
                 detail="Upload a new image instead of setting its URL.",
             )
 
+    profile_text = {key: update_data[key]
+                    for key in ("display_name", "bio") if key in update_data}
+    # Only a changed name or bio may not carry a link; before the paid scan.
+    refuse_new_links(profile_text, current_user)
     ctx = moderate_or_422(
         db, get_settings(),
         target_type="user",
         author=current_user,
-        fields={key: update_data[key]
-                for key in ("display_name", "bio") if key in update_data},
+        fields=profile_text,
         target_id=current_user.id,
     )
     if "display_name" in update_data or "bio" in update_data:

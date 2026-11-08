@@ -6045,6 +6045,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Translation into this language isn\'t available.'**
   String get apiErrorTranslationLanguageUnsupported;
+
+  /// Under a text field holding a link, which the server would refuse. match is the exact text found.
+  ///
+  /// In en, this message translates to:
+  /// **'Links can\'t be added here — remove “{match}”.'**
+  String textRuleNoLinks(String match);
+
+  /// No description provided for @apiErrorTextContainsLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Links can\'t be added here.'**
+  String get apiErrorTextContainsLink;
+
+  /// No description provided for @useAsMapLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Use as this stop\'s Google Maps link'**
+  String get useAsMapLink;
+
+  /// Under the sign-up username when it ends like a website address (a real top-level domain after a dot). match is the username.
+  ///
+  /// In en, this message translates to:
+  /// **'A username can\'t look like a website address (“{match}”).'**
+  String usernameLooksLikeLink(String match);
 }
 
 class _AppLocalizationsDelegate

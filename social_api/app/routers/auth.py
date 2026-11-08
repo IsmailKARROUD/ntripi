@@ -54,6 +54,7 @@ from app.services.auth import create_access_token, verify_google_id_token
 from app.services.moderation_actions import escalate_if_flagged
 from app.services.text_moderation_service import attach_target, moderate_or_422
 from app.errors import ApiError
+from app.validators.links import refuse_new_links
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -108,6 +109,11 @@ def register(
             code="email_unavailable",
             detail=auth_service.EMAIL_UNAVAILABLE,
         )
+
+    # No link in a new username or display name (validators/links.py) — a
+    # dotted handle ending in a real domain, such as anna.paris, included.
+    refuse_new_links({"username": payload.username,
+                      "display_name": payload.display_name})
 
     # Scanned BEFORE create_user, never after: create_user commits, so a
     # rejection discovered afterwards could not undo the account it just made.

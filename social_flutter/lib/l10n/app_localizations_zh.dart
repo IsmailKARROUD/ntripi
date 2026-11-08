@@ -3257,4 +3257,20 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get apiErrorTranslationLanguageUnsupported => '暂不支持翻译成该语言。';
+
+  @override
+  String textRuleNoLinks(String match) {
+    return '这里不能添加链接——请删除“$match”。';
+  }
+
+  @override
+  String get apiErrorTextContainsLink => '这里不能添加链接。';
+
+  @override
+  String get useAsMapLink => '用作这个停靠点的 Google 地图链接';
+
+  @override
+  String usernameLooksLikeLink(String match) {
+    return '用户名不能像网址（“$match”）。';
+  }
 }

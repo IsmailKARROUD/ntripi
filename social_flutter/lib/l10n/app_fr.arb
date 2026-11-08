@@ -1273,5 +1273,9 @@
   "translationRateLimited": "Vous avez atteint la limite de traductions. Veuillez réessayer plus tard.",
   "translationFailed": "Impossible de traduire. Vérifiez votre connexion et réessayez.",
   "translationTranslatedMarker": "Titre traduit",
-  "apiErrorTranslationLanguageUnsupported": "La traduction vers cette langue n'est pas disponible."
+  "apiErrorTranslationLanguageUnsupported": "La traduction vers cette langue n'est pas disponible.",
+  "textRuleNoLinks": "Les liens ne sont pas acceptés ici : retirez « {match} ».",
+  "apiErrorTextContainsLink": "Les liens ne sont pas acceptés ici.",
+  "useAsMapLink": "Utiliser comme lien Google Maps de l’étape",
+  "usernameLooksLikeLink": "Un identifiant ne peut pas ressembler à une adresse de site web (« {match} »)."
 }

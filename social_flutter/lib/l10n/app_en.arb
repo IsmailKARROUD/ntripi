@@ -1597,5 +1597,25 @@
   "@translationTranslatedMarker": {
     "description": "Screen-reader label of the small translate icon beside a feed card title that is shown translated."
   },
-  "apiErrorTranslationLanguageUnsupported": "Translation into this language isn't available."
+  "apiErrorTranslationLanguageUnsupported": "Translation into this language isn't available.",
+  "textRuleNoLinks": "Links can't be added here — remove “{match}”.",
+  "@textRuleNoLinks": {
+    "description": "Under a text field holding a link, which the server would refuse. match is the exact text found.",
+    "placeholders": {
+      "match": {
+        "type": "String"
+      }
+    }
+  },
+  "apiErrorTextContainsLink": "Links can't be added here.",
+  "useAsMapLink": "Use as this stop's Google Maps link",
+  "usernameLooksLikeLink": "A username can't look like a website address (“{match}”).",
+  "@usernameLooksLikeLink": {
+    "description": "Under the sign-up username when it ends like a website address (a real top-level domain after a dot). match is the username.",
+    "placeholders": {
+      "match": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -197,7 +197,10 @@ class TestFallback:
     def test_a_failed_check_falls_through_to_the_next(self, client: TestClient, people, engines):
         alice, bob = people
         description = "Book the boat ahead: https://example.com/boats"
-        trip_id = _trip(client, alice["access_token"], description=description)
+        trip_id = _trip(client, alice["access_token"])
+        # Stored as before the link rule: a new description may not hold a web
+        # address, but one saved earlier keeps it, and its translation must too.
+        _set(Itinerary, trip_id, description=description)
         engines.chain = [FakeTranslator("first", overrides={description: "Réservez le bateau."}),
                          FakeTranslator("second")]
 

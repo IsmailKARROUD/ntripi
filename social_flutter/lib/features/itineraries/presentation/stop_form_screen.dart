@@ -57,6 +57,7 @@ import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/location_error.dart';
 import 'package:ntripi/shared/widgets/moderation_hint.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
+import 'package:ntripi/shared/widgets/text_rules.dart';
 import 'package:ntripi/shared/widgets/saving_overlay.dart';
 
 class StopFormScreen extends ConsumerStatefulWidget {
@@ -137,6 +138,15 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   int _durationMinutes = 0;
   final _costController = TextEditingController();
   final _notesController = TextEditingController();
+  // The stop's text as the server holds it to the text rules: no new link.
+  // The stored values come from _existingStop, so an old link never holds
+  // Save back until its own text is edited.
+  RuledField get _nameField => RuledField(_placeNameController,
+      initial: _existingStop?.placeName);
+  RuledField get _addressField => RuledField(_placeAddressController,
+      initial: _existingStop?.placeAddress);
+  RuledField get _notesField =>
+      RuledField(_notesController, initial: _existingStop?.notes);
 
   bool _initialized = false;
   bool _saving = false;
@@ -584,6 +594,17 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   void _clearMapUrl() {
     _mapUrlController.clear();
     _onMapUrlChanged('');
+  }
+
+  /// A Google Maps link pasted into the place search becomes the stop's link,
+  /// in the Google Maps segment — search text may hold no link, so it is never
+  /// searched for or kept as one (the box has already emptied itself).
+  void _useAsMapLink(String url) {
+    FocusScope.of(context).unfocus();
+    setState(() => _locationMode = _LocationMode.google);
+    _mapUrlController.text = url;
+    _mapUrlController.selection = TextSelection.collapsed(offset: url.length);
+    _onMapUrlChanged(url);
   }
 
   /// Compact suffix action (paste/clear) for the map-link field — sized down
@@ -1362,14 +1383,18 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     )
                     : OfflineGate(
                       builder:
-                          (online) => TextButton(
-                            onPressed: (online && !_lockLost) ? _save : null,
-                            child: Text(
-                              l10n.save,
-                              style: TextStyle(
-                                color: online ? nt.forest : nt.text3,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
+                          (online) => TextRulesGate(
+                            fields: [_nameField, _addressField, _notesField],
+                            builder: (context, ok) => TextButton(
+                              onPressed:
+                                  (online && ok && !_lockLost) ? _save : null,
+                              child: Text(
+                                l10n.save,
+                                style: TextStyle(
+                                  color: online && ok ? nt.forest : nt.text3,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                ),
                               ),
                             ),
                           ),
@@ -1432,6 +1457,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                             bias: _searchBias,
                             onOsmPick: _applySuggestion,
                             onGooglePick: _applyGoogleSuggestion,
+                            onMapLink: _useAsMapLink,
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -1447,7 +1473,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                           _SFBorderlessField(
                             label: l10n.placeNameLabel.toUpperCase(),
                             childBuilder:
-                                (focusNode) => TextFormField(
+                                (focusNode) => TextRulesField(
+                                  field: _nameField,
+                                  child: TextFormField(
                                   controller: _placeNameController,
                                   focusNode: focusNode,
                                   readOnly: readOnly,
@@ -1472,6 +1500,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                               ? l10n.placeNameRequired
                                               : null,
                                 ),
+                                ),
                           ),
                           // Address is a coordinate-stop field; hidden in link mode.
                           if (_locationMode == _LocationMode.coordinates) ...[
@@ -1479,7 +1508,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                             _SFBorderlessField(
                               label: l10n.addressLabel.toUpperCase(),
                               childBuilder:
-                                  (focusNode) => TextFormField(
+                                  (focusNode) => TextRulesField(
+                                    field: _addressField,
+                                    child: TextFormField(
                                     controller: _placeAddressController,
                                     focusNode: focusNode,
                                     readOnly: readOnly,
@@ -1498,6 +1529,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                       fontWeight: FontWeight.w600,
                                       color: nt.bark,
                                     ),
+                                  ),
                                   ),
                             ),
                           ],
@@ -2081,12 +2113,18 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                               // unfiltered (real place names false-positive).
                               child: ModerationHint(
                                 controller: _notesController,
-                                child: MarkdownNotesEditor(
-                                  controller: _notesController,
-                                  readOnly: readOnly,
-                                  label: l10n.thoughtsLabel,
-                                  helpTitle: l10n.thoughtsLabel,
-                                  helpMessage: l10n.thoughtsHelp,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    MarkdownNotesEditor(
+                                      controller: _notesController,
+                                      readOnly: readOnly,
+                                      label: l10n.thoughtsLabel,
+                                      helpTitle: l10n.thoughtsLabel,
+                                      helpMessage: l10n.thoughtsHelp,
+                                    ),
+                                    TextRulesNote(_notesField),
+                                  ],
                                 ),
                               ),
                             ),

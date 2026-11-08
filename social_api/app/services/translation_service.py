@@ -341,7 +341,10 @@ def _moderation_refusals(texts: dict[str, str], settings: "Settings") -> dict[st
     keys = list(texts)
     for provider in get_moderation_chain(settings):
         try:
-            results = provider.score_many([texts[key] for key in keys])
+            # In pieces, like every moderated text: a long translation is
+            # read sentence by sentence, never diluted into one input.
+            results = text_moderation_service.score_texts(
+                provider, [texts[key] for key in keys])
         except ProviderUnavailableError:
             continue
         except Exception:

@@ -17,13 +17,20 @@
 // the answer stays in its provider, and the list comes back when the user is in
 // the field again — a tap, a screen reader, Tab. Choosing another place sends
 // no new request.
+//
+// A link is never searched (link_rule.dart): what a Google pick keeps is the
+// typed text, which may hold no link. A pasted Google Maps link is offered as
+// the stop's own link instead ([onMapLink]); any other link is named as the
+// thing to remove.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/services/geocoding_service.dart';
+import 'package:ntripi/core/text/link_rule.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/itineraries/data/google_maps_links.dart';
 import 'package:ntripi/features/itineraries/data/places_repository.dart';
 import 'package:ntripi/features/itineraries/domain/search_bias.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
@@ -39,6 +46,8 @@ class PlaceSearchBox extends ConsumerStatefulWidget {
   static const googleListKey = Key('placeSearch.googleList');
   static const askGoogleKey = Key('placeSearch.askGoogle');
   static const noticeKey = Key('placeSearch.notice');
+  static const useAsMapLinkKey = Key('placeSearch.useAsMapLink');
+  static const linkNoticeKey = Key('placeSearch.linkNotice');
 
   final TextEditingController controller;
 
@@ -57,6 +66,10 @@ class PlaceSearchBox extends ConsumerStatefulWidget {
   final void Function(GoogleSuggestion suggestion, String searchText)
       onGooglePick;
 
+  /// A Google Maps link pasted into the search, handed over to become the
+  /// stop's link instead of being searched for. Null: no such offer.
+  final ValueChanged<String>? onMapLink;
+
   const PlaceSearchBox({
     super.key,
     required this.controller,
@@ -65,6 +78,7 @@ class PlaceSearchBox extends ConsumerStatefulWidget {
     required this.bias,
     required this.onOsmPick,
     required this.onGooglePick,
+    this.onMapLink,
   });
 
   @override
@@ -120,6 +134,8 @@ class _PlaceSearchBoxState extends ConsumerState<PlaceSearchBox> {
   void _submit() {
     if (_text.isEmpty) return;
     _openList(); // the arrow can be tapped with the list folded
+    // A link is answered under the field, never sent to a search.
+    if (findLink(_text) != null) return;
     if (_onGoogle) {
       ref.read(googlePlaceSearchProvider.notifier).searchNow(_text,
           language: widget.language, bias: widget.bias());
@@ -140,7 +156,7 @@ class _PlaceSearchBoxState extends ConsumerState<PlaceSearchBox> {
       _reset();
       return;
     }
-    if (_onGoogle) {
+    if (_onGoogle && findLink(value) == null) {
       ref.read(googlePlaceSearchProvider.notifier).typed(value,
           language: widget.language, bias: widget.bias());
     }
@@ -227,10 +243,35 @@ class _PlaceSearchBoxState extends ConsumerState<PlaceSearchBox> {
           ),
         ),
         if (_listOpen)
-          _onGoogle
-              ? _googleResults(nt, l10n)
-              : _osmResults(nt, l10n, googleEnabled),
+          if (findLink(_text) case final link?)
+            _linkAnswer(l10n, link)
+          else
+            _onGoogle
+                ? _googleResults(nt, l10n)
+                : _osmResults(nt, l10n, googleEnabled),
       ],
+    );
+  }
+
+  /// What a link in the field gets instead of a search: a Google Maps link is
+  /// offered as the stop's own link, anything else is named to be removed.
+  Widget _linkAnswer(AppLocalizations l10n, String link) {
+    final onMapLink = widget.onMapLink;
+    if (onMapLink != null && isGoogleMapsUrl(_text)) {
+      return _ActionRow(
+        key: PlaceSearchBox.useAsMapLinkKey,
+        icon: Icons.link_rounded,
+        label: l10n.useAsMapLink,
+        onTap: () {
+          final url = _text;
+          _clear(); // the box empties itself: the form never edits its field
+          onMapLink(url);
+        },
+      );
+    }
+    return KeyedSubtree(
+      key: PlaceSearchBox.linkNoticeKey,
+      child: _Notice(text: l10n.textRuleNoLinks(link), error: true),
     );
   }
 

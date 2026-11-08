@@ -23,6 +23,7 @@ import 'package:ntripi/shared/widgets/markdown_edit_screen.dart';
 import 'package:ntripi/shared/widgets/moderation_hint.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
 import 'package:ntripi/shared/widgets/saving_overlay.dart';
+import 'package:ntripi/shared/widgets/text_rules.dart';
 import 'package:ntripi/shared/widgets/user_avatar.dart';
 
 class ProfileEditForm extends ConsumerStatefulWidget {
@@ -46,6 +47,10 @@ class ProfileEditForm extends ConsumerStatefulWidget {
 class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
   late final TextEditingController _displayNameController;
   late final TextEditingController _bioController;
+  // No new link in the name (text_rules.dart); the bio's own editor holds it
+  // to the same rule. An old link never blocks Save until it is edited.
+  late final _displayNameField = RuledField(_displayNameController,
+      initial: widget.user.displayName);
   late bool? _editIsPrivate;
   late List<String> _editPassportCountries;
   bool _passportCountriesChanged = false;
@@ -260,8 +265,10 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
             ),
             actions: [
               OfflineGate(
-                builder: (online) => TextButton(
-                  onPressed: (_saving || !online) ? null : _saveEdits,
+                builder: (online) => TextRulesGate(
+                  fields: [_displayNameField],
+                  builder: (context, ok) => TextButton(
+                  onPressed: (_saving || !online || !ok) ? null : _saveEdits,
                   child: _saving
                       ? SizedBox(
                           width: 18,
@@ -276,6 +283,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                           style: const TextStyle(
                               fontWeight: FontWeight.w700, fontSize: 15),
                         ),
+                ),
                 ),
               ),
             ],
@@ -435,18 +443,25 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                     label: l10n.displayNameLabel,
                     child: ModerationHint(
                       controller: _displayNameController,
-                      child: TextField(
-                        controller: _displayNameController,
-                        style: TextStyle(
-                            fontSize: 15,
-                            color: nt.bark,
-                            fontWeight: FontWeight.w500),
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          contentPadding:
-                              EdgeInsets.symmetric(vertical: 8),
-                          isDense: true,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextField(
+                            controller: _displayNameController,
+                            style: TextStyle(
+                                fontSize: 15,
+                                color: nt.bark,
+                                fontWeight: FontWeight.w500),
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              contentPadding:
+                                  EdgeInsets.symmetric(vertical: 8),
+                              isDense: true,
+                            ),
+                          ),
+                          TextRulesNote(_displayNameField,
+                              padding: const EdgeInsets.only(bottom: 8)),
+                        ],
                       ),
                     ),
                   ),

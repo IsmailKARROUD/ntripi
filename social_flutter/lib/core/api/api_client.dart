@@ -456,6 +456,14 @@ String extractErrorMessage(dynamic e, [AppLocalizations? l10n]) {
           if (code == 'text_moderation_rejected') {
             return moderationRejectionMessage(moderationCategories(e), l10n);
           }
+          // The link rule names the exact text it found, as TextRulesNote
+          // does under the field before a save.
+          final match = data['match'];
+          if (code == 'text_contains_link' && match is String) {
+            return data['field'] == 'username'
+                ? l10n.usernameLooksLikeLink(match)
+                : l10n.textRuleNoLinks(match);
+          }
           final localized = localizedApiError(code, l10n);
           if (localized != null) return localized;
         }

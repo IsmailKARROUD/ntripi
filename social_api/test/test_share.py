@@ -86,6 +86,47 @@ def og_description(html):
 
 
 # ---------------------------------------------------------------------------
+# TestShareDescriptionFormatting — formatted as in the app, never a link or an
+# image (services/markdown_render.USER_MD)
+# ---------------------------------------------------------------------------
+
+class TestShareDescriptionFormatting:
+
+    def _page(self, client, description):
+        alice = register_user(client, "alice_md", "alice_md@test.com")
+        itinerary = create_itinerary(client, alice["access_token"], visibility="public")
+        # Stored directly: an old description may hold what the link rule now
+        # refuses, and the page must still never make it a link or an image.
+        set_fields(itinerary["id"], description=description)
+        return client.get(share_url(itinerary["id"])).text
+
+    def test_formatting_renders_and_headings_never_compete_with_the_title(self, client):
+        html = self._page(client, "# Day one\n\n**Markets** at dawn\n\n- fruit\n- tea")
+        assert "<h3>Day one</h3>" in html and "<h1>Day one" not in html
+        assert "<strong>Markets</strong>" in html
+        assert "<li>fruit</li>" in html
+
+    def test_no_link_and_no_image_is_ever_made(self, client):
+        html = self._page(
+            client,
+            "[Book](https://evil.example) ![pic](https://evil.example/p.jpg) "
+            "<https://evil.example/auto> https://evil.example/bare",
+        )
+        description = html.split('class="note-text note-md"', 1)[1].split("</div>", 1)[0]
+        assert "<img" not in description and "href=" not in description
+        assert "[Book](https://evil.example)" in description
+
+    def test_raw_html_is_escaped(self, client):
+        html = self._page(client, "<script>alert(1)</script> and <b>bold</b>")
+        assert "<script>alert(1)" not in html
+        assert "&lt;script&gt;" in html
+
+    def test_the_card_carries_no_markup(self, client):
+        html = self._page(client, "**Markets** at _dawn_\n\n# Port")
+        assert og_description(html) == "Markets at dawn Port"
+
+
+# ---------------------------------------------------------------------------
 # TestSharePublicItinerary
 # ---------------------------------------------------------------------------
 

@@ -3365,3 +3365,90 @@ first, as its own change.
   failure would stop the deploy. **The sweep**: a permanent scan for a one-time
   job, which would also clear links silently on any later rule change, without
   the count the owner asked to see first.
+
+### 2026-11-08 — Text safety: no link in user text, no image in formatted text, long texts moderated in pieces, and the server moderates everything users write
+
+**Context.** The owner asked for far longer texts — a 10,000-character
+description and a 4,000-character "Why this time?" note (the next change) — and,
+while that was settled, for three rules: the server moderates everything people
+write ("ask me first if a rule says otherwise"), no text field accepts a link
+except a stop's Google Maps link, and nothing a user writes may load an image.
+What the code did then: the formatted-text widget (`InertMarkdownBody`) passed
+no `imageBuilder`, so `![](https://…)`, `data:` and `file:` images in a
+description, a stop note, a review or a bio were loaded and shown — never
+image-scanned, outside the CDN and Cloudflare's CSAM scan, and telling their
+host who was reading. Typed links were inert but storable anywhere. The share
+page printed a description's Markdown source as plain text. And moderation sent
+each save as one document: the title, description and note together (up to
+14,200 characters once the new caps land), and the sweep's re-check a whole trip
+at once — a community report (not OpenAI's documentation) has the moderation
+endpoint refusing inputs of about 6,000 characters, mostly non-Latin, with a
+429, and one long input dilutes a single bad sentence.
+
+**Decision.**
+- **No user text carries a link** (`validators/links.py`, app twin
+  `core/text/link_rule.dart`, one sample list): an address scheme (`x://`,
+  `http:`, `https:`, `javascript:`, `vbscript:`, `mailto:`, `data:` before a
+  type/subtype), `www.`, markdown link/image syntax and reference definitions,
+  e-mail addresses, and bare site names — labels ending in a real TLD from
+  IANA's list (`constants/tlds.py`, generated with the app's `tlds.dart` by
+  `scripts/update_tlds.py`), a letter before it. The owner chose the strictest
+  reading and accepted its false alarms (`lunch.Tours`, `notes.md`), so the
+  refusal quotes the exact text found. Usernames too: `anna.paris` is refused at
+  sign-up, with a message of its own.
+- **Refused only in a field whose value changed** (`stored`): a link saved
+  before stays until its own text is edited — the trip form re-sends the note on
+  every save. Operator-only texts (report notes, appeal reasons, bug reports)
+  keep accepting links: a reporter pastes one as evidence.
+- **422 `text_contains_link` `{field, match}`**, though it is a policy refusal:
+  the user fixes it by editing one field, the case the age gate's "shape 422,
+  policy 400" line keeps for field errors, and both content refusals raised in a
+  route body (`text_moderation_rejected`, `image_url_not_allowed`) are 422.
+- **One app mechanism** (`shared/widgets/text_rules.dart`): `RuledField`,
+  `TextRulesNote` under the field, `TextRulesGate` around Save — Save is off
+  while a field breaks a rule, and nothing typed is ever changed or cut. On
+  every field that stores user text: trip title, description, the note, stop
+  name/address/notes, annotations, leg line/direction/notes, review, profile
+  name and bio, and sign-up (form validators there). The search box never
+  searches a link: a pasted Google Maps link is offered as the stop's own link.
+- **Formatted text never loads an image**: `InertMarkdownBody` draws the alt
+  text. The share page renders the description formatted through
+  `markdown_render.USER_MD` (links, images, autolinks off; headings demoted) and
+  its chat card from the plain text.
+- **Moderation in pieces**: `score_text` / `score_texts`, at most 2,000
+  characters and 4,000 UTF-8 bytes a piece, the strongest score per category
+  across the pieces deciding; a text that fits one piece is still the same
+  single request. `POLICY_VERSION` "2".
+- **The rule, written down** (`constraints.md`, CLAUDE.md): the server
+  moderates everything users write, with seven named exceptions — report notes,
+  appeal reasons, bug-report messages (with device details and screenshot),
+  admin-written text, waitlist email/WhatsApp, a session's User-Agent. The owner
+  kept the first four on the safety reasoning and added the last three.
+
+**Consequences.**
+- The audit behind the rule found gaps the owner chose to close in their own
+  change, right after the long texts (backlog.md): the Google sign-up username
+  and photo, a stop link's words, a trip's currency, a hidden trip's title in
+  notifications; and a design question — a flagged @username cannot be hidden.
+- Installed builds keep loading Markdown images and only show the 422's English
+  `detail` for a link; the server refuses the link either way.
+- Cached verdicts are re-scanned once (a new policy version); OpenAI's
+  moderation is free. The piece bounds are to be checked against the live API
+  with long Arabic and Chinese texts.
+- An automatic spam check stays an idea: with links refused and never tappable,
+  spam has little to carry.
+
+**Alternatives rejected.**
+- **Capping texts at 6,000 characters instead of moderating in pieces** (the
+  owner's first proposal, as each text is saved on its own): the reported limit
+  counts tokens, so Arabic and Chinese reach it sooner; any client may send
+  title, description and note together; and the sweep's re-check already sends
+  a whole trip as one text.
+- **Web addresses only, or web addresses and e-mails**: the owner wanted bare
+  site names refused too.
+- **Scanning the operator-only texts without ever refusing them**, or
+  moderating them like the rest: a refused report that quotes abuse is a safety
+  regression, and a scan nobody acts on is a cost with no reader.
+- **Cleaning the links out of stored texts, or hiding them on screen**: it
+  rewrites people's words without asking; they are inert and go at the next
+  edit.

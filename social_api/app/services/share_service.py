@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from app.services.app_links import cta_context
+from app.services.markdown_render import USER_MD, plain_text, render_user_markdown
 from app.storage.factory import storage
 
 if TYPE_CHECKING:
@@ -43,17 +44,21 @@ def prepare_share_context(itinerary: "Itinerary", settings: "Settings") -> dict:
     """
     share_url = build_share_url(itinerary, settings)
     rated = bool(itinerary.rating_count) and itinerary.rating_avg is not None
+    description = (itinerary.description or "").strip() or None
     return {
         "itinerary_id": str(itinerary.id),
         "title": itinerary.title,
-        "description": (itinerary.description or "").strip() or None,
+        "description": description,
+        # Formatted as the app shows it, with no link and no image
+        # (markdown_render.USER_MD): typed link syntax stays literal text.
+        "description_html": render_user_markdown(description) if description else None,
         "cover_image_url": itinerary.cover_image_url
         and absolutize_stored_url(itinerary.cover_image_url, settings),
         "rating_avg": f"{itinerary.rating_avg:.1f}" if rated else None,
         "rating_count": itinerary.rating_count if rated else 0,
-        # The chat card says what the page says (the template adds the
-        # fallback line when there is neither).
-        "card_excerpt": _excerpt(itinerary.description),
+        # The chat card says what the page says, in plain words — no ** or #
+        # (the template adds the fallback line when there is neither).
+        "card_excerpt": _excerpt(plain_text(USER_MD, description) if description else None),
         "share_url": share_url,
         "preview_image_url": _resolve_preview_image_url(itinerary, settings),
         "app_cta": cta_context(share_url, settings),

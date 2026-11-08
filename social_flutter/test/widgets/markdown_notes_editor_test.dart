@@ -334,4 +334,26 @@ void main() {
       expect(boldButton.onPressed, isNotNull);
     });
   });
+
+  group('InertMarkdownBody – images', () {
+    // An image in someone's text is never loaded: no check ever saw it, and
+    // its host would learn who is reading. Its description text stands in.
+    for (final source in [
+      '![the harbour](https://evil.example/p.jpg)',
+      '![the harbour](data:image/png;base64,iVBORw0KGgo=)',
+      '![the harbour](file:///etc/hosts)',
+    ]) {
+      testWidgets('Given "$source", When drawn, Then no image is built',
+          (tester) async {
+        await tester.pumpWidget(MaterialApp(
+          theme: buildNtripiTheme(),
+          home: Scaffold(body: InertMarkdownBody(data: 'Look: $source')),
+        ));
+
+        expect(find.byType(Image), findsNothing);
+        expect(find.textContaining('the harbour', findRichText: true),
+            findsOneWidget);
+      });
+    }
+  });
 }

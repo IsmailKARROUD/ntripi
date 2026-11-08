@@ -210,6 +210,12 @@ RELEASES: tuple[Release, ...] = (
             "address that would send readers on to another site is refused, and "
             "any already saved are removed. Links copied from Google Maps work "
             "as before.",
+            "**No links in what people write.** Titles, descriptions, notes, "
+            "reviews, names and bios no longer take web addresses, e-mail "
+            "addresses or site names — a red line names what to remove — and a "
+            "picture written into a text is never shown. A stop's Google Maps "
+            "link, in its own field, is the one link left. A trip's public page "
+            "now shows its description's bold, lists and headings.",
         ),
     ),
     Release(
@@ -655,7 +661,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="building",
         schema=SCHEMA_HOWTO,
-        updated="2026-10-27",
+        updated="2026-11-08",
         keywords=(
             "stop", "stops", "place", "places", "add", "budget", "price",
             "duration", "how long", "category", "restaurant", "hotel", "museum",
@@ -732,7 +738,11 @@ ARTICLES: tuple[Article, ...] = (
                     "For a warning that should be hard to miss rather than read "
                     "in passing, use an [advice or caution "
                     "note](/help/travel-notes-and-warnings) instead: those render "
-                    "as coloured chips."
+                    "as coloured chips.\n\n"
+                    "A note can't hold a link — no web address, e-mail address or "
+                    "site name such as booking.com. Name the place in words "
+                    "instead: the one link a stop takes is its Google Maps link, "
+                    "in a field of its own."
                 ),
             ),
         ),
@@ -1253,7 +1263,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="sharing",
         schema=SCHEMA_FAQ,
-        updated="2026-10-18",
+        updated="2026-11-08",
         keywords=(
             "private", "privately", "visibility", "who can see", "public",
             "followers", "restricted", "only me", "hide", "hidden", "secret",
@@ -1335,7 +1345,7 @@ ARTICLES: tuple[Article, ...] = (
                 kind=KIND_FAQ,
                 body=(
                     "A public trip generates a preview card with its cover image, "
-                    "title, duration, cost and rating.\n\n"
+                    "title, rating and the start of its description.\n\n"
                     "A trip that is not public generates only a plain card that "
                     "says it is a private trip on Ntripi — no title, cover photo or "
                     "owner. Anything more would show the trip to everyone in the "
@@ -2638,11 +2648,12 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="troubleshooting",
         schema=SCHEMA_FAQ,
-        updated="2026-09-01",
+        updated="2026-11-08",
         keywords=(
             "error", "problem", "problems", "broken", "not working", "failed",
             "failing", "stuck", "cannot save", "can not save", "reload",
             "offline", "crash", "bug", "fix", "help",
+            "link", "links", "website", "greyed out",
         ),
         related=("contact", "getting-started"),
         intro=(
@@ -2689,6 +2700,23 @@ ARTICLES: tuple[Article, ...] = (
                     "back and save, or copy your text out and paste it in once the "
                     "other person is done. Nothing is discarded until you leave the "
                     "screen yourself."
+                ),
+            ),
+            Block(
+                anchor="links-not-allowed",
+                heading="\"Links can't be added here\"",
+                kind=KIND_FAQ,
+                body=(
+                    "Ntripi doesn't take links in what you write — titles, "
+                    "descriptions, notes, reviews, names and bios: no web address, no "
+                    "e-mail address, and no site name such as booking.com. The red "
+                    "line under the field quotes what it found, and Save stays greyed "
+                    "out until it is gone. If two words ran together around a dot "
+                    "(lunch.Tours), a space is all it takes.\n\n"
+                    "The one link a stop takes is its Google Maps link, in its own "
+                    "field — paste one into the place search and Ntripi offers to put "
+                    "it there. A username can't look like a website address either: "
+                    "anna.paris ends like one, while anna_paris is fine."
                 ),
             ),
             Block(

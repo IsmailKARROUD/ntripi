@@ -24,6 +24,7 @@ import 'package:ntripi/features/itineraries/domain/transport_leg.dart';
 import 'package:ntripi/shared/widgets/duration_picker_sheet.dart';
 import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:ntripi/shared/widgets/keyboard_avoidance.dart';
+import 'package:ntripi/shared/widgets/text_rules.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 
 // Modes that use numbered/named transit lines and directions.
@@ -80,6 +81,13 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
   late TextEditingController _lineCtrl;
   late TextEditingController _directionCtrl;
   late TextEditingController _notesCtrl;
+  // No new link in the leg's text (text_rules.dart); an old one never blocks
+  // Save until its own text is edited.
+  late final _lineField = RuledField(_lineCtrl, initial: widget.existing?.line);
+  late final _directionField =
+      RuledField(_directionCtrl, initial: widget.existing?.direction);
+  late final _notesField =
+      RuledField(_notesCtrl, initial: widget.existing?.notes);
   int _durationDays = 0;
   int _durationHours = 0;
   int _durationMinutes = 0;
@@ -336,13 +344,21 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
                 child: Text(l10n.cancel),
               ),
               const SizedBox(width: 8),
-              FilledButton(
-                onPressed: _submit,
-                child: Padding(
-                  padding: const EdgeInsetsDirectional.only(start: 8, end: 8),
-                  child: Text(isEdit
-                      ? l10n.updateTransitButton
-                      : l10n.addTransitTitle),
+              TextRulesGate(
+                // Line and direction are sent only for a transit mode.
+                fields: [
+                  if (_showTransitLine) ...[_lineField, _directionField],
+                  _notesField,
+                ],
+                builder: (context, ok) => FilledButton(
+                  onPressed: ok ? _submit : null,
+                  child: Padding(
+                    padding:
+                        const EdgeInsetsDirectional.only(start: 8, end: 8),
+                    child: Text(isEdit
+                        ? l10n.updateTransitButton
+                        : l10n.addTransitTitle),
+                  ),
                 ),
               ),
             ],
@@ -376,39 +392,45 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
                 children: [
                   _LFBorderlessField(
                     label: l10n.transitLineLabel.toUpperCase(),
-                    child: TextField(
-                      controller: _lineCtrl,
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        isDense: true,
-                        contentPadding: EdgeInsets.zero,
-                        hintText: '—',
+                    child: TextRulesField(
+                      field: _lineField,
+                      child: TextField(
+                        controller: _lineCtrl,
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                          hintText: '—',
+                        ),
+                        style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: nt.bark),
                       ),
-                      style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: nt.bark),
                     ),
                   ),
                   const FieldDivider(),
                   _LFBorderlessField(
                     label: l10n.transitDirectionLabel.toUpperCase(),
-                    child: TextField(
-                      controller: _directionCtrl,
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        isDense: true,
-                        contentPadding: EdgeInsets.zero,
-                        hintText: '—',
+                    child: TextRulesField(
+                      field: _directionField,
+                      child: TextField(
+                        controller: _directionCtrl,
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                          hintText: '—',
+                        ),
+                        style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: nt.bark),
                       ),
-                      style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: nt.bark),
                     ),
                   ),
                 ],
@@ -527,22 +549,29 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 13, 16, 12),
-                  child: TextField(
-                    controller: _notesCtrl,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                      hintText: l10n.legThoughtsLabel,
-                      hintStyle: TextStyle(color: nt.text3),
-                    ),
-                    style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: nt.bark),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        controller: _notesCtrl,
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                          hintText: l10n.legThoughtsLabel,
+                          hintStyle: TextStyle(color: nt.text3),
+                        ),
+                        style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: nt.bark),
+                      ),
+                      // Inside the card's RevealTogether: rises with the field.
+                      TextRulesNote(_notesField),
+                    ],
                   ),
                 ),
               ],

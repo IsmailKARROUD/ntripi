@@ -22,7 +22,10 @@ from dataclasses import dataclass, field
 
 # Bump on ANY change to CATEGORY_THRESHOLDS or the evaluate() rules — cached
 # verdicts keyed on the old version simply stop matching.
-POLICY_VERSION = "1"
+# "2" (2026-11-08): long texts are scored in pieces, the worst piece deciding
+# (text_moderation_service.score_text) — a verdict read off one long input is
+# not the same judgement.
+POLICY_VERSION = "2"
 
 # (review_at, reject_at) per OpenAI omni-moderation category, most restrictive
 # first. Categories absent from a provider response score 0.0.

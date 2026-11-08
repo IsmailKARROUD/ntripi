@@ -35,10 +35,17 @@ dict of them, never hand over the row — so a template cannot leak what it was
 never given. `test_public_surface.py` holds every open route to it; see
 [web-and-platform.md](web-and-platform.md#the-public-surface).
 
+**The description is formatted as in the app, and never makes a link or loads
+an image** (since 2026-11-08): `markdown_render.render_user_markdown` —
+`USER_MD`, with links, images and autolinks off, so `[label](url)` and
+`![alt](url)` show as the characters typed; raw HTML escaped; a user's headings
+demoted two levels under the page's own. Before, the page printed the Markdown
+source as plain text, `**` and `#` included.
+
 **The chat card says what the page says.** A public trip's `og:description` is
 `★ 4.6 (12) · <start of the description>` — the rating when it has one, the
-first ~150 characters of the description cut on a word — and "A trip on Ntripi"
-when it has neither; title and cover are the card's title and image. A profile's
+first ~150 characters of the description's plain text (`plain_text`, no
+markup) cut on a word — and "A trip on Ntripi" when it has neither; title and cover are the card's title and image. A profile's
 card is its display name, `@username · Ntripi` and the avatar. Until 2026-10-19
 the trip card carried duration, cost and stop count, which the page no longer
 shows.

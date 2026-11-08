@@ -16,6 +16,7 @@ import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/moderation_hint.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
 import 'package:ntripi/shared/widgets/saving_overlay.dart';
+import 'package:ntripi/shared/widgets/text_rules.dart';
 
 /// Opens [MarkdownEditScreen] and resolves to the edited text, or null if the
 /// user left without saving. An empty string means the field was cleared.
@@ -31,6 +32,7 @@ Future<String?> editMarkdownField(
   String? helpTitle,
   String? helpMessage,
   Future<void> Function(String value)? onSave,
+  TextRules rules = TextRules.userText,
 }) {
   return Navigator.of(context).push<String>(
     MaterialPageRoute(
@@ -40,6 +42,7 @@ Future<String?> editMarkdownField(
         helpTitle: helpTitle,
         helpMessage: helpMessage,
         onSave: onSave,
+        rules: rules,
       ),
     ),
   );
@@ -56,6 +59,10 @@ class MarkdownEditScreen extends StatefulWidget {
   /// Optional inline persister — see [editMarkdownField]. Null → pop on Save.
   final Future<void> Function(String value)? onSave;
 
+  /// What the text must obey to be saved (text_rules.dart) — the server's own
+  /// rules, so Save stays off for a text it would refuse.
+  final TextRules rules;
+
   const MarkdownEditScreen({
     super.key,
     required this.initialText,
@@ -63,6 +70,7 @@ class MarkdownEditScreen extends StatefulWidget {
     this.helpTitle,
     this.helpMessage,
     this.onSave,
+    this.rules = TextRules.userText,
   });
 
   @override
@@ -71,6 +79,8 @@ class MarkdownEditScreen extends StatefulWidget {
 
 class _MarkdownEditScreenState extends State<MarkdownEditScreen> {
   late final TextEditingController _controller;
+  late final RuledField _field =
+      RuledField(_controller, rules: widget.rules, initial: widget.initialText);
   bool _dirty = false;
   bool _saving = false;
 
@@ -170,14 +180,17 @@ class _MarkdownEditScreenState extends State<MarkdownEditScreen> {
               )
             else
               OfflineGate(
-                builder: (online) => TextButton(
-                  onPressed: online ? _save : null,
-                  child: Text(
-                    l10n.save,
-                    style: TextStyle(
-                      color: online ? nt.forest : nt.text3,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
+                builder: (online) => TextRulesGate(
+                  fields: [_field],
+                  builder: (context, ok) => TextButton(
+                    onPressed: online && ok ? _save : null,
+                    child: Text(
+                      l10n.save,
+                      style: TextStyle(
+                        color: online && ok ? nt.forest : nt.text3,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
                     ),
                   ),
                 ),
@@ -190,12 +203,18 @@ class _MarkdownEditScreenState extends State<MarkdownEditScreen> {
               // title-type field must opt out: place names false-positive.
               child: ModerationHint(
                 controller: _controller,
-                child: MarkdownNotesEditor(
-                  controller: _controller,
-                  readOnly: _saving,
-                  label: widget.title,
-                  helpTitle: widget.helpTitle,
-                  helpMessage: widget.helpMessage,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    MarkdownNotesEditor(
+                      controller: _controller,
+                      readOnly: _saving,
+                      label: widget.title,
+                      helpTitle: widget.helpTitle,
+                      helpMessage: widget.helpMessage,
+                    ),
+                    TextRulesNote(_field),
+                  ],
                 ),
               ),
             ),

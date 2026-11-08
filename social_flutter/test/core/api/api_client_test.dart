@@ -20,6 +20,31 @@ void main() {
   final requestOptions = RequestOptions(path: '/whatever');
 
   group('extractErrorMessage', () {
+    group('a link the server refused', () {
+      DioException refusal() => DioException(
+            requestOptions: requestOptions,
+            type: DioExceptionType.badResponse,
+            response: Response(
+              requestOptions: requestOptions,
+              statusCode: 422,
+              data: {
+                'detail': 'Links are not allowed in this text.',
+                'code': 'text_contains_link',
+                'field': 'notes',
+                'match': 'booking.com',
+              },
+            ),
+          );
+
+      test(
+          'Given a 422 text_contains_link, When extracted, Then the message '
+          'quotes the text it found, in the reader\'s language', () {
+        final ar = lookupAppLocalizations(const Locale('ar'));
+
+        expect(extractErrorMessage(refusal(), ar), ar.textRuleNoLinks('booking.com'));
+      });
+    });
+
     group('a blocked sign-up address', () {
       const serverDetail =
           "This email address can't be used to create an account.";

@@ -163,6 +163,10 @@ class _PreviewBody extends StatelessWidget {
 /// - `styleSheet.a` matches body text — typed link syntax is visually
 ///   indistinguishable from regular text, so users don't perceive
 ///   user-supplied URLs as clickable.
+/// - `imageBuilder` draws an image as its description text and never loads
+///   it: `![alt](https://…)` (or a `data:`, `file:` or asset address) would
+///   otherwise show a picture no image check ever saw, from a host that learns
+///   who is reading — the renderer's default loads every one of them.
 class InertMarkdownBody extends StatelessWidget {
   final String data;
   const InertMarkdownBody({super.key, required this.data});
@@ -178,6 +182,9 @@ class InertMarkdownBody extends StatelessWidget {
       softLineBreak: true,
       extensionSet: md.ExtensionSet.none,
       styleSheet: base.copyWith(a: bodyStyle),
+      imageBuilder: (_, _, alt) => (alt == null || alt.trim().isEmpty)
+          ? const SizedBox.shrink()
+          : Text(alt, style: bodyStyle),
     );
   }
 }

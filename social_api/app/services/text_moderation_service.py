@@ -31,6 +31,7 @@ from __future__ import annotations
 import hashlib
 import html
 import logging
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
@@ -46,7 +47,7 @@ from app.models.text_moderation_decision import TextModerationDecision
 from app.services import moderation_policy, operator_alerts
 from app.services.moderation_policy import POLICY_VERSION, PolicyDecision
 from app.services.text_moderation_providers import (
-    ProviderUnavailableError, get_provider_chain,
+    ProviderResult, ProviderUnavailableError, get_provider_chain,
 )
 
 if TYPE_CHECKING:
@@ -115,6 +116,138 @@ def build_text(fields: dict[str, str | None]) -> str:
     return "\n\n".join(
         value.strip() for value in fields.values() if value and value.strip()
     )
+
+
+# A long text is classified in pieces. One long input dilutes a single bad
+# sentence among thousands of harmless ones, and the moderation endpoint has
+# been reported refusing long input outright (HTTP 429 near 6,000 characters,
+# mostly in non-Latin scripts) — which would drop a 10,000-character
+# description to the word list. Both bounds hold: the byte bound is what keeps
+# Arabic (~2,000 characters) and Chinese (~1,333) pieces small. Tune all three
+# against the live API.
+PIECE_MAX_CHARS = 2_000
+PIECE_MAX_BYTES = 4_000
+# Per provider call: the sweep's re-check of a whole trip can make dozens.
+PIECES_PER_CALL = 32
+CHARS_PER_CALL = 16_000
+
+_PARAGRAPH_BREAK = re.compile(r"\n\s*\n")
+# After a sentence's end: Latin and Arabic punctuation before whitespace, and
+# the full-width CJK marks, which take no space after them.
+_SENTENCE_BREAK = re.compile(r"(?<=[.!?…؟])\s+|(?<=[。！？])")
+
+
+def _fits(piece: str) -> bool:
+    return len(piece) <= PIECE_MAX_CHARS and len(piece.encode("utf-8")) <= PIECE_MAX_BYTES
+
+
+def _pack(parts: list[str], joiner: str, finer) -> list[str]:
+    """Consecutive parts joined while the piece still fits; a part too long on
+    its own is cut by `finer`."""
+    pieces: list[str] = []
+    current = ""
+    for part in parts:
+        if not _fits(part):
+            if current:
+                pieces.append(current)
+                current = ""
+            pieces.extend(finer(part))
+            continue
+        candidate = f"{current}{joiner}{part}" if current else part
+        if _fits(candidate):
+            current = candidate
+        else:
+            pieces.append(current)
+            current = part
+    if current:
+        pieces.append(current)
+    return pieces
+
+
+def _cut(text: str) -> list[str]:
+    """A sentence longer than a piece, cut at the last whitespace that fits —
+    mid-word only when there is none."""
+    pieces: list[str] = []
+    rest = text
+    while rest:
+        if _fits(rest):
+            pieces.append(rest)
+            break
+        end, size = 0, 0
+        for end, ch in enumerate(rest):
+            size += len(ch.encode("utf-8"))
+            if end + 1 > PIECE_MAX_CHARS or size > PIECE_MAX_BYTES:
+                break
+        space = max(rest.rfind(" ", 0, end), rest.rfind("\n", 0, end))
+        cut = space if space > 0 else max(end, 1)
+        pieces.append(rest[:cut].strip())
+        rest = rest[cut:].strip()
+    return [piece for piece in pieces if piece]
+
+
+def _sentences(paragraph: str) -> list[str]:
+    return _pack([part for part in _SENTENCE_BREAK.split(paragraph) if part.strip()],
+                 " ", _cut)
+
+
+def split_for_moderation(text: str) -> list[str]:
+    """`text` as the pieces a classifier reads: whole when it fits, otherwise
+    cut at paragraph breaks, then sentence ends, then whitespace."""
+    if _fits(text):
+        return [text]
+    paragraphs = [part for part in _PARAGRAPH_BREAK.split(text) if part.strip()]
+    return _pack(paragraphs, "\n\n", _sentences) or [text]
+
+
+def _strongest(results: list[ProviderResult]) -> ProviderResult:
+    """The highest score per category across a text's pieces. Exactly the
+    verdict of its worst piece: evaluate() judges each category on its own
+    threshold, so nothing is lost by merging."""
+    if len(results) == 1:
+        return results[0]
+    categories = {category for result in results for category in result.scores}
+    return ProviderResult(
+        scores={category: max(result.scores.get(category, 0.0) for result in results)
+                for category in categories},
+        provider=results[0].provider,
+        model=results[0].model,
+    )
+
+
+def score_text(provider, text: str) -> ProviderResult:
+    """A write's document scored in pieces (split_for_moderation). One that fits
+    a single piece is sent with provider.score() — exactly the request a short
+    write has always made. Raises what the provider raises."""
+    if _fits(text):
+        return provider.score(text)
+    return score_texts(provider, [text])[0]
+
+
+def score_texts(provider, texts: list[str]) -> list[ProviderResult]:
+    """One result per text, each scored in pieces, all of them through
+    score_many in as few calls as the caps allow (PIECES_PER_CALL pieces,
+    CHARS_PER_CALL characters) — translation output's path, which has always
+    batched. Raises what the provider raises."""
+    pieces_of = [split_for_moderation(text) for text in texts]
+    scored: list[ProviderResult] = []
+    batch: list[str] = []
+    batch_chars = 0
+    for piece in (piece for pieces in pieces_of for piece in pieces):
+        if batch and (len(batch) >= PIECES_PER_CALL
+                      or batch_chars + len(piece) > CHARS_PER_CALL):
+            scored.extend(provider.score_many(batch))
+            batch, batch_chars = [], 0
+        batch.append(piece)
+        batch_chars += len(piece)
+    if batch:
+        scored.extend(provider.score_many(batch))
+
+    results: list[ProviderResult] = []
+    start = 0
+    for pieces in pieces_of:
+        results.append(_strongest(scored[start:start + len(pieces)]))
+        start += len(pieces)
+    return results
 
 
 def content_hash(text: str, model: str) -> str:
@@ -301,7 +434,7 @@ def _score_with_chain(text: str, ctx: TextModerationContext):
     chain = get_provider_chain(ctx.settings)
     for index, provider in enumerate(chain):
         try:
-            result = provider.score(text)
+            result = score_text(provider, text)
         except ProviderUnavailableError as exc:
             logger.warning("text moderation provider %s unavailable: %s", provider.name, exc)
             continue

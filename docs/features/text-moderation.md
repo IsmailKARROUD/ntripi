@@ -62,12 +62,27 @@ paid moderation call before `require_etag` could return its 412.
 
 ### Coverage
 
-**Every stored user string except the moderator-facing ones:**
+**The server moderates everything users write** — the owner's rule, written
+down on 2026-11-08 (`docs/constraints.md`). Covered:
 
-itinerary title/description · stop name/address/notes · a Google place's search
-text (`google_place_query`, since 2026-10-31) · both annotation tables ·
-transport-leg line/direction/notes · rating notes · profile display_name/bio ·
-the `username` + `display_name` chosen at registration.
+itinerary title/description/`recommended_period_note` · stop
+name/address/notes · a Google place's search text (`google_place_query`, since
+2026-10-31) · both annotation tables · transport-leg line/direction/notes ·
+rating notes · profile display_name/bio · the `username` + `display_name` chosen
+at registration.
+
+**Long texts are read in pieces** (`score_text` for a write, `score_texts` for
+translation output): at most 2,000 characters and 4,000 UTF-8 bytes per piece,
+cut at paragraphs, then sentence ends (`.!?…؟` and `。！？`), then spaces; the
+pieces of one write go out in one `score_many` call (at most 32 pieces and
+16,000 characters a call) and the highest score per category across them is the
+verdict — exactly the worst piece's, since `evaluate()` judges each category on
+its own threshold. A text that fits one piece is still today's single `score()`
+request. The cache keys on the whole text. One long input dilutes a bad
+sentence, and the endpoint has been reported refusing long non-Latin input with
+a 429 (a community report, not documented by OpenAI), which would drop a
+description to the word list; the bounds are tuned against the live API.
+`POLICY_VERSION` is "2" since.
 
 **The post-outage re-check covers the same set.** Text published as `pending`
 during an outage is re-scanned by the sweep across everything that rolls up to
@@ -80,9 +95,19 @@ approved the row, so text written during an outage went live unscanned.
 with `ON CONFLICT DO NOTHING`: two people posting the same short text at once
 both saw no cache row, and the second commit hit the primary key as a 500.
 
-**Deliberately NOT moderated:** `content_reports.notes`, `appeals.user_reason`,
-`bug_reports.message`, and admin action reasons. A 422 there would block someone
-reporting hate speech who quotes it — a safety regression, not an improvement.
+**The seven exceptions, each with its reason:** `content_reports.notes`,
+`appeals.user_reason` and `bug_reports.message` (with its device details and
+screenshot) — a 422 there would block someone reporting hate speech who quotes
+it, a safety regression; admin-written text, waitlist email/WhatsApp and a
+session's User-Agent — no other user ever reads them. Known gaps, planned as
+their own change ([backlog.md](../backlog.md)): the Google sign-up username and
+photo, the words in a stop's map link, a trip's currency, and a hidden trip's
+title in notifications.
+
+**No user text may carry a link** except a stop's map link
+(`validators/links.py`, 422 `text_contains_link`): see
+[constraints.md](../constraints.md) and decisions.md 2026-11-08. The same
+operator-only texts keep accepting links.
 
 ### Content state
 
@@ -153,7 +178,9 @@ rating submit, the Google signup path, and the reject path in
 
 ### The client filter
 
-`lib/core/moderation/text_precheck.dart` **warns, never blocks**: any failure
+The word-list filter, `lib/core/moderation/text_precheck.dart`, **warns, never
+blocks** (the link check in `shared/widgets/text_rules.dart` is not this filter:
+it repeats a refusal the server makes, so it holds Save back): any failure
 returns "clean", the submit control stays enabled, and text is **never mutated or
 cleared**.
 
@@ -226,7 +253,7 @@ read the queue: `GET /admin/text-flags` and
 - [itineraries.md](itineraries.md) · [ratings.md](ratings.md) · [annotations.md](annotations.md) · [tracks-and-stops.md](tracks-and-stops.md) · [transit-segments.md](transit-segments.md) — the scanned fields
 - [authentication.md](authentication.md) · [google-sign-in.md](google-sign-in.md) — the signup scans
 - [accounts-and-profiles.md](accounts-and-profiles.md) — display_name and bio
-- [translations.md](translations.md) — translations are scored with `score_many` before they are cached
+- [translations.md](translations.md) — translations are scored in pieces (`score_texts`) before they are cached
 - [places-and-maps.md](places-and-maps.md) — a Google place's search text is scanned with the stop
 
 ## OPEN QUESTIONS

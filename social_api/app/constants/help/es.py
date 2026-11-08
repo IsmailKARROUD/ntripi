@@ -114,6 +114,7 @@ RELEASES: tuple[Release, ...] = (
             "**Las imágenes no permitidas también se detienen en la web.** Como en el móvil, una imagen que claramente incumple las normas de la comunidad se rechaza en cuanto la eliges, y se indica el motivo. Una imagen en un formato que Ntripi no puede abrir (una foto HEIC en un navegador web, por ejemplo) se indica en cuanto la eliges, en lugar de quedarse cargando, y las imágenes AVIF ahora también se abren en el navegador.",
             "**Toca la portada de un viaje para verla entera.** En la página de un viaje, tocar la portada la abre a pantalla completa, como la foto de un perfil; pellizca o toca dos veces para hacer zoom.",
             "**El enlace de Google Maps de una parada solo lleva a Google Maps.** Se rechaza una dirección de Google que llevaría a los lectores a otro sitio, y las que ya estaban guardadas se eliminan. Los enlaces copiados de Google Maps funcionan como antes.",
+            "**Sin enlaces en lo que se escribe.** Títulos, descripciones, notas, reseñas, nombres y biografías ya no admiten direcciones web, de correo ni nombres de sitio —una línea roja indica qué quitar— y una imagen escrita en un texto nunca se muestra. El enlace de Google Maps de una parada, en su propio campo, es el único enlace que queda. La página pública de un viaje muestra ahora las negritas, listas y títulos de su descripción.",
         ),
     ),
     Release(
@@ -481,7 +482,9 @@ Reserva el tiempo que realmente querrías estar allí, no el mínimo en el que s
                 heading="Añadir tus propias notas",
                 body="""El campo de notas es texto libre: referencias de reserva, qué pedir, por qué entrada entrar, por qué elegiste este sitio y no el de al lado.
 
-Para un aviso que deba costar pasar por alto en vez de leerse de refilón, usa mejor [una nota de consejo o precaución](/help/travel-notes-and-warnings): esas se muestran como etiquetas de color.""",
+Para un aviso que deba costar pasar por alto en vez de leerse de refilón, usa mejor [una nota de consejo o precaución](/help/travel-notes-and-warnings): esas se muestran como etiquetas de color.
+
+Una nota no puede contener enlaces: ni direcciones web, ni de correo, ni nombres de sitio como booking.com. Nombra el lugar con palabras: el único enlace que admite una parada es su enlace de Google Maps, en un campo propio.""",
             ),
         ),
         keywords=(
@@ -500,7 +503,7 @@ Para un aviso que deba costar pasar por alto en vez de leerse de refilón, usa m
             "museo",
         ),
         related=("plan-a-trip-itinerary", "add-locations-from-google-maps", "travel-notes-and-warnings"),
-        updated="2026-10-27",
+        updated="2026-11-08",
         cta="Empieza un viaje y añade tu primera parada.",
     ),
     Article(
@@ -913,7 +916,7 @@ Solo el propietario del viaje puede cambiar la visibilidad. Alguien a quien haya
                 anchor="link-previews",
                 heading="¿Qué aparece cuando pego el enlace en algún sitio?",
                 kind=KIND_FAQ,
-                body="""Un viaje público genera una tarjeta de vista previa con su imagen de portada, su título, su duración, su coste y su valoración.
+                body="""Un viaje público genera una tarjeta de vista previa con su imagen de portada, su título, su valoración y el comienzo de su descripción.
 
 Un viaje que no es público solo genera una tarjeta neutra que dice que es un viaje privado en Ntripi, sin título, foto de portada ni propietario. Mostrar más enseñaría el viaje a todo el mundo en la conversación, incluidos quienes no pueden abrirlo.""",
             ),
@@ -938,7 +941,7 @@ Un viaje que no es público solo genera una tarjeta neutra que dice que es un vi
             "no disponible",
         ),
         related=("plan-a-trip-itinerary", "plan-alternative-options"),
-        updated="2026-10-18",
+        updated="2026-11-08",
         cta="Planifica un viaje y compártelo exactamente con quien quieres.",
     ),
     Article(
@@ -1909,6 +1912,14 @@ Espera a que termine, o toma el relevo si lleva un rato inactiva. Si eres el pro
 Tienes dos salidas, y las dos conservan tu trabajo: recupera el viaje y guarda, o copia tu texto y pégalo cuando la otra persona termine. No se descarta nada hasta que tú mismo sales de la pantalla.""",
             ),
             Block(
+                anchor="links-not-allowed",
+                heading="«Aquí no se pueden añadir enlaces»",
+                kind=KIND_FAQ,
+                body="""Ntripi no admite enlaces en lo que escribes —títulos, descripciones, notas, reseñas, nombres y biografías—: ni direcciones web, ni de correo, ni nombres de sitio como booking.com. La línea roja bajo el campo cita lo que encontró, y Guardar sigue en gris mientras siga ahí. Si dos palabras quedaron pegadas alrededor de un punto (lunch.Tours), basta con un espacio.
+
+El único enlace que admite una parada es su enlace de Google Maps, en su propio campo: pega uno en la búsqueda de lugares y Ntripi te ofrece ponerlo ahí. Un nombre de usuario tampoco puede parecer una dirección web: anna.paris termina como una, mientras que anna_paris sirve.""",
+            ),
+            Block(
                 anchor="image-rejected",
                 heading="Mi foto se rechazó al subirla",
                 kind=KIND_FAQ,
@@ -1963,9 +1974,13 @@ La barra desaparece sola cuando vuelve la conexión: no hay nada que tocar.""",
             "fallo técnico",
             "arreglar",
             "ayuda",
+            "enlace",
+            "enlaces",
+            "sitio web",
+            "en gris",
         ),
         related=("contact", "getting-started"),
-        updated="2026-09-01",
+        updated="2026-11-08",
     ),
     Article(
         slug="report-a-bug",

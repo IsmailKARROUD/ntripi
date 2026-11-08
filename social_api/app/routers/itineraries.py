@@ -129,6 +129,7 @@ from app.services.translation_service import purge_orphans, sync_translations
 from app.services.user_service import get_active_user_or_404, public_profile_text
 from app.storage.factory import storage
 from app.errors import ApiError
+from app.validators.links import refuse_new_links
 
 logger = logging.getLogger(__name__)
 
@@ -199,6 +200,8 @@ def _moderate_itinerary_text(
     itinerary: Itinerary | None,
     db: Session,
     current_user: User,
+    *,
+    stored=None,
 ):
     """Scan text belonging to an itinerary and stamp the outcome on it.
 
@@ -209,9 +212,12 @@ def _moderate_itinerary_text(
     Call from the endpoint BODY, after the ownership/If-Match checks: a 412
     must never spend a moderation call. `itinerary` is None on create (the row
     does not exist yet); the caller stamps the returned status itself.
+    `stored` is what `fields` replace (the row, or a mapping) — see
+    _scan_itinerary_text.
     """
     ctx = _scan_itinerary_text(
         fields, itinerary.id if itinerary is not None else None, db, current_user,
+        stored=stored,
     )
     if itinerary is not None:
         _stamp_itinerary_text(ctx, itinerary, db)
@@ -223,13 +229,21 @@ def _scan_itinerary_text(
     itinerary_id: uuid.UUID | None,
     db: Session,
     current_user: User,
+    *,
+    stored=None,
 ):
     """The scan half of _moderate_itinerary_text, touching no itinerary.
 
     On its own for the form routes, which check a cover between the scan and
     the stamp: a refused image commits the session for its audit row, so the
     itinerary must not be dirty by then.
+
+    Every itinerary text write passes here, so this is where the link rule is
+    held (validators/links.py): `stored` is what the fields replace — the row,
+    a mapping, or None on a create — and only a changed value may not carry a
+    link. Checked before the scan, so a refused write costs no provider call.
     """
+    refuse_new_links(fields, stored)
     return moderate_or_422(
         db, get_settings(),
         target_type="itinerary",
@@ -429,6 +443,16 @@ def _leg_text_fields(legs) -> dict[str, str | None]:
         for index, leg in enumerate(legs)
         for name in ("line", "direction", "notes")
     }
+
+
+def _unchanged_leg_text(leg_text: dict[str, str | None], old_legs) -> dict[str, str]:
+    """The entries of `leg_text` an old leg already stores in the same field —
+    a segment update replaces every leg, so this is how the link rule tells an
+    untouched old text from a new one (`_scan_itinerary_text`'s `stored`)."""
+    held = {name: {getattr(leg, name) for leg in old_legs}
+            for name in ("line", "direction", "notes")}
+    return {key: value for key, value in leg_text.items()
+            if value is not None and value in held[key.split("_", 1)[1]]}
 
 
 def _two_phase_renumber(rows, db: Session) -> None:
@@ -1271,6 +1295,7 @@ def update_itinerary(
 
     _moderate_itinerary_text(
         _itinerary_text_fields(update_data), itinerary, db, current_user,
+        stored=itinerary,
     )
     was_public = itinerary.visibility == "public"
     old_title = itinerary.title
@@ -1324,6 +1349,7 @@ def update_itinerary_form(
     # Both checks before the first write: either refusal commits the session.
     text_ctx = _scan_itinerary_text(
         _itinerary_text_fields(update_data), itinerary.id, db, current_user,
+        stored=itinerary,
     )
     moderation = None
     if image is not None:
@@ -1915,7 +1941,7 @@ def update_stop(
     )
     _moderate_itinerary_text(
         {key: scalar_fields[key] for key in _STOP_TEXT_FIELDS if key in scalar_fields},
-        itinerary, db, current_user,
+        itinerary, db, current_user, stored=stop,
     )
     for field, value in scalar_fields.items():
         setattr(stop, field, value)
@@ -2187,7 +2213,8 @@ def update_itinerary_annotation(
     wants_trip: str | None = Depends(wants_itinerary),
 ) -> Response:
     annotation = _get_itinerary_annotation_or_404(annotation_id, itinerary_id, db)
-    _moderate_itinerary_text({"content": body.content}, itinerary, db, current_user)
+    _moderate_itinerary_text({"content": body.content}, itinerary, db, current_user,
+                             stored=annotation)
     _apply_annotation_fields(annotation, body)
     annotation = _save_annotation(annotation, itinerary, db)
     if wants_trip:
@@ -2282,7 +2309,8 @@ def update_annotation(
     wants_trip: str | None = Depends(wants_itinerary),
 ) -> Response:
     annotation = _get_stop_annotation_or_404(annotation_id, stop_id, itinerary_id, db)
-    _moderate_itinerary_text({"content": body.content}, itinerary, db, current_user)
+    _moderate_itinerary_text({"content": body.content}, itinerary, db, current_user,
+                             stored=annotation)
     _apply_annotation_fields(annotation, body)
     annotation = _save_annotation(annotation, itinerary, db)
     if wants_trip:
@@ -2318,6 +2346,8 @@ def upsert_rating(
     if note == "":
         note = None
 
+    # Only a changed note may not carry a link; checked before the paid scan.
+    refuse_new_links({"note": note}, existing)
     # Ratings carry their own status: a stranger's abusive review must never
     # take down the itinerary owner's trip.
     ctx = moderate_or_422(
@@ -2719,7 +2749,9 @@ def update_segment(
 
     _require_stops_in_itinerary(itinerary_id, body.from_stop_id, body.to_stop_id, db)
 
-    _moderate_itinerary_text(_leg_text_fields(body.legs), itinerary, db, current_user)
+    leg_text = _leg_text_fields(body.legs)
+    _moderate_itinerary_text(leg_text, itinerary, db, current_user,
+                             stored=_unchanged_leg_text(leg_text, segment.legs))
 
     segment.from_stop_id = body.from_stop_id
     segment.to_stop_id = body.to_stop_id
@@ -2835,7 +2867,7 @@ def update_leg(
     _moderate_itinerary_text(
         {key: update_data[key]
          for key in ("line", "direction", "notes") if key in update_data},
-        itinerary, db, current_user,
+        itinerary, db, current_user, stored=leg,
     )
     for field, value in update_data.items():
         setattr(leg, field, value)

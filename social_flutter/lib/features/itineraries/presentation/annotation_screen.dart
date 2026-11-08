@@ -20,6 +20,7 @@ import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/moderation_hint.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
 import 'package:ntripi/shared/widgets/saving_overlay.dart';
+import 'package:ntripi/shared/widgets/text_rules.dart';
 
 /// What the editor returns on Save.
 typedef AnnotationFormResult = ({String content, AnnotationType type});
@@ -59,6 +60,9 @@ class AnnotationScreen extends StatefulWidget {
 class _AnnotationScreenState extends State<AnnotationScreen> {
   late AnnotationType _type;
   late final TextEditingController _contentController;
+  // No new link in the note (text_rules.dart); an old one never blocks Save.
+  late final RuledField _contentField =
+      RuledField(_contentController, initial: widget.initialContent);
   bool _saving = false;
 
   // Baseline of the editable fields, captured after seeding from widget, so
@@ -135,7 +139,9 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final title = widget.isEdit ? l10n.editAnnotationTitle : l10n.addAnnotationDialogTitle;
-    final canSave = !_saving && _contentController.text.trim().isNotEmpty;
+    final canSave = !_saving &&
+        _contentController.text.trim().isNotEmpty &&
+        textRulesHold([_contentField]);
 
     return PopScope(
       // Block the back gesture/button while there are unsaved edits; the
@@ -336,7 +342,10 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ModerationHint(
               controller: _contentController,
-              child: Container(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+              Container(
                 decoration: BoxDecoration(
                   color: nt.surface,
                   borderRadius: BorderRadius.circular(NtripiRadius.field),
@@ -363,6 +372,9 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
                     height: 1.5,
                   ),
                 ),
+              ),
+                  TextRulesNote(_contentField),
+                ],
               ),
             ),
           ),

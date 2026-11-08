@@ -3478,4 +3478,20 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get apiErrorTranslationLanguageUnsupported =>
       'الترجمة إلى هذه اللغة غير متاحة.';
+
+  @override
+  String textRuleNoLinks(String match) {
+    return 'لا يمكن إضافة روابط هنا — احذف «$match».';
+  }
+
+  @override
+  String get apiErrorTextContainsLink => 'لا يمكن إضافة روابط هنا.';
+
+  @override
+  String get useAsMapLink => 'استخدمه رابطًا لخرائط Google لهذه المحطة';
+
+  @override
+  String usernameLooksLikeLink(String match) {
+    return 'لا يمكن أن يبدو اسم المستخدم كعنوان موقع إلكتروني («$match»).';
+  }
 }

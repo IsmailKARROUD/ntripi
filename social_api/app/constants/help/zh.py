@@ -114,6 +114,7 @@ RELEASES: tuple[Release, ...] = (
             "**网页版也会拦下不允许的图片。**和手机上一样，明显违反社区准则的图片在你选中时就会被拒绝，并说明原因。Ntripi 打不开的格式（例如网页浏览器里的 HEIC 照片）现在会在选中时直接说明是哪种格式，而不是一直加载；AVIF 图片现在也能在浏览器里打开。",
             "**点按行程封面即可查看完整图片。**在行程页面上点按封面，会像头像一样全屏打开——双指张开或双击即可放大。",
             "**停靠点的 Google 地图链接只会通往 Google 地图。** 会把读者转到其他网站的 Google 地址会被拒绝，已经保存的此类链接也会被移除。从 Google 地图复制的链接照常可用。",
+            "**所写内容里不再有链接。** 标题、描述、备注、点评、名字和简介不再接受网址、电子邮件地址或网站名——红字会指出要删掉什么——写进文字里的图片也永远不会显示。停靠点的 Google 地图链接（在单独的栏位里）是唯一保留的链接。行程的公开页面现在会显示描述里的粗体、列表和标题。",
         ),
     ),
     Release(
@@ -480,7 +481,9 @@ ARTICLES: tuple[Article, ...] = (
                 heading="写下自己的备注",
                 body="""备注字段是自由文本——预订号、点什么菜、走哪个入口、为什么选这里而不是隔壁那家。
 
-如果某条提醒应该显眼到难以忽略，而不是被顺带读过，请改用[建议或注意提示](/help/travel-notes-and-warnings)：那些会显示为彩色标签。""",
+如果某条提醒应该显眼到难以忽略，而不是被顺带读过，请改用[建议或注意提示](/help/travel-notes-and-warnings)：那些会显示为彩色标签。
+
+备注里不能包含链接——不能有网址、电子邮件地址，也不能有 booking.com 这样的网站名。请用文字写出地点名称：停靠点唯一接受的链接是它的 Google 地图链接，填在单独的栏位里。""",
             ),
         ),
         keywords=(
@@ -498,7 +501,7 @@ ARTICLES: tuple[Article, ...] = (
             "博物馆",
         ),
         related=("plan-a-trip-itinerary", "add-locations-from-google-maps", "travel-notes-and-warnings"),
-        updated="2026-10-27",
+        updated="2026-11-08",
         cta="开一趟行程，添加你的第一个停靠点。",
     ),
     Article(
@@ -907,7 +910,7 @@ ARTICLES: tuple[Article, ...] = (
                 anchor="link-previews",
                 heading="把链接贴到别处时会显示什么？",
                 kind=KIND_FAQ,
-                body="""公开的行程会生成一张预览卡片，包含封面图、标题、时长、花费和评分。
+                body="""公开的行程会生成一张预览卡片，包含封面图、标题、评分和描述的开头。
 
 非公开的行程只会生成一张朴素的卡片，说明这是 Ntripi 上的私密行程——不含标题、封面照片或所有者。显示得更多，就会把行程展示给聊天里的所有人，包括那些根本打不开它的人。""",
             ),
@@ -931,7 +934,7 @@ ARTICLES: tuple[Article, ...] = (
             "不可用",
         ),
         related=("plan-a-trip-itinerary", "plan-alternative-options"),
-        updated="2026-10-18",
+        updated="2026-11-08",
         cta="规划一趟行程，只分享给你真正想分享的人。",
     ),
     Article(
@@ -1894,6 +1897,14 @@ ARTICLES: tuple[Article, ...] = (
 有两条出路，而且都保住你的成果：把行程拿回来再保存，或者把文字复制出去，等对方结束后再粘贴回来。在你自己离开这个页面之前，什么都不会被丢弃。""",
             ),
             Block(
+                anchor="links-not-allowed",
+                heading="“这里不能添加链接”",
+                kind=KIND_FAQ,
+                body="""Ntripi 不接受你所写内容里的链接——标题、描述、备注、点评、名字和简介都一样：不能有网址、电子邮件地址，也不能有 booking.com 这样的网站名。栏位下方的红字会引用它找到的内容，在它被删掉之前，“保存”一直是灰色的。如果两个词在句点两边连在了一起（lunch.Tours），加一个空格就行。
+
+停靠点唯一接受的链接是它的 Google 地图链接，填在单独的栏位里——把链接粘贴到地点搜索里，Ntripi 会提议把它放到那里。用户名也不能像网址：anna.paris 的结尾就像一个网址，而 anna_paris 可以。""",
+            ),
+            Block(
                 anchor="image-rejected",
                 heading="我上传的照片被拒绝了",
                 kind=KIND_FAQ,
@@ -1946,9 +1957,13 @@ ARTICLES: tuple[Article, ...] = (
             "崩溃",
             "修复",
             "帮助",
+            "链接",
+            "网址",
+            "网站",
+            "灰色",
         ),
         related=("contact", "getting-started"),
-        updated="2026-09-01",
+        updated="2026-11-08",
     ),
     Article(
         slug="report-a-bug",
