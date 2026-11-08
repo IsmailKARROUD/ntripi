@@ -112,6 +112,7 @@ RELEASES: tuple[Release, ...] = (
             "**Las pestañas pasan al lateral en una pantalla ancha.** En una tableta, o en una ventana del navegador con espacio de sobra, las cinco pestañas aparecen en el lado izquierdo en lugar de abajo, y cada pantalla queda centrada, con un ancho cómodo de leer. Ahora las tabletas también se pueden girar en horizontal.",
             "**Las pantallas anchas aprovechan su espacio.** Las pestañas del lateral ocupan toda la altura de la pantalla. **Nuevo itinerario** pasa al extremo derecho, fuera de tu lista, y el título **Mis itinerarios** comparte fila con **Todos**, **Míos** y **Compartidos**. En un perfil, el nombre se coloca junto a los contadores de **Seguidores** y **Siguiendo**, y **Pasaporte**, **Vive en** y **Habla** se alinean en una sola fila, de lado a lado de la pantalla. Cuando no hay sitio, todo se apila como en un teléfono.",
             "**Las imágenes no permitidas también se detienen en la web.** Como en el móvil, una imagen que claramente incumple las normas de la comunidad se rechaza en cuanto la eliges, y se indica el motivo. Una imagen en un formato que Ntripi no puede abrir (una foto HEIC en un navegador web, por ejemplo) se indica en cuanto la eliges, en lugar de quedarse cargando, y las imágenes AVIF ahora también se abren en el navegador.",
+            "**Toca la portada de un viaje para verla entera.** En la página de un viaje, tocar la portada la abre a pantalla completa, como la foto de un perfil; pellizca o toca dos veces para hacer zoom.",
         ),
     ),
     Release(
@@ -732,6 +733,11 @@ Quienes tengan la aplicación en otro idioma pueden traducir ambas con **Ver tra
 El recorte es apaisado, porque esa es la forma que usa una vista previa de enlace. Una foto vertical perderá la parte de arriba y la de abajo, así que elige una cuyo motivo esté en el centro.""",
             ),
             Block(
+                anchor="see-the-whole-cover",
+                heading="Ver la portada entera",
+                body="""En la página de un viaje, la portada se recorta para caber en el espacio sobre el título. Tócala para verla entera, a pantalla completa: pellizca o toca dos veces para hacer zoom, y toca ✕ para cerrar. Puede hacerlo cualquiera que pueda abrir el viaje, igual que con la foto de un perfil.""",
+            ),
+            Block(
                 anchor="what-gets-refused",
                 heading="Qué se rechaza, y por qué",
                 body="""Una imagen puede rechazarse por tres motivos:
@@ -773,6 +779,9 @@ Aun así conviene poner una de verdad antes de compartirlo públicamente: en un 
             "heic",
             "avif",
             "formato",
+            "pantalla completa",
+            "ampliar",
+            "zoom",
         ),
         related=("plan-a-trip-itinerary", "share-a-trip-link"),
         updated="2026-11-07",

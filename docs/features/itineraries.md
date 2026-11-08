@@ -271,6 +271,24 @@ registered from the same router under the `/users` prefix.
   claim, a 422 on the text or the image — leaves the form open with every field
   and the picked image intact; on create that now includes a refused cover,
   which used to create the trip without it.
+- **A tap on the cover opens it full screen** (since 2026-11-07) — `_CoverHero`
+  hands a tap on the cover to `showFullscreenImage`
+  (`shared/widgets/fullscreen_image_viewer.dart`), the viewer a profile's cover
+  and photo open in: pinch or double-tap to zoom, ✕ to close, grown out of the
+  tap point. The hero cuts the cover to fit its 240 px banner, so this is where
+  the whole picture is seen. Anyone who can open the trip, in read and edit
+  mode; deaf to it while arranging (`_InertWhileArranging`). The viewer is a
+  pageless route on the root navigator — no URL, nothing to classify in
+  `landing_routes_test.dart` — and asks for the same
+  `CachedNetworkImageProvider` key as the hero, so it opens from the copy
+  already in memory, offline too. For a screen reader the cover is a button
+  named `coverImageLabel` ("Cover image") whose tap opens the viewer from the
+  centre. Only a cover that shows answers: the placeholder — no cover, or one
+  that failed to load, both labelled "No cover image" — keeps its own tap, the
+  owner's add-cover hint and nothing for anyone else. The owner's and an
+  editor's long press still opens the details form; the gesture arena gives a
+  press to one or the other. Regression test:
+  `test/widgets/itinerary_detail_cover_tap_test.dart`.
 - **The route in Google Maps** (since 2026-10-29) — the directions arrow in the
   stops header (`_RoutePillButton`; read mode only, shown once the route has
   two points) opens the trip in Google Maps, the one maps app with multi-stop

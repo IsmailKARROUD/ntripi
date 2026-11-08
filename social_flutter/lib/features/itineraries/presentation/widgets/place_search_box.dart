@@ -200,7 +200,7 @@ class _PlaceSearchBoxState extends ConsumerState<PlaceSearchBox> {
             hintText: l10n.searchPlaceHintText,
             filled: true,
             fillColor: nt.surface,
-            prefixIcon: Icon(Icons.search_rounded, color: nt.forest),
+            prefixIcon: Icon(Icons.travel_explore, color: nt.forest),
             suffixIcon: widget.controller.text.isEmpty
                 ? null
                 : Row(
@@ -208,14 +208,14 @@ class _PlaceSearchBoxState extends ConsumerState<PlaceSearchBox> {
                     children: [
                       IconButton(
                         key: PlaceSearchBox.clearKey,
-                        icon: const Icon(Icons.close_rounded, size: 18),
+                        icon: Icon(Icons.backspace, size: 16,color: nt.inverseSurface,),
                         tooltip: l10n.mapLinkClear,
                         onPressed: _clear,
                       ),
                       IconButton(
                         key: PlaceSearchBox.submitKey,
-                        icon: Icon(Icons.arrow_forward_rounded,
-                            size: 20, color: nt.forest),
+                        icon: Icon(Icons.manage_search,
+                             color: nt.forest),
                         tooltip: l10n.placeSearchButton,
                         onPressed: _submit,
                       ),

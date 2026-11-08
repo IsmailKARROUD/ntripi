@@ -203,6 +203,9 @@ RELEASES: tuple[Release, ...] = (
             "picture in a format Ntripi can't open — a HEIC photo in a web "
             "browser, for example — is named the moment you pick it, instead "
             "of loading, and AVIF pictures now open in the browser too.",
+            "**Tap a trip's cover to see all of it.** On a trip's page, tapping "
+            "the cover opens it full screen, as a profile's photo does — pinch "
+            "or double-tap to zoom.",
         ),
     ),
     Release(
@@ -1032,7 +1035,7 @@ ARTICLES: tuple[Article, ...] = (
         keywords=(
             "cover", "photo", "image", "picture", "upload", "crop", "banner",
             "thumbnail", "rejected", "too small", "not allowed", "heic", "avif",
-            "format",
+            "format", "full screen", "zoom", "enlarge",
         ),
         related=("plan-a-trip-itinerary", "share-a-trip-link"),
         cta="Give your trip a face.",
@@ -1052,6 +1055,16 @@ ARTICLES: tuple[Article, ...] = (
                     "The crop is wide, because that is the shape a link preview "
                     "uses. A tall photo will lose its top and bottom, so choose one "
                     "whose subject sits in the middle."
+                ),
+            ),
+            Block(
+                anchor="see-the-whole-cover",
+                heading="See the whole cover",
+                body=(
+                    "On a trip's page the cover is trimmed to fit the space above "
+                    "the title. Tap it to see all of it, full screen: pinch or "
+                    "double-tap to zoom, and tap ✕ to close. Anyone who can open "
+                    "the trip can do this, as with a profile's photo."
                 ),
             ),
             Block(

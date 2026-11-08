@@ -112,6 +112,7 @@ RELEASES: tuple[Release, ...] = (
             "**Les onglets passent sur le côté sur un grand écran.** Sur une tablette, ou dans une fenêtre de navigateur assez large, les cinq onglets s’affichent sur le côté gauche plutôt qu’en bas, et chaque écran reste centré, à une largeur confortable à lire. Les tablettes peuvent désormais être tournées à l’horizontale.",
             "**Les grands écrans tirent parti de leur place.** Les onglets sur le côté occupent toute la hauteur de l’écran. **Nouvel itinéraire** passe tout à droite, à l’écart de votre liste, et le titre **Mes itinéraires** partage sa ligne avec **Tous**, **Les miens** et **Partagés**. Sur un profil, le nom se place à côté des compteurs **Abonnés** et **Abonnements**, et **Passeport**, **Réside à** et **Parle** s’alignent sur une seule ligne, d’un bord à l’autre de l’écran. Quand la place manque, tout s’empile comme sur un téléphone.",
             "**Les images non autorisées sont aussi arrêtées sur le web.** Comme sur téléphone, une image qui enfreint manifestement les règles de la communauté est refusée dès que vous la choisissez, et la raison s’affiche. Une image dans un format que Ntripi ne peut pas ouvrir — une photo HEIC dans un navigateur web, par exemple — est nommée dès que vous la choisissez, au lieu de charger, et les images AVIF s’ouvrent désormais aussi dans le navigateur.",
+            "**Appuyez sur la couverture d’un voyage pour la voir en entier.** Sur la page d’un voyage, appuyer sur la couverture l’ouvre en plein écran, comme la photo d’un profil — pincez ou appuyez deux fois pour zoomer.",
         ),
     ),
     Release(
@@ -734,6 +735,11 @@ Les lecteurs dont l’application est réglée sur une autre langue peuvent trad
 Le recadrage est large, parce que c’est la forme qu’utilise un aperçu de lien. Une photo verticale perdra son haut et son bas, choisissez-en donc une dont le sujet est au milieu.""",
             ),
             Block(
+                anchor="see-the-whole-cover",
+                heading="Voir toute la couverture",
+                body="""Sur la page d’un voyage, la couverture est rognée pour tenir dans l’espace au-dessus du titre. Appuyez dessus pour la voir en entier, en plein écran : pincez ou appuyez deux fois pour zoomer, et appuyez sur ✕ pour fermer. Toute personne qui peut ouvrir le voyage peut le faire, comme avec la photo d’un profil.""",
+            ),
+            Block(
                 anchor="what-gets-refused",
                 heading="Ce qui est refusé, et pourquoi",
                 body="""Une image peut être refusée pour trois raisons :
@@ -776,6 +782,9 @@ Mieux vaut tout de même en ajouter une vraie avant de partager publiquement : d
             "heic",
             "avif",
             "format",
+            "plein écran",
+            "agrandir",
+            "zoom",
         ),
         related=("plan-a-trip-itinerary", "share-a-trip-link"),
         updated="2026-11-07",

@@ -3247,3 +3247,60 @@ libaom) and a heif-enc HEIC:
 - **A time budget on the editor's decode** (planned, dropped): no decode was
   found that never answers. The spinner was a stale build, and a timeout with no
   failure behind it is not a fix.
+
+### 2026-11-07 — A trip's cover opens full screen on a tap, in the profile's viewer
+
+**Context.** A profile's cover and photo open full screen on a tap, through
+`showFullscreenImage` (`shared/widgets/fullscreen_image_viewer.dart`). A trip
+page's cover did nothing when tapped: only the "No cover image" placeholder
+answered, with the owner's add-cover hint. The hero cuts the cover to fit a
+240 px banner, so the whole picture could not be seen anywhere in the app. The
+owner asked for the trip's cover to open the way the profile picture does,
+through the same widget.
+
+**Decision.**
+- `_CoverHero` wraps the cover it shows in a tap that calls
+  `showFullscreenImage` with the tap point — the profile's own call. It works for
+  anyone who can open the trip, in read and edit mode: looking at the picture
+  changes nothing, and the profile's owner opens their own cover the same way.
+  While arranging, the hero stays deaf to touch.
+- The tap belongs to the cover only. The placeholder — no cover, or one that
+  failed to load — keeps its own tap (the owner's hint, nothing for anyone
+  else): it says "No cover image", so opening a viewer from it would contradict
+  it.
+- For a screen reader the cover is a button named `coverImageLabel` ("Cover
+  image", already in all six languages), whose tap opens the viewer from the
+  centre. The pointer's `GestureDetector` is excluded from semantics because a
+  screen reader's tap reaches `onTapUp` with no position and the viewer would
+  grow out of the top-left corner.
+- Neither the viewer nor the profile changes.
+
+**Consequences.**
+- The viewer asks for the cover's `CachedNetworkImageProvider` key, the one the
+  hero drew, so it opens at once from memory, offline too.
+- A long press keeps opening the details form for the owner and an editor; the
+  gesture arena gives a press to one gesture or the other.
+- The viewer is a pageless route on the root navigator: no URL, and on the web
+  the browser's Back leaves the trip as it leaves a profile's viewer.
+- A tap on the title or the visibility badge, drawn over the cover, still opens
+  nothing: they hit-test themselves, as they always did for the placeholder.
+- A profile's cover and photo remain unlabelled for a screen reader
+  ([backlog.md](backlog.md)).
+- Help centre: `trip-cover-photos` gains *See the whole cover* in all six
+  languages, and 0.4.0's release notes say so.
+- Tests: `test/widgets/itinerary_detail_cover_tap_test.dart` (renamed from
+  `itinerary_detail_cover_hint_test.dart`, whose placeholder cases it keeps)
+  seeds Flutter's in-memory image cache under the hero's key, since the real
+  disk cache cannot run under test.
+
+**Alternatives rejected.**
+- **A tap layer over the whole hero, as the profile has**: it would have to sit
+  between the title and the buttons, and decide again at tap time what the
+  placeholder's own detector already decides.
+- **Opening the viewer from the placeholder**: the placeholder says there is no
+  cover image.
+- **A routed page (`/itineraries/:id/cover`)**: a URL to classify in
+  `landing_routes_test.dart` for a picture nobody links to, where the
+  profile's viewer has none.
+- **A viewer of its own for covers**: the owner asked for the same widget, and a
+  second viewer would drift from the first.

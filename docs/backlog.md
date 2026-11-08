@@ -297,6 +297,18 @@ every call site. A token for each, held by a guard like
 `radius_scale_guard_test.dart`, would do for spacing what `NtripiRadius` did for
 corners. Not built: the 2026-10-28 change was scoped to corners.
 
+### idea — a profile's cover and photo are unlabelled for a screen reader
+
+A trip's cover is a button named "Cover image" whose screen-reader tap opens
+the photo viewer from the centre ([decisions](decisions.md), 2026-11-07). A
+profile's cover (`ProfileHero`'s tap layer, `profile_chrome.dart`) and photo
+(`onAvatarTap`) open the same viewer through a bare `GestureDetector`: a screen
+reader hears a tap target with no name, and its tap reaches `onTapUp` with no
+position, so the viewer grows out of the top-left corner. Not built: the
+2026-11-07 change was scoped to the trip's cover. Both taps branch — the cover
+to the visited-places map when there is none, the photo to the add-photo hint
+— so each needs its own label rather than one shared wrapper.
+
 ### idea — the duplicate-stop warning in the stop form may run edge to edge
 
 A bug spotted during the radius sweep, not yet checked on a device: the warning

@@ -2,7 +2,8 @@
 //
 // Layout (CustomScrollView so pull-to-refresh works over the whole page):
 //   Cover hero   — 240px full-bleed image + back / share / flag (non-owner) /
-//                  edit-details / edit-pencil chrome; ✓ to leave edit mode
+//                  edit-details / edit-pencil chrome; ✓ to leave edit mode;
+//                  a tap on the cover opens it full screen
 //   Owner row    — avatar, the viewer's own rating, community average
 //   Meta chips   — duration, cost, stop count
 //   Recommended period — best travel window + why note
@@ -87,6 +88,7 @@ import 'package:ntripi/features/itineraries/presentation/widgets/share_link_acti
 import 'package:ntripi/features/itineraries/presentation/widgets/arrange_trip_view.dart';
 import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/field_help.dart';
+import 'package:ntripi/shared/widgets/fullscreen_image_viewer.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
 import 'package:ntripi/shared/widgets/markdown_edit_screen.dart';
@@ -1927,6 +1929,8 @@ class _DescriptionEditRow extends StatelessWidget {
 // ─── Cover hero (240 px full-bleed) ──────────────────────────────────────────
 // Back button top-left; share / edit / done top-right (glassmorphism).
 // Visibility badge + title + location overlay at the bottom.
+// A tap on the cover opens it full screen in the profile's photo viewer, for
+// anyone who can see the trip; the placeholder keeps its own tap.
 class _CoverHero extends StatefulWidget {
   final String? coverUrl;
   final Itinerary itinerary;
@@ -1951,6 +1955,7 @@ class _CoverHero extends StatefulWidget {
   final VoidCallback? onEnterEdit;
   final VoidCallback? onExitEdit;
   // Owner-only tap on the placeholder cover (null makes it inert for viewers).
+  // A cover that shows opens full screen instead, whoever taps it.
   final VoidCallback? onCoverTap;
   // Owner shortcut in read mode: long-press the hero to open the edit form.
   final VoidCallback? onLongPressEdit;
@@ -1996,19 +2001,36 @@ class _CoverHeroState extends State<_CoverHero> {
           if (widget.coverUrl != null &&
               widget.coverUrl!.isNotEmpty &&
               !_imgError)
-            CachedNetworkImage(
-              imageUrl: widget.coverUrl!,
-              cacheManager: NtripiImageCacheManager(),
-              fit: BoxFit.cover,
-              errorWidget: (_, __, ___) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) setState(() => _imgError = true);
-                });
-                // pill mid-frame — clear of the glass buttons above and the
-                // title/badge overlay below
-                return const ItineraryCoverPlaceholder(
-                    labelAlignment: Alignment(0, 0.1));
-              },
+            // A tap opens the cover in the viewer a profile's photo uses, grown
+            // out of the tap point; a screen reader's tap opens it from the
+            // centre (its TapUpDetails would carry no position).
+            Semantics(
+              container: true,
+              button: true,
+              label: AppLocalizations.of(context)!.coverImageLabel,
+              onTap: () =>
+                  showFullscreenImage(context, imageUrl: widget.coverUrl!),
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                excludeFromSemantics: true,
+                onTapUp: (details) => showFullscreenImage(context,
+                    imageUrl: widget.coverUrl!,
+                    sourcePosition: details.globalPosition),
+                child: CachedNetworkImage(
+                  imageUrl: widget.coverUrl!,
+                  cacheManager: NtripiImageCacheManager(),
+                  fit: BoxFit.cover,
+                  errorWidget: (_, __, ___) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) setState(() => _imgError = true);
+                    });
+                    // pill mid-frame — clear of the glass buttons above and the
+                    // title/badge overlay below
+                    return const ItineraryCoverPlaceholder(
+                        labelAlignment: Alignment(0, 0.1));
+                  },
+                ),
+              ),
             )
           else
             GestureDetector(
@@ -2022,7 +2044,7 @@ class _CoverHeroState extends State<_CoverHero> {
 
           // Gradient overlay: dark at top + bottom, transparent in middle.
           // IgnorePointer: a BoxDecoration hit-tests as opaque, which would
-          // swallow taps meant for the placeholder cover below.
+          // swallow taps meant for the cover or the placeholder below.
           IgnorePointer(
             child: DecoratedBox(
               decoration: BoxDecoration(

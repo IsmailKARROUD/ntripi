@@ -198,6 +198,17 @@ builds already installed, and go once no build in testing calls them
   error. Regression tests: `test/widgets/cover_crop_overlay_test.dart`,
   `test/widgets/undecodable_image_pick_test.dart`.
 - `_CropScreen` is private to `cover_image_field.dart`.
+- **`shared/widgets/fullscreen_image_viewer.dart` `showFullscreenImage`** — the
+  one full-screen photo viewer: photo_view on a black backdrop (pinch or
+  double-tap to zoom, pan, ✕ or Android's Back to close), pushed as a pageless
+  route that grows out of the tap point (`sourcePosition`). It takes a stored
+  URL, relative or absolute, and resolves it through `absoluteImageUrl` and
+  `NtripiImageCacheManager`, the cache the tapped picture was drawn from — a
+  cover's in-memory copy is the viewer's own key. Three callers: a profile's
+  cover (`ProfileHero`, `profile_chrome.dart`)
+  and photo (`ProfileScreen`'s `onAvatarTap`), and since 2026-11-07 a trip's
+  cover (`_CoverHero` — see [itineraries.md](itineraries.md#flutter-surface)).
+  Listed in `test/content_column_guard_test.dart` as a full-window screen.
 - `core/cache/image_cache.dart` — the project-wide image cache; `?v=` is what
   gives it cross-device freshness.
 - `image_picker` for selection, imported by `core/media/image_pick.dart` alone;
