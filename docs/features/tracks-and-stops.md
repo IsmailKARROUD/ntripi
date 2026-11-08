@@ -75,9 +75,10 @@ or moving one item writes exactly one row.
   `after_track_id`/`before_track_id` unless `track_id` is null — otherwise the
   intent ("move to that track" vs "make a new track there") is ambiguous.
 - `map_url` is the security boundary. `validate_google_maps_url`
-  (`schemas/itinerary.py:62`) allows http(s) only, any path on
-  `maps.google.com` / `maps.app.goo.gl`, and only `/maps` paths on
-  `google.com` / `www.google.com` / `goo.gl`.
+  (`schemas/itinerary.py`) accepts only the link shapes Google Maps produces,
+  through `validators/map_link.py` `is_google_maps_link` — never Google's
+  redirect pages, a dot segment, a userinfo or a web address in the query
+  ([places-and-maps.md](places-and-maps.md), decisions.md 2026-11-08).
 - **A stop's location follows the rules of
   [places-and-maps.md](places-and-maps.md)**, enforced for every client by
   `services/stop_location.normalize` and two CHECKs: no coordinates beside a

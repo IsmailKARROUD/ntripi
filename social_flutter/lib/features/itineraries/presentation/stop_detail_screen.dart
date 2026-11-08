@@ -390,7 +390,9 @@ class _StopDetailView extends ConsumerWidget {
                   ? () => maps.openGooglePlace(stop.googlePlaceId!, mapsQuery)
                   : placeLost && mapsQuery.isNotEmpty
                       ? () => maps.searchGoogleMaps(mapsQuery)
-                      : stop.mapUrl != null
+                      // Only a link the check accepts opens: a stored one it
+                      // refuses could be Google's redirect to anywhere.
+                      : hasMapLink
                           ? () => maps.openUrl(stop.mapUrl!)
                           : (hasCoords
                               ? () => showOpenInMapsSheet(

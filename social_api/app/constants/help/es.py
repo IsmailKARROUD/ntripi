@@ -113,6 +113,7 @@ RELEASES: tuple[Release, ...] = (
             "**Las pantallas anchas aprovechan su espacio.** Las pestañas del lateral ocupan toda la altura de la pantalla. **Nuevo itinerario** pasa al extremo derecho, fuera de tu lista, y el título **Mis itinerarios** comparte fila con **Todos**, **Míos** y **Compartidos**. En un perfil, el nombre se coloca junto a los contadores de **Seguidores** y **Siguiendo**, y **Pasaporte**, **Vive en** y **Habla** se alinean en una sola fila, de lado a lado de la pantalla. Cuando no hay sitio, todo se apila como en un teléfono.",
             "**Las imágenes no permitidas también se detienen en la web.** Como en el móvil, una imagen que claramente incumple las normas de la comunidad se rechaza en cuanto la eliges, y se indica el motivo. Una imagen en un formato que Ntripi no puede abrir (una foto HEIC en un navegador web, por ejemplo) se indica en cuanto la eliges, en lugar de quedarse cargando, y las imágenes AVIF ahora también se abren en el navegador.",
             "**Toca la portada de un viaje para verla entera.** En la página de un viaje, tocar la portada la abre a pantalla completa, como la foto de un perfil; pellizca o toca dos veces para hacer zoom.",
+            "**El enlace de Google Maps de una parada solo lleva a Google Maps.** Se rechaza una dirección de Google que llevaría a los lectores a otro sitio, y las que ya estaban guardadas se eliminan. Los enlaces copiados de Google Maps funcionan como antes.",
         ),
     ),
     Release(
@@ -524,7 +525,7 @@ Elige una sugerencia y el lugar aparece en el mapa de Google. Para elegir otra, 
                 kind=KIND_STEP,
                 body="""Pega la URL en el campo de enlace bajo la búsqueda. Ntripi guarda el enlace tal como lo pegaste y no lo abre, así que escribe tú el nombre de la parada.
 
-Un enlace largo copiado del navegador puede aparecer en el mapa del viaje. Un enlace corto para compartir (maps.app.goo.gl) no puede — no dice de qué lugar se trata —, así que Ntripi te sugiere buscar el lugar. Solo se aceptan direcciones de Google Maps: un enlace a cualquier otro sitio se rechaza en lugar de guardarse e ignorarse en silencio.""",
+Un enlace largo copiado del navegador puede aparecer en el mapa del viaje. Un enlace corto para compartir (maps.app.goo.gl) no puede — no dice de qué lugar se trata —, así que Ntripi te sugiere buscar el lugar. Solo se aceptan los enlaces que crea el propio Google Maps, como los que copia su botón Compartir. Un enlace a cualquier otro sitio se rechaza en lugar de guardarse e ignorarse en silencio, y lo mismo ocurre con una dirección de Google que llevaría a los lectores a otro sitio.""",
             ),
             Block(
                 anchor="pick-on-the-map",
@@ -580,7 +581,7 @@ La vista **Mapa** de un viaje muestra esa misma ruta en el mapa de Google, por l
             "no encontrado",
         ),
         related=("add-places-to-an-itinerary", "permissions"),
-        updated="2026-10-31",
+        updated="2026-11-08",
         cta="Coloca tu primera parada en el mapa.",
     ),
     Article(

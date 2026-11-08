@@ -206,6 +206,10 @@ RELEASES: tuple[Release, ...] = (
             "**Tap a trip's cover to see all of it.** On a trip's page, tapping "
             "the cover opens it full screen, as a profile's photo does — pinch "
             "or double-tap to zoom.",
+            "**A stop's Google Maps link only leads to Google Maps.** A Google "
+            "address that would send readers on to another site is refused, and "
+            "any already saved are removed. Links copied from Google Maps work "
+            "as before.",
         ),
     ),
     Release(
@@ -742,7 +746,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="building",
         schema=SCHEMA_HOWTO,
-        updated="2026-10-31",
+        updated="2026-11-08",
         keywords=(
             "google maps", "search", "find a place", "autocomplete", "place id",
             "link", "paste", "short link", "coordinates", "gps", "pin",
@@ -788,9 +792,11 @@ ARTICLES: tuple[Article, ...] = (
                     "A long link copied from your browser can appear on the trip's "
                     "map. A short share link (maps.app.goo.gl) cannot — it does "
                     "not say which place it is — so Ntripi suggests searching for "
-                    "the place instead. Only Google Maps addresses are accepted: a "
-                    "link to anywhere else is refused rather than stored and "
-                    "quietly ignored."
+                    "the place instead. Only links Google Maps itself makes are "
+                    "accepted, such as the ones its Share button copies. A link to "
+                    "anywhere else is refused rather than stored and quietly "
+                    "ignored — and so is a Google address that would pass readers "
+                    "on to another site."
                 ),
             ),
             Block(

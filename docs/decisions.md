@@ -3304,3 +3304,64 @@ through the same widget.
   profile's viewer has none.
 - **A viewer of its own for covers**: the owner asked for the same widget, and a
   second viewer would drift from the first.
+
+### 2026-11-08 — A stop's map link must be one Google Maps makes; links stored before are cleared once, by hand
+
+**Context.** A stop's `map_url` is the one user-supplied link a reader can tap
+("Open in Google Maps"). The check on it (`validate_google_maps_url`, mirrored
+by the app's `isGoogleMapsUrl`) only looked at the host: any path on
+`maps.google.com` or `maps.app.goo.gl` passed, and any path *starting* `/maps`
+on `google.com`. So `https://maps.google.com/url?q=https://phish.example` —
+Google's own redirect page, a documented phishing route for years (Sophos 2018,
+Cofense 2024, Mimecast 2026) — passed both checks, and so did
+`google.com/maps/../url?q=…`, which a browser resolves to `/url`. Python's
+`urlparse` also reads the host of `https://evil.example\@maps.google.com/` as
+`maps.google.com`, while a browser goes to `evil.example`. And the stop page
+opened a stored link even when the app's own check refused it (the fallback
+branch of `onOpenInMaps` tested `stop.mapUrl != null`). The owner raised the
+redirect route while the long-texts plan was being settled and chose to fix it
+first, as its own change.
+
+**Decision.**
+- One check, `app/validators/map_link.py` `is_google_maps_link`, mirrored rule
+  for rule by `isGoogleMapsUrl`: only the shapes Google Maps produces —
+  `maps.app.goo.gl/<code>`, `goo.gl/maps/<code>`, `(www.)google.com/maps…` and
+  `maps.google.com[/maps…]` — with a bare host (no userinfo, no port), no dot
+  segment raw or escaped (ASCII escapes decoded up to three rounds), no
+  backslash, no whitespace or invisible character, and no web address in the
+  query or the fragment. Escaped slashes stay legal inside a place link's
+  `data=` (`…!16s%2Fg%2F…`), where Google writes them.
+- Both sides read one sample list, `social_flutter/test/support/map_link_samples.json`
+  (`test_map_links.py`, `google_maps_links_test.dart`), the way
+  `test_radius_scale.py` reads across the two codebases.
+- The stop page opens a link only when the check accepts it, and the trip's
+  route ignores a stored link it refuses (`mapPointOf`).
+- Links already stored are cleared once, by hand:
+  `scripts/clear_unsafe_map_links.py`, dry run first (it lists every link and
+  rolls back, so its count is exact), the owner reviews the list, then the real
+  run. It clears each refused link the way an edit removing it would
+  (`stop_location.normalize`): the link, the place ID read from its text,
+  `place_source` and the refresh stamps; the stop keeps its name and notes. A
+  Core `UPDATE` on `stops` only, so `itineraries.updated_at` never moves.
+
+**Consequences.**
+- A link pasted from Google Maps' Share sheet, a place, search, directions,
+  viewport or My Maps link still saves. Country Google domains
+  (`google.fr/maps`) were never accepted and still are not.
+- The refusal stays the Pydantic 422 on `map_url`; the app's field validator
+  refuses the same links before a save.
+- Installed builds still accept any `maps.google.com` path in their own form,
+  but the server refuses it, and once the clean-up has run there is no stored
+  one left for them to open.
+- Deploy order: backend, then the clean-up (dry run, review, run), then the app.
+
+**Alternatives rejected.**
+- **Keeping the host check and blocking `/url` alone**: the dot-segment and
+  backslash routes stay open, and Google has more redirect pages (`/amp/s/…`).
+- **Resolving short links on the server to see where they lead**: a fetch per
+  save, for links only Google's own share sheet can mint.
+- **An Alembic data migration for the clean-up**: logic in a migration runs
+  untested, would have to import the app or redo the decoding in SQL, and a
+  failure would stop the deploy. **The sweep**: a permanent scan for a one-time
+  job, which would also clear links silently on any later rule change, without
+  the count the owner asked to see first.

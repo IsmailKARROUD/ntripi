@@ -18,10 +18,9 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 from typing import Literal, Optional
-from urllib.parse import urlparse
-
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.validators.map_link import is_google_maps_link, strip_link
 from app.validators.not_null import reject_explicit_nulls
 
 
@@ -64,24 +63,15 @@ _DAYS_IN_MONTH = {
 
 # A stop's map_url may only point at Google Maps — OSM's gazetteer is thinner,
 # so users paste a Google Maps link for places it can't resolve. This is the
-# security boundary (do not trust the client): any host not on the allowlist is
-# rejected, so an arbitrary link (YouTube, other providers) can never be stored.
+# security boundary (do not trust the client): only the link shapes Google Maps
+# produces pass — a host check alone let Google's own redirect pages through
+# (validators/map_link.py says which, and why).
 def validate_google_maps_url(url: Optional[str]) -> Optional[str]:
     if url is None:
         return url
-    parsed = urlparse(url.strip())
-    if parsed.scheme not in ("http", "https") or not parsed.hostname:
-        raise ValueError("map_url must be an http(s) Google Maps link")
-    host = parsed.hostname.lower()
-    path = parsed.path or ""
-    # Short-link / maps subdomains carry the destination in the path itself.
-    if host in ("maps.google.com", "maps.app.goo.gl"):
-        return url.strip()
-    # Bare-domain hosts must scope to /maps so a generic google.com/goo.gl
-    # (search, mail, arbitrary short link) can't slip through.
-    if host in ("google.com", "www.google.com", "goo.gl") and path.startswith("/maps"):
-        return url.strip()
-    raise ValueError("map_url must be a Google Maps link")
+    if not is_google_maps_link(url):
+        raise ValueError("map_url must be a Google Maps link")
+    return strip_link(url)
 
 
 def validate_stop_location(stop):

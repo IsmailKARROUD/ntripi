@@ -80,7 +80,8 @@ MapPoint? mapPointOf(Stop stop) {
   if (stop.googlePlaceMissing) return null;
   if (stop.lat != null && stop.lng != null) return CoordPoint(stop.lat!, stop.lng!);
   final link = stop.mapUrl;
-  if (link == null) return null;
+  // A stored link the check now refuses names nothing the route may trust.
+  if (link == null || !isGoogleMapsUrl(link)) return null;
   final placeId = extractPlaceId(link);
   if (placeId != null) return PlacePoint(placeId, fallback);
   final coords = extractMapCoords(link);

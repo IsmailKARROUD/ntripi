@@ -55,6 +55,15 @@ Google's route through the stops on screen.
   An OSM pick fills the name only when it is empty, plus the address and the
   coordinates (OSM data is open); the Coordinates segment and the map picker
   follow the same rule (`_applySuggestion`).
+- **A pasted link must be one Google Maps makes** (`validators/map_link.py`
+  `is_google_maps_link`, mirrored by the app's `isGoogleMapsUrl`):
+  `maps.app.goo.gl/<code>`, `goo.gl/maps/<code>`, `(www.)google.com/maps…` or
+  `maps.google.com[/maps…]`, with a bare host, no dot segment (raw or escaped),
+  no backslash, no invisible character and no web address in the query or the
+  fragment. Google's own redirect pages (`maps.google.com/url?q=…`, `/amp/s/…`)
+  live on those hosts, so the host alone is not enough (decisions.md
+  2026-11-08). The two checks read one sample list,
+  `social_flutter/test/support/map_link_samples.json`.
 - **A pasted link is stored as typed and never fetched by the form**, and no
   coordinates are ever stored beside it. The server reads a `ChIJ…` place ID
   out of the link's own text into `google_place_id`
@@ -128,6 +137,9 @@ Google's route through the stops on screen.
   its text alone.
 - The route link carries `origin_place_id` / `destination_place_id`, and
   `waypoint_place_ids` only when every waypoint has one (they pair one to one).
+- A pasted link opens as it was typed, and only when the check accepts it: a
+  stored link it refuses gets no map, no Open in Google Maps and no place on
+  the trip's route (`mapPointOf`).
 
 ### The trip page's map
 
@@ -214,7 +226,13 @@ month is paid: watch it with a Google Cloud budget alert.
 - **A bug-report screenshot can capture Google's suggestions** while they are on
   screen; it is kept under bug-report retention (see backlog.md).
 - **The stop page's link preview still fetches the link** for every reader, by
-  the user's choice; only the form stopped.
+  the user's choice; only the form stopped. It follows up to 5 redirects, now
+  only from links the check accepts.
+- **Links stored before 2026-11-08 passed a host-only check.** Those the check
+  now refuses are cleared once, by hand, with
+  `scripts/clear_unsafe_map_links.py` (dry run first; the stop keeps its name
+  and loses its location). Until it has run, installed builds — which open any
+  stored link — can still open one.
 - **Nominatim's one request per second is for the whole app**: past early
   traffic, OSM search needs a self-hosted or paid geocoder (backlog.md).
 - **Mixed waypoint lists** send the text of the place waypoints instead of

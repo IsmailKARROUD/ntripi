@@ -113,6 +113,7 @@ RELEASES: tuple[Release, ...] = (
             "**Les grands écrans tirent parti de leur place.** Les onglets sur le côté occupent toute la hauteur de l’écran. **Nouvel itinéraire** passe tout à droite, à l’écart de votre liste, et le titre **Mes itinéraires** partage sa ligne avec **Tous**, **Les miens** et **Partagés**. Sur un profil, le nom se place à côté des compteurs **Abonnés** et **Abonnements**, et **Passeport**, **Réside à** et **Parle** s’alignent sur une seule ligne, d’un bord à l’autre de l’écran. Quand la place manque, tout s’empile comme sur un téléphone.",
             "**Les images non autorisées sont aussi arrêtées sur le web.** Comme sur téléphone, une image qui enfreint manifestement les règles de la communauté est refusée dès que vous la choisissez, et la raison s’affiche. Une image dans un format que Ntripi ne peut pas ouvrir — une photo HEIC dans un navigateur web, par exemple — est nommée dès que vous la choisissez, au lieu de charger, et les images AVIF s’ouvrent désormais aussi dans le navigateur.",
             "**Appuyez sur la couverture d’un voyage pour la voir en entier.** Sur la page d’un voyage, appuyer sur la couverture l’ouvre en plein écran, comme la photo d’un profil — pincez ou appuyez deux fois pour zoomer.",
+            "**Le lien Google Maps d’une étape ne mène qu’à Google Maps.** Une adresse Google qui renverrait les lecteurs vers un autre site est refusée, et celles déjà enregistrées sont supprimées. Les liens copiés depuis Google Maps fonctionnent comme avant.",
         ),
     ),
     Release(
@@ -526,7 +527,7 @@ Choisissez une suggestion et le lieu apparaît sur la carte de Google. Pour en c
                 kind=KIND_STEP,
                 body="""Collez l’URL dans le champ de lien sous la recherche. Ntripi garde le lien tel que vous l’avez collé et ne l’ouvre pas : saisissez donc vous-même le nom de l’étape.
 
-Un lien long copié depuis votre navigateur peut apparaître sur la carte du voyage. Un lien de partage court (maps.app.goo.gl) ne le peut pas — il ne dit pas de quel lieu il s’agit — et Ntripi vous propose plutôt de chercher le lieu. Seules les adresses Google Maps sont acceptées : un lien vers autre chose est refusé plutôt que stocké et ignoré en silence.""",
+Un lien long copié depuis votre navigateur peut apparaître sur la carte du voyage. Un lien de partage court (maps.app.goo.gl) ne le peut pas — il ne dit pas de quel lieu il s’agit — et Ntripi vous propose plutôt de chercher le lieu. Seuls les liens créés par Google Maps lui-même sont acceptés, comme ceux que copie son bouton Partager. Un lien vers autre chose est refusé plutôt que stocké et ignoré en silence — tout comme une adresse Google qui renverrait les lecteurs vers un autre site.""",
             ),
             Block(
                 anchor="pick-on-the-map",
@@ -582,7 +583,7 @@ La vue **Carte** d’un voyage montre ce même trajet sur la carte de Google, pa
             "introuvable",
         ),
         related=("add-places-to-an-itinerary", "permissions"),
-        updated="2026-10-31",
+        updated="2026-11-08",
         cta="Placez votre première étape sur la carte.",
     ),
     Article(

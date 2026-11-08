@@ -113,6 +113,7 @@ RELEASES: tuple[Release, ...] = (
             "**Breite Bildschirme nutzen ihren Platz.** Die Tabs am Rand verteilen sich über die ganze Höhe des Bildschirms. **Neue Reiseroute** rückt ganz nach rechts, weg von Ihrer Liste, und der Titel **Meine Reiserouten** teilt sich seine Zeile mit **Alle**, **Meine** und **Geteilt**. Im Profil steht der Name neben den Zählern **Follower** und **Gefolgt**, und **Reisepass**, **Wohnt in** und **Spricht** stehen in einer Zeile quer über den Bildschirm. Wo der Platz nicht reicht, steht alles untereinander wie auf dem Telefon.",
             "**Unzulässige Bilder werden jetzt auch im Web gestoppt.** Wie auf dem Telefon wird ein Bild, das offensichtlich gegen die Community-Richtlinien verstößt, schon beim Auswählen abgelehnt, mit Begründung. Ein Bild in einem Format, das Ntripi nicht öffnen kann — etwa ein HEIC-Foto in einem Webbrowser —, wird schon beim Auswählen benannt, statt zu laden, und AVIF-Bilder öffnen sich jetzt auch im Browser.",
             "**Tippen Sie auf das Titelbild einer Reise, um es ganz zu sehen.** Auf der Seite einer Reise öffnet ein Tippen das Titelbild im Vollbild, wie ein Profilfoto — zum Zoomen mit zwei Fingern aufziehen oder doppelt tippen.",
+            "**Der Google-Maps-Link eines Stopps führt nur zu Google Maps.** Eine Google-Adresse, die Leser auf eine andere Website weiterleiten würde, wird abgelehnt, und bereits gespeicherte werden entfernt. Aus Google Maps kopierte Links funktionieren wie bisher.",
         ),
     ),
     Release(
@@ -524,7 +525,7 @@ Wählen Sie einen Vorschlag, und der Ort erscheint auf der Karte von Google. Um 
                 kind=KIND_STEP,
                 body="""Fügen Sie die URL in das Linkfeld unter der Suche ein. Ntripi behält den Link so, wie Sie ihn eingefügt haben, und öffnet ihn nicht — geben Sie den Namen des Stopps also selbst ein.
 
-Ein langer Link aus Ihrem Browser kann auf der Karte der Reise erscheinen. Ein kurzer Teilen-Link (maps.app.goo.gl) kann das nicht — er sagt nicht, um welchen Ort es geht —, deshalb schlägt Ntripi vor, den Ort stattdessen zu suchen. Nur Google-Maps-Adressen werden angenommen: Ein Link zu etwas anderem wird abgelehnt, statt gespeichert und still ignoriert zu werden.""",
+Ein langer Link aus Ihrem Browser kann auf der Karte der Reise erscheinen. Ein kurzer Teilen-Link (maps.app.goo.gl) kann das nicht — er sagt nicht, um welchen Ort es geht —, deshalb schlägt Ntripi vor, den Ort stattdessen zu suchen. Angenommen werden nur Links, die Google Maps selbst erzeugt, etwa die über seine Teilen-Schaltfläche kopierten. Ein Link zu etwas anderem wird abgelehnt, statt gespeichert und still ignoriert zu werden — ebenso eine Google-Adresse, die Leser auf eine andere Website weiterleiten würde.""",
             ),
             Block(
                 anchor="pick-on-the-map",
@@ -580,7 +581,7 @@ Die **Karten**-Ansicht einer Reise zeigt dieselbe Route auf der Karte von Google
             "nicht gefunden",
         ),
         related=("add-places-to-an-itinerary", "permissions"),
-        updated="2026-10-31",
+        updated="2026-11-08",
         cta="Setzen Sie Ihren ersten Stopp auf die Karte.",
     ),
     Article(

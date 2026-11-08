@@ -6,23 +6,104 @@
 // (the trip's route map, Open in Google Maps) and never stored as coordinates —
 // coordinates in a Google link are Google's content.
 
-/// Mirror of the backend allowlist (schemas/itinerary.py `validate_google_maps_url`).
-/// The server stays the authority for what gets stored; this validates the
-/// form's link field and gates the stop page's preview fetch, so no request is
-/// ever made to a non-Google host. Only Google Maps hosts pass.
+// The check below mirrors the server's validators/map_link.py rule for rule;
+// that file says why each one exists. Both are held to one sample list,
+// test/support/map_link_samples.json — add a case there, never to one side.
+const _mapsHosts = {
+  'maps.app.goo.gl',
+  'goo.gl',
+  'google.com',
+  'www.google.com',
+  'maps.google.com',
+};
+// Controls, spaces of every kind, zero-width and bidi characters, the BOM and
+// the backslash a browser reads as a slash. An explicit class, not \s, so the
+// two languages refuse exactly the same characters.
+final _unsafe = RegExp(
+  r'[\u0000- \u007f-\u009f   -‏ - '
+  r' -⁯　﻿\\]',
+);
+// Only ASCII blanks are trimmed — the same set the server strips.
+final _edgeBlanks = RegExp(r'^[ \t\n\r\f\v]+|[ \t\n\r\f\v]+$');
+final _badEscape = RegExp(r'%(?![0-9A-Fa-f]{2})');
+final _asciiEscape = RegExp(r'%([0-7][0-9A-Fa-f])');
+final _linkParts = RegExp(
+  r'^([A-Za-z][A-Za-z0-9+.-]*)://([^/?#]*)([^?#]*)(?:\?([^#]*))?(?:#(.*))?$',
+  dotAll: true,
+);
+final _shortLinkPath = RegExp(r'^/[A-Za-z0-9_-]+/?$');
+final _gooGlPath = RegExp(r'^/maps/[A-Za-z0-9_-]+/?$');
+final _embeddedAddress = RegExp(
+  r'[a-z][a-z0-9+.-]*://|//|\\'
+  r'|(?<![a-z0-9_])(?:https?|javascript|vbscript|data|file|ftp):'
+  r'|(?<![a-z0-9])www\.',
+  caseSensitive: false,
+);
+
+/// %XX escapes of ASCII characters decoded until stable (three rounds at most).
+/// Not `Uri.decodeComponent`: it throws on bytes that are not UTF-8, and
+/// `Uri.parse` resolves the very dot segments this check must see.
+String _decodeAsciiEscapes(String text) {
+  var current = text;
+  for (var round = 0; round < 3; round++) {
+    final decoded = current.replaceAllMapped(
+      _asciiEscape,
+      (m) => String.fromCharCode(int.parse(m[1]!, radix: 16)),
+    );
+    if (decoded == current) break;
+    current = decoded;
+  }
+  return current;
+}
+
+/// Mirror of the server's check (validators/map_link.py `is_google_maps_link`):
+/// only the link shapes Google Maps itself produces pass — never Google's
+/// redirect pages (`maps.google.com/url?q=…`), a `../` path, a userinfo or a
+/// web address hidden in the query. The server stays the authority for what
+/// gets stored; this validates the form's link field and gates the stop page's
+/// preview fetch and its "Open in Google Maps".
 bool isGoogleMapsUrl(String url) {
-  final uri = Uri.tryParse(url.trim());
-  if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
+  final link = url.replaceAll(_edgeBlanks, '');
+  if (link.isEmpty || _unsafe.hasMatch(link) || _badEscape.hasMatch(link)) {
     return false;
   }
-  final host = uri.host.toLowerCase();
-  if (host == 'maps.google.com' || host == 'maps.app.goo.gl') return true;
-  // Bare-domain hosts must scope to /maps so a generic google.com / goo.gl
-  // link (search, mail, arbitrary short link) can't slip through.
-  return (host == 'google.com' ||
-          host == 'www.google.com' ||
-          host == 'goo.gl') &&
-      uri.path.startsWith('/maps');
+  final parts = _linkParts.firstMatch(link);
+  if (parts == null) return false;
+  final scheme = parts[1]!.toLowerCase();
+  if (scheme != 'http' && scheme != 'https') return false;
+  // The whole authority must be a bare host: userinfo or a port never matches.
+  final host = parts[2]!.toLowerCase();
+  if (!_mapsHosts.contains(host)) return false;
+
+  final path = parts[3]!;
+  final bool shapeOk;
+  if (host == 'maps.app.goo.gl') {
+    shapeOk = _shortLinkPath.hasMatch(path);
+  } else if (host == 'goo.gl') {
+    shapeOk = _gooGlPath.hasMatch(path);
+  } else {
+    // The first segment is exactly "maps" — not /url, /amp, /mapsXYZ.
+    shapeOk = path == '/maps' ||
+        path.startsWith('/maps/') ||
+        (host == 'maps.google.com' && (path.isEmpty || path == '/'));
+  }
+  if (!shapeOk) return false;
+
+  // Escaped slashes are legal inside a place link's data= (…!16s%2Fg%2F…);
+  // a dot segment or a backslash once decoded is not.
+  final decodedPath = _decodeAsciiEscapes(path);
+  if (decodedPath.contains(r'\') ||
+      decodedPath.split('/').any((s) => s == '.' || s == '..')) {
+    return false;
+  }
+  for (final part in [parts[4], parts[5]]) {
+    if (part != null &&
+        part.isNotEmpty &&
+        _embeddedAddress.hasMatch(_decodeAsciiEscapes(part))) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /// Coordinate patterns Google Maps embeds in its URLs, most-precise first: the

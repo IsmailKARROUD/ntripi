@@ -209,6 +209,20 @@ void main() {
     expect(launches.single.url, Uri.parse(link));
   });
 
+  testWidgets(
+      'Given a stored link the check now refuses (a Google redirect page), '
+      'When its page opens, Then no map is drawn and nothing can open it',
+      (tester) async {
+    final launches = recordUrlLaunches();
+    const redirect = 'https://maps.google.com/url?q=https://phish.example';
+    final l10n =
+        await _pump(tester, _stop(source: PlaceSource.link, mapUrl: redirect));
+
+    expect(find.text(l10n.linkPreviewOpensInMaps), findsNothing);
+    expect(find.byTooltip(l10n.openInMaps), findsNothing);
+    expect(launches, isEmpty);
+  });
+
   group('a place Google lost', () {
     final lost = _stop(
         source: PlaceSource.google,

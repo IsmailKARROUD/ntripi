@@ -1,5 +1,8 @@
 // Reading a Google Maps link's own text — never fetching it. The form's link
 // field, its short-link hint and the trip's route all decide through these.
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ntripi/features/itineraries/data/google_maps_links.dart';
 
@@ -7,30 +10,26 @@ const _placeId = 'ChIJLU7jZClu5kcR4PcOOO6p3I0';
 
 void main() {
   group('isGoogleMapsUrl', () {
-    for (final url in [
-      'https://maps.app.goo.gl/abc123',
-      'https://maps.google.com/?q=48.85,2.29',
-      'https://www.google.com/maps/place/Eiffel+Tower/',
-      'https://google.com/maps/search/?api=1&query=x',
-      'https://goo.gl/maps/xyz',
-      '  https://maps.app.goo.gl/abc123  ',
-    ]) {
-      test('Given $url, When checked, Then it is a Google Maps link', () {
-        expect(isGoogleMapsUrl(url), isTrue);
+    // One list for the app and the server (social_api/test/test_map_links.py):
+    // the two checks must answer alike for every link in it.
+    final samples = jsonDecode(
+      File('test/support/map_link_samples.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
+    List<Map<String, dynamic>> cases(String kind) =>
+        (samples[kind] as List).cast<Map<String, dynamic>>();
+
+    for (final c in cases('accept')) {
+      test('Given ${c['why']}, When checked, Then it is a Google Maps link',
+          () {
+        expect(isGoogleMapsUrl(c['url'] as String), isTrue,
+            reason: c['url'] as String);
       });
     }
 
-    for (final url in [
-      'https://www.google.com/search?q=maps',
-      'https://goo.gl/abc',
-      'https://www.google.fr/maps/place/x',
-      'https://youtube.com/watch?v=x',
-      'ftp://maps.google.com/x',
-      'maps.app.goo.gl/abc',
-      '',
-    ]) {
-      test('Given "$url", When checked, Then it is refused', () {
-        expect(isGoogleMapsUrl(url), isFalse);
+    for (final c in cases('refuse')) {
+      test('Given ${c['why']}, When checked, Then it is refused', () {
+        expect(isGoogleMapsUrl(c['url'] as String), isFalse,
+            reason: c['url'] as String);
       });
     }
   });
