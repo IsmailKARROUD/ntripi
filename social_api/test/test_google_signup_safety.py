@@ -142,6 +142,16 @@ def test_a_site_name_username_loses_its_dots(client, monkeypatch):
     assert _google(client)["username"] == "anna_paris"
 
 
+def test_a_taken_underscore_name_gets_a_number(client, monkeypatch):
+    """The underscore name is generated like any other: taken → the next free
+    number, never someone else's account."""
+    conftest.register_user(client, "anna_paris", "anna@example.com")
+    _patch_google(monkeypatch, email="anna.paris@gmail.com", sub="g-anna-1")
+    assert _google(client)["username"] == "anna_paris1"
+    _patch_google(monkeypatch, email="anna.paris@outlook.com", sub="g-anna-2")
+    assert _google(client)["username"] == "anna_paris2"
+
+
 def test_an_ordinary_dotted_username_is_kept(client, monkeypatch):
     _patch_google(monkeypatch, email="jane.doe@gmail.com")
     assert _google(client)["username"] == "jane.doe"
