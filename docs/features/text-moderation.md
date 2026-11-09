@@ -175,14 +175,19 @@ rating submit, the Google signup path, and the reject path in
   `hash(text + model + POLICY_VERSION)`.
 - **`text_moderation_decisions` is the audit trail *and* the moderator queue** —
   `reviewed_at IS NULL` means queued. **Retention purges reviewed rows only.**
+- **Moderators read the best-time note** (since 2026-11-09): the admin trip page
+  (`templates/admin/itinerary.html`) shows it under the description, and
+  `admin_service.snapshot_itinerary` keeps it in an operator action's evidence
+  copy (`recommended_period_note`). At 4,000 characters it is too long to act
+  on unseen.
 
 ### The client filter
 
 The word-list filter, `lib/core/moderation/text_precheck.dart`, **warns, never
-blocks** (the link check in `shared/widgets/text_rules.dart` is not this filter:
-it repeats a refusal the server makes, so it holds Save back): any failure
-returns "clean", the submit control stays enabled, and text is **never mutated or
-cleared**.
+blocks** (the text rules in `shared/widgets/text_rules.dart` are not this
+filter: the link rule and each field's cap repeat refusals the server makes, so
+they hold Save back): any failure returns "clean", the submit control stays
+enabled, and text is **never mutated or cleared**.
 
 **Applied to free prose only — never to titles or place names.** European place
 names false-positive on wordlists (Bitche, Condom, Sexbierum, Wank); flagging a

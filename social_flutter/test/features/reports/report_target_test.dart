@@ -95,4 +95,29 @@ void main() {
       );
     });
   });
+
+  group('notesRoom', () {
+    test('a whole itinerary, a review or a profile has the whole cap', () {
+      expect(const ReportTarget.itinerary(itineraryId).notesRoom, 2000);
+      expect(const ReportTarget.rating('r-1').notesRoom, 2000);
+      expect(const ReportTarget.user('u-1').notesRoom, 2000);
+    });
+
+    test(
+        'a fragment leaves room for its reference, so a full note is never '
+        'pushed past the server\'s cap', () {
+      // Real ids are UUIDs: the longest reference is a stop annotation's.
+      const stop = '6f1c2a9e-3b4d-4e5f-8a7b-9c0d1e2f3a4b';
+      const note = '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d';
+      for (final target in const [
+        ReportTarget.stop(itineraryId, stop),
+        ReportTarget.stopAnnotation(itineraryId, stop, note),
+        ReportTarget.itineraryAnnotation(itineraryId, note),
+      ]) {
+        final full = 'x' * target.notesRoom;
+        expect(target.notesWithContext(full)!.length, 2000);
+        expect(target.notesRoom, lessThan(2000));
+      }
+    });
+  });
 }

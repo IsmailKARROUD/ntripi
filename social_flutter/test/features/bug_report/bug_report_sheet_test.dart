@@ -172,6 +172,23 @@ void main() {
       expect(tester.widget<FilledButton>(send).onPressed, isNotNull);
     });
 
+    testWidgets(
+        'past 2,000 characters Send is off and the count red; nothing is cut',
+        (tester) async {
+      await tester.pumpWidget(_sheetHarness(onSubmit: (_, {extras}) async {}));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'z' * 2001);
+      await tester.pumpAndSettle();
+
+      final field = tester.widget<TextField>(find.byType(TextField));
+      expect(field.maxLength, isNull);
+      expect(field.controller!.text.length, 2001);
+      expect(find.text('2001/2000'), findsOneWidget);
+      final send = find.widgetWithText(FilledButton, 'Send report');
+      expect(tester.widget<FilledButton>(send).onPressed, isNull);
+    });
+
     testWidgets('a failed submit reports inline and keeps the text',
         (tester) async {
       var calls = 0;

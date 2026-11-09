@@ -1111,5 +1111,18 @@
   "textRuleNoLinks": "Aquí no se pueden añadir enlaces: quita «{match}».",
   "apiErrorTextContainsLink": "Aquí no se pueden añadir enlaces.",
   "useAsMapLink": "Usar como enlace de Google Maps de la parada",
-  "usernameLooksLikeLink": "Un nombre de usuario no puede parecer una dirección web («{match}»)."
+  "usernameLooksLikeLink": "Un nombre de usuario no puede parecer una dirección web («{match}»).",
+  "textRuleTooLong": "{limit, plural, one{Demasiado largo: {limit} carácter como máximo.} other{Demasiado largo: {limit} caracteres como máximo.}}",
+  "@textRuleTooLong": {
+    "description": "Under a field past its cap, and the server's string_too_long answer. limit is the cap in characters.",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "errorInvalidInput": "Algo de lo que has introducido no se puede guardar así. Revísalo e inténtalo de nuevo.",
+  "@errorInvalidInput": {
+    "description": "A server validation refusal other than a text over its cap — never the server's raw list."
+  }
 }

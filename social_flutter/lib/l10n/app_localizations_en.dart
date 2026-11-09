@@ -3456,4 +3456,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String usernameLooksLikeLink(String match) {
     return 'A username can\'t look like a website address (“$match”).';
   }
+
+  @override
+  String textRuleTooLong(int limit) {
+    String _temp0 = intl.Intl.pluralLogic(
+      limit,
+      locale: localeName,
+      other: 'Too long — $limit characters at most.',
+      one: 'Too long — $limit character at most.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get errorInvalidInput =>
+      'Something you entered can\'t be saved as it is. Check it and try again.';
 }

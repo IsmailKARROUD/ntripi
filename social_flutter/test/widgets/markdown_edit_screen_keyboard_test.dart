@@ -11,9 +11,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
+import 'package:ntripi/core/text/text_limits.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/markdown_edit_screen.dart';
+import 'package:ntripi/shared/widgets/text_rules.dart';
 
 void main() {
   testWidgets('the caret at the end of a long description is above the keyboard',
@@ -43,6 +45,7 @@ void main() {
       ctx,
       initialText: List.filled(30, 'A line of the description').join('\n'),
       title: 'Description',
+      rules: const TextRules(TextLimits.itineraryDescription),
     );
     await tester.pumpAndSettle();
 

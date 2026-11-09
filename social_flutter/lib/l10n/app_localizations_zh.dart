@@ -3273,4 +3273,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String usernameLooksLikeLink(String match) {
     return '用户名不能像网址（“$match”）。';
   }
+
+  @override
+  String textRuleTooLong(int limit) {
+    String _temp0 = intl.Intl.pluralLogic(
+      limit,
+      locale: localeName,
+      other: '太长了——最多 $limit 个字符。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get errorInvalidInput => '你输入的部分内容无法按原样保存。请检查后重试。';
 }

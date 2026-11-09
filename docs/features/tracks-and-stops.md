@@ -289,6 +289,11 @@ trip edit.
   every parallel track with notes collapsed to 0 px in view mode and re-threw on
   each relayout, freezing the app. Regression test:
   `test/widgets/parallel_stop_group_layout_test.dart`.
+- **A stop card's notes fold to two lines of their words** (since 2026-11-09,
+  `FoldedMarkdown`): no `**` or `#` while folded, formatted once "view more"
+  opens them, and formatted at once when short enough to need no fold — then
+  drawn under `IgnorePointer`, so the card's tap still opens the stop
+  ([itineraries.md](itineraries.md)).
 - Inserting a track between two adjacent tracks joined by a segment shows a
   confirmation first, then deletes the segment(s) — see
   [transit-segments.md](transit-segments.md).

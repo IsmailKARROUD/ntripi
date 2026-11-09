@@ -32,7 +32,7 @@ Future<String?> editMarkdownField(
   String? helpTitle,
   String? helpMessage,
   Future<void> Function(String value)? onSave,
-  TextRules rules = TextRules.userText,
+  required TextRules rules,
 }) {
   return Navigator.of(context).push<String>(
     MaterialPageRoute(
@@ -60,7 +60,7 @@ class MarkdownEditScreen extends StatefulWidget {
   final Future<void> Function(String value)? onSave;
 
   /// What the text must obey to be saved (text_rules.dart) — the server's own
-  /// rules, so Save stays off for a text it would refuse.
+  /// rules and the field's cap, so Save stays off for a text it would refuse.
   final TextRules rules;
 
   const MarkdownEditScreen({
@@ -70,7 +70,7 @@ class MarkdownEditScreen extends StatefulWidget {
     this.helpTitle,
     this.helpMessage,
     this.onSave,
-    this.rules = TextRules.userText,
+    required this.rules,
   });
 
   @override

@@ -135,6 +135,83 @@ void main() {
     expect(find.text(_long), findsNothing);
   });
 
+  group('a markdown text (foldedText + expandedBuilder)', () {
+    Widget formatted(BuildContext context, String text) =>
+        Text('formatted: $text');
+
+    testWidgets(
+        'Given a text that fits, Then it shows formatted at once, with no '
+        'link — its markup is never shown as typed', (tester) async {
+      await tester.pumpWidget(_host(ExpandableText(
+        '**Short** note',
+        foldedText: 'Short note',
+        expandedBuilder: formatted,
+      )));
+      await tester.pumpAndSettle();
+
+      expect(find.text('formatted: **Short** note'), findsOneWidget);
+      expect(find.text('**Short** note'), findsNothing);
+      expect(find.text(_viewMore), findsNothing);
+    });
+
+    testWidgets(
+        'Given a text that overflows, Then the fold shows the plain words and '
+        'the link opens the formatted text', (tester) async {
+      await tester.pumpWidget(_host(ExpandableText(
+        '# $_long',
+        foldedText: _long,
+        expandedBuilder: formatted,
+      )));
+      await tester.pumpAndSettle();
+
+      expect(_body(tester, _long).maxLines, 2);
+      expect(find.text('# $_long'), findsNothing);
+
+      await tester.tap(find.text(_viewMore));
+      await tester.pumpAndSettle();
+      expect(find.text('formatted: # $_long'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Given the plain words fit though the source would not, Then the fold '
+        'measures the plain words — markup is not length', (tester) async {
+      // 31 visible characters fit two lines; the link's address would not.
+      const source = '[$_fitsAtOneX](https://example.com/a/very/long/path/'
+          'that/would/wrap/onto/more/lines)';
+      await tester.pumpWidget(_host(ExpandableText(
+        source,
+        foldedText: _fitsAtOneX,
+        expandedBuilder: formatted,
+      )));
+      await tester.pumpAndSettle();
+
+      expect(find.text(_viewMore), findsNothing);
+      expect(find.text('formatted: $source'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Given a short formatted text inside something with a tap of its own, '
+        'Then the tap still reaches it', (tester) async {
+      var parentTaps = 0;
+      await tester.pumpWidget(_host(InkWell(
+        onTap: () => parentTaps++,
+        child: ExpandableText(
+          'Short',
+          foldedText: 'Short',
+          // A builder that would take every tap — as selectable markdown does.
+          expandedBuilder: (context, text) =>
+              GestureDetector(onTap: () {}, child: Text('formatted: $text')),
+        ),
+      )));
+      await tester.pumpAndSettle();
+
+      // The text itself is not hit: that is the point.
+      await tester.tap(find.text('formatted: Short'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(parentTaps, 1);
+    });
+  });
+
   testWidgets('Given the link, Then a screen reader hears a button',
       (tester) async {
     final semantics = tester.ensureSemantics();

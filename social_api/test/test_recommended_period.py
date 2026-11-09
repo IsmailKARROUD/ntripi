@@ -6,7 +6,7 @@ endpoint only:
 
   recommended_periods      windows of {from_month, from_day, to_month, to_day}
   recommended_weekdays     ISO weekday numbers, 1 = Monday … 7 = Sunday
-  recommended_period_note  the one-line "why"
+  recommended_period_note  the author's "why", up to 4,000 characters
 
 The load-bearing rules pinned here:
 
@@ -225,10 +225,16 @@ def test_invalid_weekdays_rejected(client, owner, weekdays):
     ).status_code == 422
 
 
-def test_note_over_cap_rejected(client, owner):
+def test_note_cap_is_4000_characters(client, owner):
+    """The note is written in the description's editor since 2026-11-09 — the
+    old 200 was a one-line justification."""
+    token = owner["access_token"]
     assert _create(
-        client, owner["access_token"], recommended_period_note="x" * 201,
+        client, token, recommended_period_note="x" * 4001,
     ).status_code == 422
+
+    itinerary_id = _create_ok(client, token, recommended_period_note="x" * 4000)
+    assert len(_detail(client, token, itinerary_id)["recommended_period_note"]) == 4000
 
 
 def test_empty_lists_normalize_to_null(client, owner):

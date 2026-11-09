@@ -23,7 +23,6 @@ import 'package:ntripi/features/itineraries/presentation/widgets/rate_itinerary_
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
 import 'package:ntripi/shared/widgets/appeal_sheet.dart';
 import 'package:ntripi/shared/widgets/content_column.dart';
-import 'package:ntripi/shared/widgets/expandable_text.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/moderation_hidden_banner.dart';
 import 'package:ntripi/shared/widgets/reload_report.dart';
@@ -852,10 +851,10 @@ class _ReviewNote extends StatelessWidget {
 
   /// The note as shown — its original, or the translation. Tapping the
   /// one-line preview reveals the rest, as the link does.
-  Widget _note(BuildContext context, String note) => ExpandableText(
+  Widget _note(BuildContext context, String note) => FoldedMarkdown(
         note,
         maxLines: 1,
         expandOnTextTap: true,
-        expandedBuilder: (context, note) => InertMarkdownBody(data: note),
+        style: TextStyle(fontSize: 13, height: 1.4, color: context.nt.text2),
       );
 }

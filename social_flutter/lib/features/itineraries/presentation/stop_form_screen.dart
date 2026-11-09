@@ -24,6 +24,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/services/geocoding_service.dart';
 import 'package:ntripi/core/services/location_service.dart';
+import 'package:ntripi/core/text/text_limits.dart';
 import 'package:ntripi/features/itineraries/domain/annotation.dart';
 import 'package:ntripi/features/itineraries/domain/stop.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/annotation_chip.dart';
@@ -138,15 +139,21 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   int _durationMinutes = 0;
   final _costController = TextEditingController();
   final _notesController = TextEditingController();
-  // The stop's text as the server holds it to the text rules: no new link.
-  // The stored values come from _existingStop, so an old link never holds
-  // Save back until its own text is edited.
+  // The stop's text as the server holds it to the text rules: no new link,
+  // and each field's cap. The stored values come from _existingStop, so an old
+  // link never holds Save back until its own text is edited.
   RuledField get _nameField => RuledField(_placeNameController,
+      rules: const TextRules(TextLimits.stopName),
       initial: _existingStop?.placeName);
   RuledField get _addressField => RuledField(_placeAddressController,
+      rules: const TextRules(TextLimits.stopAddress),
       initial: _existingStop?.placeAddress);
-  RuledField get _notesField =>
-      RuledField(_notesController, initial: _existingStop?.notes);
+  RuledField get _notesField => RuledField(_notesController,
+      rules: const TextRules(TextLimits.stopNotes),
+      initial: _existingStop?.notes);
+  // The map link is the one field that holds a link; only its cap applies.
+  RuledField get _mapUrlField => RuledField(_mapUrlController,
+      rules: const TextRules(TextLimits.mapLink, refuseLinks: false));
 
   bool _initialized = false;
   bool _saving = false;
@@ -1384,7 +1391,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     : OfflineGate(
                       builder:
                           (online) => TextRulesGate(
-                            fields: [_nameField, _addressField, _notesField],
+                            fields: [
+                              _nameField,
+                              _addressField,
+                              _notesField,
+                              _mapUrlField,
+                            ],
                             builder: (context, ok) => TextButton(
                               onPressed:
                                   (online && ok && !_lockLost) ? _save : null,
@@ -1590,7 +1602,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                             _SFBorderlessField(
                               label: l10n.mapLinkLabel.toUpperCase(),
                               childBuilder:
-                                  (focusNode) => TextFormField(
+                                  (focusNode) => TextRulesField(
+                                    field: _mapUrlField,
+                                    child: TextFormField(
                                     key: StopFormScreen.mapLinkFieldKey,
                                     controller: _mapUrlController,
                                     focusNode: focusNode,
@@ -1655,6 +1669,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                           ? null
                                           : l10n.mapLinkInvalid;
                                     },
+                                  ),
                                   ),
                             ),
                           if (!readOnly &&

@@ -39,16 +39,19 @@ _GOOGLE_PLACE_ID_PATTERN = "^[A-Za-z0-9_-]+$"
 # Caps on the free-text columns (all `Text` in PostgreSQL, so previously
 # unbounded). These bound what a single write can submit to the moderation
 # provider — both a cost ceiling and a defence against a megabyte of prose in
-# one request. Generous enough that no plausible travel note hits them.
-_MAX_DESCRIPTION = 4000
+# one request. Generous enough that no plausible travel note hits them; a long
+# text is moderated in pieces (text_moderation_service.score_text). The app
+# holds the same numbers (lib/core/text/text_limits.dart, test_text_limits.py).
+_MAX_DESCRIPTION = 10000
 _MAX_STOP_ADDRESS = 400
 _MAX_STOP_NOTES = 2000
 _MAX_RATING_NOTE = 2000
 _MAX_LEG_DIRECTION = 200
 _MAX_LEG_NOTES = 1000
-# The recommended-period "why" is a one-line justification, not a second
-# description — hence far tighter than _MAX_DESCRIPTION.
-_MAX_PERIOD_NOTE = 200
+# The recommended-period "why" is the author's case for the season — weather,
+# festivals, crowds — written in the description's editor: room for a few
+# paragraphs, still well under the description itself.
+_MAX_PERIOD_NOTE = 4000
 # 12 alternating months (Jan, Mar, May, …) is the densest arrangement of
 # disjoint non-adjacent windows, so 6 is the true ceiling, not a guess.
 _MAX_PERIOD_WINDOWS = 6

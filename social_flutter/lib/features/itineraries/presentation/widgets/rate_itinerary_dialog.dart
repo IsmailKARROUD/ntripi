@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/services/haptics_service.dart';
+import 'package:ntripi/core/text/text_limits.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
 import 'package:ntripi/features/itineraries/domain/my_rating.dart';
@@ -71,9 +72,11 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
   late int? _familyFriendly;
   late int? _crowdedness;
   final _noteController = TextEditingController();
-  // No new link in the review (text_rules.dart); an old one never blocks Save.
-  late final _noteField =
-      RuledField(_noteController, initial: widget.current?.note);
+  // The review's text rules (text_rules.dart): no new link — an old one never
+  // blocks Save — and the server's cap.
+  late final _noteField = RuledField(_noteController,
+      rules: const TextRules(TextLimits.ratingNote),
+      initial: widget.current?.note);
 
   bool _saving = false;
   // Shown inline rather than via a snackbar: the sheet stays open on failure, so

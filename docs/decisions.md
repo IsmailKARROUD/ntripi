@@ -3452,3 +3452,67 @@ endpoint refusing inputs of about 6,000 characters, mostly non-Latin, with a
 - **Cleaning the links out of stored texts, or hiding them on screen**: it
   rewrites people's words without asking; they are inert and go at the next
   edit.
+
+### 2026-11-09 — Long texts: description 10,000, best-time note 4,000, every field held to its cap in the app without cutting, long texts folded
+
+**Context.** The owner asked for a best-time note ("Why this time?") much longer
+than its 200 characters, in the description's editor; the description went to
+10,000 in the same grill (2026-11-08). The 200 had been chosen as "a one-line
+justification, not a second description" (`_MAX_PERIOD_NOTE`); that reasoning
+is superseded here. Long texts were made safe first — moderation in pieces, no
+links, no images (the entry above). What the change found on the way: of the
+app's text fields only four had a cap at all, each as a `maxLength` that cut a
+paste at the cap without a word; every other field met the server's 422, whose
+`detail` the app printed — a list carrying the whole refused text as `input`.
+A report about a stop or a note had a reference prepended after the field's
+own 2,000-character cut, so a full note was refused.
+
+**Decision.**
+- **Caps**: `_MAX_DESCRIPTION` 10,000, `_MAX_PERIOD_NOTE` 4,000. Both columns
+  are `Text`; no migration. Moderators see the note on the admin trip page and
+  in an action's evidence snapshot.
+- **Every text field the server stores is held to its cap in the app — shown,
+  never cut** (the owner's "allow over, block Save"): one number per field in
+  `lib/core/text/text_limits.dart`, read by `test_text_limits.py` against the
+  API's own OpenAPI document; `text_rules.dart` counts code points of the
+  trimmed text (what the server counts), shows the count from 90% of the cap,
+  red past it with "Too long — N characters at most.", and holds Save, Done or
+  Send off while over. No `maxLength` anywhere; `text_rules_guard_test.dart`
+  fails on one, and on a file that draws a text field without naming its
+  rules. The operator-only texts (report, appeal, bug report) take the cap but
+  keep their links. A report's room is the cap less its reference
+  (`ReportTarget.notesRoom`). The place search names a text past its cap and
+  sends it nowhere.
+- **A 422 is never printed raw**: a `string_too_long` becomes the same
+  "Too long" sentence with the server's cap, anything else "check what you
+  entered".
+- **The note is written in the description's editor** (`MarkdownNotesEditor`,
+  bold, lists, headings, Preview) and read like it (`InertMarkdownBody`).
+- **Folding**: on the trip page the description folds to about three lines and
+  the note to two (the owner's numbers), "view more" opening each in place.
+  Folded, a text shows its words without the markup
+  (`markdown_plain_text.dart`); a text short enough to need no fold shows
+  formatted at once — which also fixes stop-card and review notes, whose short
+  texts showed `**` and `#` as typed because only "view more" formatted them.
+  Edit-mode rows and the form's Best time row show plain previews.
+
+**Consequences.**
+- Installed builds keep the note's `maxLength: 200`: opening a longer note in
+  one and typing cuts it to 200, and its Done saves the cut. They show the
+  note's markup and the whole description, and name a 422 by its raw list.
+  The server cannot tell them apart; they age out.
+- The count follows the server's way of counting, so an emoji counts once and
+  trailing blanks not at all — what the user sees is what the server checks.
+- A search box gets no count, only the "Too long" line past its cap: what it
+  holds is a question, not text written for others.
+
+**Alternatives rejected.**
+- **A `maxLength` per field** (Flutter's own counter): it cuts what is pasted,
+  and counts graphemes where the server counts code points.
+- **Counting from the start, or only past the cap**: a count on every field is
+  noise for texts nobody comes near; one that appears only when it is too late
+  gives no warning. The owner chose 90%.
+- **Folding to six and three lines** (the first draft): the owner chose three
+  and two.
+- **Showing a long text in full on the trip page**: 10,000 characters push the
+  stops, the trip's substance, screens away.

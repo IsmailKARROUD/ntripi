@@ -49,6 +49,7 @@ import 'package:ntripi/core/providers/long_press_hint_provider.dart';
 import 'package:ntripi/core/router/navigation_ext.dart';
 import 'package:ntripi/core/services/segment_orphan_service.dart';
 import 'package:ntripi/core/services/sfx_service.dart';
+import 'package:ntripi/core/text/text_limits.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/confirm_dialog.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
@@ -70,6 +71,7 @@ import 'package:ntripi/features/itineraries/domain/recommended_period.dart';
 import 'package:ntripi/features/itineraries/presentation/annotation_screen.dart';
 import 'package:ntripi/features/itineraries/presentation/recommended_period_screen.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
+import 'package:ntripi/shared/utils/markdown_plain_text.dart';
 import 'package:ntripi/shared/models/user.dart';
 import 'package:ntripi/features/itineraries/domain/stop.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/itinerary_unavailable_view.dart';
@@ -106,6 +108,7 @@ import 'package:ntripi/features/translation/presentation/translatable_text.dart'
 import 'package:ntripi/features/translation/providers/translation_providers.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/itinerary_cover_placeholder.dart';
+import 'package:ntripi/shared/widgets/text_rules.dart';
 import 'package:ntripi/shared/widgets/visibility_badge.dart';
 
 class ItineraryDetailScreen extends ConsumerStatefulWidget {
@@ -275,6 +278,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
       title: l10n.descriptionLabel,
       helpTitle: l10n.descriptionLabel,
       helpMessage: l10n.descriptionHelp,
+      rules: const TextRules(TextLimits.itineraryDescription),
       onSave: (value) => ref
           .read(itineraryDetailProvider(widget.itineraryId).notifier)
           .updateHeader({'description': value.isEmpty ? null : value}),
@@ -1888,7 +1892,9 @@ class _DescriptionRow extends StatelessWidget {
           contentId: itineraryId,
           field: 'description',
           original: description,
-          builder: (context, text) => InertMarkdownBody(data: text),
+          // Up to 10,000 characters: about three lines, then "view more".
+          builder: (context, text) =>
+              FoldedMarkdown(text, maxLines: 3, expandOnTextTap: true),
         ),
       ],
     );
@@ -1914,10 +1920,15 @@ class _DescriptionEditRow extends StatelessWidget {
       helpTitle: l10n.descriptionLabel,
       helpMessage: l10n.descriptionHelp,
       onTap: onTap,
-      // IgnorePointer so the markdown's selectable text doesn't swallow the tap
-      // meant for the box's InkWell.
+      // A plain preview of the opening lines: the editor shows the rest, and
+      // a 10,000-character text drawn in full would push the trip off screen.
       child: hasText
-          ? IgnorePointer(child: InertMarkdownBody(data: description!))
+          ? Text(
+              markdownPlainText(description!),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium,
+            )
           : Text(
               l10n.addDescriptionLabel,
               style: TextStyle(color: Theme.of(context).hintColor),
@@ -2454,8 +2465,12 @@ class _RecommendedPeriodRow extends StatelessWidget {
             field: 'recommended_period_note',
             // Untrimmed: the same string the toggle's member names.
             original: period.note!,
-            builder: (context, text) => Text(
+            // Up to 4,000 characters in the description's markdown: two
+            // lines, then "view more".
+            builder: (context, text) => FoldedMarkdown(
               text.trim(),
+              maxLines: 2,
+              expandOnTextTap: true,
               style: TextStyle(fontSize: 12.5, color: nt.text2),
             ),
           ),
@@ -2519,7 +2534,12 @@ class _RecommendedPeriodEditRow extends StatelessWidget {
               Text(weekdays,
                   style: TextStyle(fontSize: 12.5, color: nt.text2)),
             if (note != null && note.isNotEmpty)
-              Text(note, style: TextStyle(fontSize: 12.5, color: nt.text2)),
+              Text(
+                markdownPlainText(note),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12.5, color: nt.text2),
+              ),
           ],
         ],
       ),

@@ -1617,5 +1617,18 @@
         "type": "String"
       }
     }
+  },
+  "textRuleTooLong": "{limit, plural, one{Too long — {limit} character at most.} other{Too long — {limit} characters at most.}}",
+  "@textRuleTooLong": {
+    "description": "Under a field past its cap, and the server's string_too_long answer. limit is the cap in characters.",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "errorInvalidInput": "Something you entered can't be saved as it is. Check it and try again.",
+  "@errorInvalidInput": {
+    "description": "A server validation refusal other than a text over its cap — never the server's raw list."
   }
 }

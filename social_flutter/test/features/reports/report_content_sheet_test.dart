@@ -55,6 +55,7 @@ class _OkRepo extends ReportRepository {
   _OkRepo() : super(Dio());
 
   int calls = 0;
+  String? notes;
 
   @override
   Future<void> report({
@@ -63,6 +64,7 @@ class _OkRepo extends ReportRepository {
     String? notes,
   }) async {
     calls++;
+    this.notes = notes;
   }
 }
 
@@ -81,7 +83,11 @@ class _HeldRepo extends ReportRepository {
       answer.future;
 }
 
-Widget _harness(ReportRepository repo, {bool online = true}) {
+Widget _harness(
+  ReportRepository repo, {
+  bool online = true,
+  ReportTarget target = const ReportTarget.itinerary('itinerary-1'),
+}) {
   return ProviderScope(
     overrides: [
       reportRepositoryProvider.overrideWithValue(repo),
@@ -93,11 +99,7 @@ Widget _harness(ReportRepository repo, {bool online = true}) {
       home: Scaffold(
         body: Consumer(
           builder: (context, ref, _) => TextButton(
-            onPressed: () => showReportContentSheet(
-              context,
-              ref,
-              const ReportTarget.itinerary('itinerary-1'),
-            ),
+            onPressed: () => showReportContentSheet(context, ref, target),
             child: const Text('open'),
           ),
         ),
@@ -276,6 +278,64 @@ void main() {
 
       expect(find.byIcon(Icons.error_outline), findsNothing);
       expect(find.text('Submit report'), findsNothing); // sheet popped
+    });
+  });
+
+  group('the notes\' cap', () {
+    setUp(() {
+      final view =
+          TestWidgetsFlutterBinding.instance.platformDispatcher.views.first;
+      view.physicalSize = const Size(1080, 1920);
+      view.devicePixelRatio = 1.0;
+    });
+
+    tearDown(() {
+      TestWidgetsFlutterBinding.instance.platformDispatcher.views.first.reset();
+    });
+
+    final submit = find.descendant(
+        of: find.byType(SheetActionBar), matching: find.byType(FilledButton));
+
+    testWidgets(
+        'Given a stop\'s report, When the note fills 2,000 characters, Then '
+        'Submit is off — the stop\'s reference needs room — and nothing is cut',
+        (tester) async {
+      const target = ReportTarget.stop(
+          'itinerary-1', '6f1c2a9e-3b4d-4e5f-8a7b-9c0d1e2f3a4b');
+      final repo = _OkRepo();
+      await tester.pumpWidget(_harness(repo, target: target));
+      await _openAndPickViolence(tester);
+
+      await tester.enterText(find.byType(TextField), 'x' * 2000);
+      await tester.pumpAndSettle();
+      final field = tester.widget<TextField>(find.byType(TextField));
+      expect(field.controller!.text.length, 2000, reason: 'never cut');
+      expect(find.text('2000/${target.notesRoom}'), findsOneWidget);
+      expect(tester.widget<FilledButton>(submit).onPressed, isNull);
+
+      final fits = 'x' * target.notesRoom;
+      await tester.enterText(find.byType(TextField), fits);
+      await tester.pumpAndSettle();
+      await tester.tap(submit);
+      await tester.pumpAndSettle();
+
+      expect(repo.calls, 1);
+      expect(target.notesWithContext(repo.notes)!.length, 2000);
+    });
+
+    testWidgets(
+        'Given a link in the notes, Then it is allowed — only the operator '
+        'reads a report, and quoting the abuse is the point', (tester) async {
+      final repo = _OkRepo();
+      await tester.pumpWidget(_harness(repo));
+      await _openAndPickViolence(tester);
+
+      await tester.enterText(find.byType(TextField), 'He sent me to evil.example');
+      await tester.pumpAndSettle();
+      await tester.tap(submit);
+      await tester.pumpAndSettle();
+
+      expect(repo.calls, 1);
     });
   });
 }

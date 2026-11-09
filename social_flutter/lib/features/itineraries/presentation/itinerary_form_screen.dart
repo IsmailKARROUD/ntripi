@@ -34,6 +34,7 @@ import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/cache/image_cache.dart';
 import 'package:ntripi/core/services/currency.dart';
 import 'package:ntripi/core/services/sfx_service.dart';
+import 'package:ntripi/core/text/text_limits.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary.dart';
@@ -87,8 +88,8 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   // The title as stored (edit mode), so an old link in it never holds Save
   // back until it is edited — the server refuses a link only in changed text.
   String? _storedTitle;
-  RuledField get _titleField =>
-      RuledField(_titleController, initial: _storedTitle);
+  RuledField get _titleField => RuledField(_titleController,
+      rules: const TextRules(TextLimits.itineraryTitle), initial: _storedTitle);
   final _titleFocusNode = FocusNode();
   List<Currency> _currencies = [];
 
@@ -933,6 +934,9 @@ class _PickerRow extends StatelessWidget {
                   else
                     Text(
                       value,
+                      // A summary: a long best-time note must not grow the row.
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,

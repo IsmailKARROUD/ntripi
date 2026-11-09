@@ -20,6 +20,7 @@ import 'package:ntripi/shared/widgets/keyboard_avoidance.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
 import 'package:ntripi/shared/widgets/saving_overlay.dart';
+import 'package:ntripi/shared/widgets/text_rules.dart';
 
 String _reasonLabel(String reason, AppLocalizations l10n) {
   return switch (reason) {
@@ -77,6 +78,10 @@ class _ReportContentSheet extends StatefulWidget {
 class _ReportContentSheetState extends State<_ReportContentSheet> {
   String? _reason;
   final _notesController = TextEditingController();
+  // The notes' cap, less the stop or note reference sent in front of them. A
+  // report may quote a link: only the operator reads it.
+  late final _notesField = RuledField(_notesController,
+      rules: TextRules(widget.target.notesRoom, refuseLinks: false));
   bool _saving = false;
   // Shown inline rather than via a snackbar: the sheet stays open on failure, so
   // a root-messenger snackbar renders behind the modal barrier and is never seen.
@@ -143,11 +148,14 @@ class _ReportContentSheetState extends State<_ReportContentSheet> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: OfflineGate(
-                    builder: (online) => FilledButton(
-                      onPressed: (canSubmit && online) ? _submit : null,
-                      child: _saving
-                          ? const NTripiRingLoader(size: 18)
-                          : Text(l10n.reportSubmit),
+                    builder: (online) => TextRulesGate(
+                      fields: [_notesField],
+                      builder: (context, ok) => FilledButton(
+                        onPressed: (canSubmit && online && ok) ? _submit : null,
+                        child: _saving
+                            ? const NTripiRingLoader(size: 18)
+                            : Text(l10n.reportSubmit),
+                      ),
                     ),
                   ),
                 ),
@@ -192,12 +200,12 @@ class _ReportContentSheetState extends State<_ReportContentSheet> {
               // ── Notes (optional) ─────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-                // The whole box and its counter, not just the caret line.
-                child: RevealTogether(
+                // The whole box and its count, not just the caret line.
+                child: TextRulesField(
+                  field: _notesField,
                   child: TextField(
                   controller: _notesController,
                   enabled: !_saving,
-                  maxLength: 2000,
                   maxLines: 3,
                   minLines: 2,
                   decoration: InputDecoration(

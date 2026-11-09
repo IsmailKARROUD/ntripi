@@ -32,7 +32,14 @@ Two service layers raise their own exception types that routers convert to
    the server found (`usernameLooksLikeLink` when `field` is `username`).
 4. `localizedApiError(code, l10n)` (`lib/core/api/api_error_codes.dart`) — a
    localized string for **57 of the 69 codes** (re-counted 2026-11-08).
-5. Fall back to the server's `detail` string — **English, untranslated**.
+5. Fall back to the server's `detail` when it is a string — **English,
+   untranslated**. When it is FastAPI's validation list (a 422 with no `code`),
+   never the list itself, which carries each refused text as `input`:
+   `validationErrorMessage` names the cap of the first `string_too_long`
+   (`textRuleTooLong(ctx.max_length)`), and anything else is `errorInvalidInput`
+   (since 2026-11-09; until then the list was printed whole). The app holds
+   every cap before a save ([constraints.md](../constraints.md)), so this is
+   for builds and fields that do not.
 6. Fall back to a generic message.
 
 Step 5 is why the "Client" column below matters: a code with no client mapping

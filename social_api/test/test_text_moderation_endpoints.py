@@ -801,7 +801,8 @@ def test_editing_a_hidden_review_keeps_it_hidden(client, owner, stranger):
 # Length caps
 # ---------------------------------------------------------------------------
 
-@pytest.mark.parametrize("field,limit", [("description", 4000)])
+@pytest.mark.parametrize(
+    "field,limit", [("description", 10000), ("recommended_period_note", 4000)])
 def test_oversized_text_is_rejected_before_the_provider(
     client, owner, provider, field, limit
 ):

@@ -438,4 +438,49 @@ void main() {
           findsOneWidget);
     });
   });
+
+  group('a search past its cap (the server takes 200 characters)', () {
+    testWidgets(
+        'Given 201 characters, When submitted, Then neither OSM nor Google is '
+        'asked and the cap is named; back at 200, the search runs',
+        (tester) async {
+      final geocoding = _Geocoding((_) => [_louvre]);
+      final box = await _pump(tester, geocoding: geocoding);
+      box.googleFinds();
+
+      await _submit(tester, 'a' * 201);
+      await tester.pumpAndSettle();
+      expect(geocoding.queries, isEmpty);
+      expect(box.googleAsked, 0);
+      expect(
+          find.descendant(
+              of: find.byKey(PlaceSearchBox.tooLongKey),
+              matching: find.text(box.l10n.textRuleTooLong(200))),
+          findsOneWidget);
+      expect(box.controller.text.length, 201, reason: 'never cut');
+
+      await _submit(tester, 'a' * 200);
+      await tester.pumpAndSettle();
+      expect(geocoding.queries, ['a' * 200]);
+      expect(find.byKey(PlaceSearchBox.tooLongKey), findsNothing);
+    });
+
+    testWidgets(
+        'Given a long Google Maps link, Then it is still offered as the stop\'s '
+        'link — the link field takes 500 characters', (tester) async {
+      final handed = <String>[];
+      await _pump(tester,
+          geocoding: _Geocoding((_) => [_louvre]), handedLinks: handed);
+      final link = 'https://www.google.com/maps/place/Somewhere/@48.8,2.3,17z/'
+          'data=${'!3m1' * 50}';
+      expect(link.length, greaterThan(200));
+
+      await _submit(tester, link);
+      await tester.pumpAndSettle();
+      expect(find.byKey(PlaceSearchBox.tooLongKey), findsNothing);
+      await tester.tap(find.byKey(PlaceSearchBox.useAsMapLinkKey));
+      await tester.pumpAndSettle();
+      expect(handed, [link]);
+    });
+  });
 }

@@ -19,13 +19,14 @@
 import 'package:feedback/feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/text/text_limits.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/features/bug_report/domain/bug_report_diagnostics.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/editorial_widgets.dart';
-import 'package:ntripi/shared/widgets/keyboard_avoidance.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
+import 'package:ntripi/shared/widgets/text_rules.dart';
 
 String _categoryLabel(String category, AppLocalizations l10n) {
   return switch (category) {
@@ -57,6 +58,9 @@ class BugReportSheet extends StatefulWidget {
 
 class _BugReportSheetState extends State<BugReportSheet> {
   final _messageController = TextEditingController();
+  // Only the cap: a bug report may hold a link, and only the operator reads it.
+  late final _messageField = RuledField(_messageController,
+      rules: const TextRules(TextLimits.bugMessage, refuseLinks: false));
   String? _category;
   bool _saving = false;
   // Shown inline, not via a snackbar: the feedback UI covers the whole screen,
@@ -95,7 +99,10 @@ class _BugReportSheetState extends State<BugReportSheet> {
   Widget build(BuildContext context) {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
-    final canSubmit = !_saving && _messageController.text.trim().isNotEmpty;
+    // The field rebuilds this on every change, so the rules are read here.
+    final canSubmit = !_saving &&
+        _messageController.text.trim().isNotEmpty &&
+        textRulesHold([_messageField]);
 
     return Column(
       children: [
@@ -126,12 +133,12 @@ class _BugReportSheetState extends State<BugReportSheet> {
                   const SizedBox(height: 10),
 
                   // ── What happened ────────────────────────────────────────
-                  // The whole box and its counter, not just the caret line.
-                  RevealTogether(
+                  // The whole box and its count, not just the caret line.
+                  TextRulesField(
+                    field: _messageField,
                     child: TextField(
                       controller: _messageController,
                       enabled: !_saving,
-                      maxLength: 2000,
                       maxLines: 4,
                       minLines: 2,
                       // Rebuilds so Send enables the moment there is something

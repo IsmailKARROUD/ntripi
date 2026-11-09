@@ -202,6 +202,24 @@ void main() {
         lessThanOrEqualTo(568 - 260));
   });
 
+  testWidgets(
+      'Given a reason past 2,000 characters, Then Submit is off, the count is '
+      'red, and nothing is cut', (tester) async {
+    final repo = _RecordingRepo();
+    await pumpSheet(tester, repo);
+
+    await tester.enterText(find.byKey(reasonField), 'y' * 2001);
+    await tester.pumpAndSettle();
+
+    final field = tester.widget<TextField>(find.byKey(reasonField));
+    expect(field.maxLength, isNull);
+    expect(field.controller!.text.length, 2001);
+    expect(find.text('2001/2000'), findsOneWidget);
+    expect(tester.widget<FilledButton>(find.byKey(submitButton)).onPressed,
+        isNull);
+    expect(repo.calls, 0);
+  });
+
   testWidgets('Given an empty reason, When submitted, Then nothing is posted',
       (tester) async {
     final repo = _RecordingRepo();

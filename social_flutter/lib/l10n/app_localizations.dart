@@ -6069,6 +6069,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A username can\'t look like a website address (“{match}”).'**
   String usernameLooksLikeLink(String match);
+
+  /// Under a field past its cap, and the server's string_too_long answer. limit is the cap in characters.
+  ///
+  /// In en, this message translates to:
+  /// **'{limit, plural, one{Too long — {limit} character at most.} other{Too long — {limit} characters at most.}}'**
+  String textRuleTooLong(int limit);
+
+  /// A server validation refusal other than a text over its cap — never the server's raw list.
+  ///
+  /// In en, this message translates to:
+  /// **'Something you entered can\'t be saved as it is. Check it and try again.'**
+  String get errorInvalidInput;
 }
 
 class _AppLocalizationsDelegate

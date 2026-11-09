@@ -10,13 +10,17 @@
 //     asks too — and is disabled outright when there is nothing to clear.
 //
 // Also pinned: the guard is by VALUE, so toggling a month on and back off again
-// is not "unsaved changes" and must not nag on the way out.
+// is not "unsaved changes" and must not nag on the way out. And the note —
+// "Why this time?", up to 4,000 characters — is written in the description's
+// markdown editor and held to its cap: counted near it, Done off past it,
+// nothing cut.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ntripi/core/ui/confirm_dialog.dart';
 import 'package:ntripi/features/itineraries/domain/recommended_period.dart';
 import 'package:ntripi/features/itineraries/presentation/recommended_period_screen.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 
 void main() {
@@ -241,6 +245,47 @@ void main() {
       await tester.tap(find.text(en.done));
       await tester.pumpAndSettle();
       expect(popped.single?.isEmpty, isTrue);
+    });
+  });
+
+  group('the note', () {
+    TextButton done(WidgetTester tester) =>
+        tester.widget<TextButton>(find.widgetWithText(TextButton, en.done));
+
+    testWidgets(
+        'Given the screen, Then the note is written in the markdown editor, '
+        'with no length cut on the field', (tester) async {
+      await pumpScreen(tester, popped: <RecommendedPeriod?>[]);
+
+      expect(find.byType(MarkdownNotesEditor), findsOneWidget);
+      final field = tester.widget<TextField>(find.descendant(
+          of: find.byType(MarkdownNotesEditor),
+          matching: find.byType(TextField)));
+      expect(field.maxLength, isNull);
+      expect(field.decoration!.hintText, en.periodWhyHint);
+    });
+
+    testWidgets(
+        'Given a note past 4,000 characters, Then Done is off and the count is '
+        'red; back under it, Done saves the whole note', (tester) async {
+      final popped = <RecommendedPeriod?>[];
+      await pumpScreen(tester, popped: popped);
+
+      final over = 'Cherry blossom. ' * 251; // 4,016, trimmed 4,015
+      await tester.enterText(find.byType(TextField), over);
+      await tester.pumpAndSettle();
+      expect(find.text('4015/4000'), findsOneWidget);
+      expect(find.text(en.textRuleTooLong(4000)), findsOneWidget);
+      expect(done(tester).onPressed, isNull);
+
+      final fits = over.substring(0, 3990);
+      await tester.enterText(find.byType(TextField), fits);
+      await tester.pumpAndSettle();
+      expect(done(tester).onPressed, isNotNull);
+
+      await tester.tap(find.text(en.done));
+      await tester.pumpAndSettle();
+      expect(popped.single?.note, fits.trim());
     });
   });
 }

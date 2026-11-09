@@ -165,7 +165,12 @@ Admin-side lanes are documented in
 ## Flutter surface
 
 - **`report_content_sheet.dart`** (`features/reports/presentation/`) — the compose
-  sheet; `ugc_actions.dart` offers Report alongside Block.
+  sheet; `ugc_actions.dart` offers Report alongside Block. Its notes take a
+  link (only the operator reads them) and are held to `ReportTarget.notesRoom`:
+  the server's 2,000 less the `[stop:… annotation:…]` reference sent in front
+  of them, counted from 90% and holding Submit back past it. Until 2026-11-09
+  the field cut at 2,000 and the reference then pushed a full note over the
+  cap, so the report was refused.
 - **`reportRepositoryProvider`** → `ReportRepository`
   (`features/reports/data/report_repository.dart`).
 - The flag button sits on the itinerary detail screen, and an anonymous variant

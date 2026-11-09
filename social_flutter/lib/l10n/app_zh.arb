@@ -1111,5 +1111,18 @@
   "textRuleNoLinks": "这里不能添加链接——请删除“{match}”。",
   "apiErrorTextContainsLink": "这里不能添加链接。",
   "useAsMapLink": "用作这个停靠点的 Google 地图链接",
-  "usernameLooksLikeLink": "用户名不能像网址（“{match}”）。"
+  "usernameLooksLikeLink": "用户名不能像网址（“{match}”）。",
+  "textRuleTooLong": "{limit, plural, other{太长了——最多 {limit} 个字符。}}",
+  "@textRuleTooLong": {
+    "description": "Under a field past its cap, and the server's string_too_long answer. limit is the cap in characters.",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "errorInvalidInput": "你输入的部分内容无法按原样保存。请检查后重试。",
+  "@errorInvalidInput": {
+    "description": "A server validation refusal other than a text over its cap — never the server's raw list."
+  }
 }

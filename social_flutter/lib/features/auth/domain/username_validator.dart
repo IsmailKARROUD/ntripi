@@ -1,3 +1,4 @@
+import 'package:ntripi/core/text/text_limits.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 
 class UsernameValidator {
@@ -13,7 +14,7 @@ class UsernameValidator {
     if (value == null || value.isEmpty) return l10n.usernameRequired;
     final v = value.trim();
     if (v.length < 4) return l10n.usernameTooShort;
-    if (v.length > 30) return l10n.usernameTooLong;
+    if (v.length > TextLimits.username) return l10n.usernameTooLong;
     if (!isValidFormat(v)) return l10n.usernameInvalidFormat;
     if (hasConsecutiveSpecial(v)) return l10n.usernameConsecutiveSpecial;
     return null;
@@ -24,7 +25,9 @@ class DisplayNameValidator {
   /// Returns null if valid (including empty — display name is optional).
   static String? validate(String? value, AppLocalizations l10n) {
     if (value == null || value.trim().isEmpty) return null;
-    if (value.trim().length > 50) return l10n.displayNameTooLong;
+    if (textLength(value) > TextLimits.displayName) {
+      return l10n.displayNameTooLong;
+    }
     return null;
   }
 }

@@ -11,22 +11,31 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/utils/markdown_plain_text.dart';
+import 'package:ntripi/shared/widgets/expandable_text.dart';
 import 'package:ntripi/shared/widgets/field_help.dart';
 
 class MarkdownNotesEditor extends StatefulWidget {
   final TextEditingController controller;
   final bool readOnly;
-  final String label;
+
+  /// The heading inside the box. Null: none — a section label above it
+  /// already names the text.
+  final String? label;
   final String? helpTitle;
   final String? helpMessage;
+
+  /// Shown in the empty field.
+  final String? hintText;
 
   const MarkdownNotesEditor({
     super.key,
     required this.controller,
     required this.readOnly,
-    this.label = 'Notes',
+    this.label,
     this.helpTitle,
     this.helpMessage,
+    this.hintText,
   });
 
   @override
@@ -50,6 +59,7 @@ class _MarkdownNotesEditorState extends State<MarkdownNotesEditor> {
           color: Theme.of(context).colorScheme.primary,
           fontWeight: FontWeight.w500,
         );
+    final label = widget.label;
     final hasHelp =
         widget.helpTitle != null && widget.helpMessage != null;
 
@@ -63,23 +73,24 @@ class _MarkdownNotesEditorState extends State<MarkdownNotesEditor> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 4, 0),
-            child: hasHelp
-                ? Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(widget.label, style: labelStyle),
-                      const SizedBox(width: 2),
-                      FieldHelpIcon(
-                        helpTitle: widget.helpTitle!,
-                        helpMessage: widget.helpMessage!,
-                        size: 16,
-                      ),
-                    ],
-                  )
-                : Text(widget.label, style: labelStyle),
-          ),
+          if (label != null)
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 4, 0),
+              child: hasHelp
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(label, style: labelStyle),
+                        const SizedBox(width: 2),
+                        FieldHelpIcon(
+                          helpTitle: widget.helpTitle!,
+                          helpMessage: widget.helpMessage!,
+                          size: 16,
+                        ),
+                      ],
+                    )
+                  : Text(label, style: labelStyle),
+            ),
           _Toolbar(
             controller: widget.controller,
             previewMode: _previewMode,
@@ -96,11 +107,12 @@ class _MarkdownNotesEditorState extends State<MarkdownNotesEditor> {
               maxLines: null,
               keyboardType: TextInputType.multiline,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 contentPadding:
-                    EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 border: InputBorder.none,
                 isDense: true,
+                hintText: widget.hintText,
               ),
             ),
         ],
@@ -111,7 +123,7 @@ class _MarkdownNotesEditorState extends State<MarkdownNotesEditor> {
 
 class _ReadOnlyNotes extends StatelessWidget {
   final String text;
-  final String label;
+  final String? label;
   const _ReadOnlyNotes({required this.text, required this.label});
 
   @override
@@ -123,11 +135,13 @@ class _ReadOnlyNotes extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.titleSmall,
-        ),
-        const SizedBox(height: 6),
+        if (label case final label?) ...[
+          Text(
+            label,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 6),
+        ],
         InertMarkdownBody(data: text),
       ],
     );
@@ -169,22 +183,66 @@ class _PreviewBody extends StatelessWidget {
 ///   who is reading — the renderer's default loads every one of them.
 class InertMarkdownBody extends StatelessWidget {
   final String data;
-  const InertMarkdownBody({super.key, required this.data});
+
+  /// Merged over the theme's body text — paragraphs, list items, links — so a
+  /// note drawn smaller than the body keeps its size once unfolded. Headings
+  /// keep the theme's.
+  final TextStyle? style;
+
+  const InertMarkdownBody({super.key, required this.data, this.style});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final base = MarkdownStyleSheet.fromTheme(theme);
-    final bodyStyle = theme.textTheme.bodyMedium;
+    final bodyStyle = theme.textTheme.bodyMedium?.merge(style);
     return MarkdownBody(
       data: data,
       selectable: true,
       softLineBreak: true,
       extensionSet: md.ExtensionSet.none,
-      styleSheet: base.copyWith(a: bodyStyle),
+      styleSheet: base.copyWith(p: bodyStyle, listBullet: bodyStyle, a: bodyStyle),
       imageBuilder: (_, _, alt) => (alt == null || alt.trim().isEmpty)
           ? const SizedBox.shrink()
           : Text(alt, style: bodyStyle),
+    );
+  }
+}
+
+/// A markdown text folded to [maxLines] lines of its words without the markup
+/// — never a `**` or a `#` — with "view more" opening it in place, formatted
+/// by [InertMarkdownBody]. A text short enough to need no fold shows formatted
+/// at once. A trip's description and best-time note, a stop's notes on its
+/// card and a review's note fold through it.
+class FoldedMarkdown extends StatelessWidget {
+  const FoldedMarkdown(
+    this.data, {
+    super.key,
+    this.maxLines = 2,
+    this.style,
+    this.expandOnTextTap = false,
+  });
+
+  final String data;
+  final int maxLines;
+
+  /// Merged over the theme's body text, folded and unfolded alike.
+  final TextStyle? style;
+
+  /// See [ExpandableText.expandOnTextTap] — off where the text sits inside
+  /// something with a tap of its own.
+  final bool expandOnTextTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ExpandableText(
+      data,
+      maxLines: maxLines,
+      foldedText: markdownPlainText(data),
+      style: Theme.of(context).textTheme.bodyMedium?.merge(style),
+      expandOnTextTap: expandOnTextTap,
+      expandedBuilder: (context, text) =>
+          InertMarkdownBody(data: text, style: style),
     );
   }
 }

@@ -86,6 +86,15 @@ def _itinerary_row(itinerary_id: str) -> Itinerary:
         db.close()
 
 
+def _set_period_note(itinerary_id: str, note: str) -> None:
+    db = TestingSessionLocal()
+    try:
+        db.get(Itinerary, __import__("uuid").UUID(itinerary_id)).recommended_period_note = note
+        db.commit()
+    finally:
+        db.close()
+
+
 def _user_row(email: str) -> User:
     from sqlalchemy import select
 
@@ -172,6 +181,16 @@ class TestReportActions:
         snapshot = logs[0].content_snapshot
         assert snapshot["title"] == "Trip"
         assert snapshot["report_id"] == scenario["report_id"]
+        assert snapshot["recommended_period_note"] is None
+
+    def test_the_snapshot_keeps_the_best_time_note(self, client, scenario):
+        # The note is up to 4,000 characters of the author's own prose — the
+        # evidence copy must hold it like the description.
+        _set_period_note(scenario["itinerary_id"], "Go in May: the souks are quiet.")
+        assert _act(client, scenario["report_id"], "delete", "explicit content").status_code == 303
+
+        snapshot = _logs("delete")[0].content_snapshot
+        assert snapshot["recommended_period_note"] == "Go in May: the souks are quiet."
 
         db = TestingSessionLocal()
         try:
@@ -653,6 +672,17 @@ class TestItineraryDetail:
         assert resp.status_code == 200
         assert "meet the dealer behind the bins" in resp.text
         assert "Back alley" in resp.text
+
+    def test_full_content_includes_the_best_time_note(self, client, scenario):
+        _set_period_note(scenario["itinerary_id"], "Avoid August, the ferries are full.")
+        resp = client.get(self._url(scenario["itinerary_id"]), auth=ADMIN_BASIC)
+        assert resp.status_code == 200
+        assert "Why this time?" in resp.text
+        assert "Avoid August, the ferries are full." in resp.text
+
+    def test_no_note_no_best_time_block(self, client, scenario):
+        resp = client.get(self._url(scenario["itinerary_id"]), auth=ADMIN_BASIC)
+        assert "Why this time?" not in resp.text
 
     def test_hidden_itinerary_still_opens_for_the_admin(self, client, scenario):
         _act(client, scenario["report_id"], "hide", "under review")

@@ -8,6 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ntripi/core/router/app_links.dart';
 import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/text/link_rule.dart';
+import 'package:ntripi/core/text/text_limits.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/ntripi_logo.dart';
 import 'package:ntripi/features/auth/domain/username_validator.dart';
@@ -175,9 +177,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   decoration: InputDecoration(hintText: l10n.registerDisplayNameHint),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return null;
-                    if (v.trim().length > 50) return l10n.displayNameTooLong;
-                    // The server refuses a link in a new name (text_rules.dart).
-                    return textRuleBreak(v, TextRules.userText)?.message(l10n);
+                    // The server refuses a link in a new name, and a name over
+                    // its cap (text_rules.dart).
+                    return textRuleBreak(
+                            v, const TextRules(TextLimits.displayName))
+                        ?.message(l10n);
                   },
                 ),
                 const SizedBox(height: 14),
@@ -224,12 +228,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     if (v == null || v.isEmpty) return l10n.usernameRequired;
                     final trimmed = v.trim();
                     if (trimmed.length < 4) return l10n.usernameTooShort;
-                    if (trimmed.length > 30) return l10n.usernameTooLong;
+                    if (trimmed.length > TextLimits.username) {
+                      return l10n.usernameTooLong;
+                    }
                     if (!UsernameValidator.isValidFormat(trimmed)) return l10n.usernameInvalidFormat;
                     if (UsernameValidator.hasConsecutiveSpecial(trimmed)) return l10n.usernameConsecutiveSpecial;
                     // A dotted handle ending in a real domain (anna.paris) is
                     // a site name to the server's link rule.
-                    if (textRuleBreak(trimmed, TextRules.userText) != null) {
+                    if (findLink(trimmed) != null) {
                       return l10n.usernameLooksLikeLink(trimmed);
                     }
                     return null;

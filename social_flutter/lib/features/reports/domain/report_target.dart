@@ -6,6 +6,8 @@
 // and the annotation constructors exist to build that note, not as separate
 // backend target types.
 
+import 'package:ntripi/core/text/text_limits.dart';
+
 /// Backend target types (must match REPORT_TARGET_TYPES in
 /// app/models/content_report.py).
 enum ReportTargetKind { itinerary, rating, user }
@@ -53,16 +55,27 @@ class ReportTarget {
   bool get isAnnotation => annotationId != null;
   bool get isStop => stopId != null && annotationId == null;
 
+  String get _fragment => [
+        if (stopId != null) 'stop:$stopId',
+        if (annotationId != null) 'annotation:$annotationId',
+      ].join(' ');
+
   /// Prefixes the reporter's notes with the fragment reference when there is
   /// one — `[stop:x]`, `[stop:x annotation:y]` or `[annotation:y]`.
   String? notesWithContext(String? notes) {
     final trimmed = notes?.trim();
-    final fragment = [
-      if (stopId != null) 'stop:$stopId',
-      if (annotationId != null) 'annotation:$annotationId',
-    ].join(' ');
+    final fragment = _fragment;
     if (fragment.isEmpty) return (trimmed?.isEmpty ?? true) ? null : trimmed;
     return '[$fragment] ${trimmed ?? ''}'.trim();
+  }
+
+  /// Room for the reporter's own words: the server's cap on a report's notes,
+  /// less the reference [notesWithContext] puts in front of them — a note that
+  /// filled the field to the cap was refused once the reference was added.
+  int get notesRoom {
+    final fragment = _fragment;
+    return TextLimits.reportNotes -
+        (fragment.isEmpty ? 0 : '[$fragment] '.length);
   }
 }
 

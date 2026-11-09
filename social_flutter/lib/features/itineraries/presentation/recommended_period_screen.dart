@@ -14,9 +14,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
+import 'package:ntripi/core/text/text_limits.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
 import 'package:ntripi/features/itineraries/domain/recommended_period.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/editorial_widgets.dart';
@@ -41,9 +43,11 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
   late Set<int> _months;
   late Set<int> _weekdays;
   late final TextEditingController _noteController;
-  // The note as the server holds it to the text rules: no new link.
-  late final RuledField _noteField =
-      RuledField(_noteController, initial: widget.initial?.note);
+  // The note as the server holds it to the text rules: no new link, and its
+  // cap.
+  late final RuledField _noteField = RuledField(_noteController,
+      rules: const TextRules(TextLimits.periodNote),
+      initial: widget.initial?.note);
 
   /// Exact-day refinements, keyed by the window's "fromMonth-toMonth" pair.
   ///
@@ -339,31 +343,20 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
           // ── Why ───────────────────────────────────────────────────────────
           SectionLabel(label: l10n.periodSectionWhy),
           _SectionCard(
-            // Free prose, which is exactly the client filter's scope. It warns
-            // and nothing more; only a text rule the server enforces (a link)
-            // holds Done back, and the months and weekdays are never filtered.
+            // Free prose in the description's editor — bold, lists, headings —
+            // and exactly the client filter's scope. The filter warns and
+            // nothing more; only a text rule the server enforces (a link, the
+            // cap) holds Done back, and the months and weekdays are never
+            // filtered.
             child: ModerationHint(
               controller: _noteController,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TextField(
+                  MarkdownNotesEditor(
                     controller: _noteController,
-                    maxLength: 200,
-                    maxLines: 3,
-                    minLines: 2,
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                      counterStyle: TextStyle(color: nt.text3, fontSize: 11),
-                      hintText: l10n.periodWhyHint,
-                      hintStyle:
-                          TextStyle(color: nt.text3, fontWeight: FontWeight.w500),
-                    ),
-                    style: TextStyle(fontSize: 14, color: nt.bark),
+                    readOnly: false,
+                    hintText: l10n.periodWhyHint,
                   ),
                   TextRulesNote(_noteField),
                 ],

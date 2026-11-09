@@ -3513,4 +3513,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String usernameLooksLikeLink(String match) {
     return 'Ein Benutzername darf nicht wie eine Webadresse aussehen („$match“).';
   }
+
+  @override
+  String textRuleTooLong(int limit) {
+    String _temp0 = intl.Intl.pluralLogic(
+      limit,
+      locale: localeName,
+      other: 'Zu lang – höchstens $limit Zeichen.',
+      one: 'Zu lang – höchstens $limit Zeichen.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get errorInvalidInput =>
+      'Etwas, das du eingegeben hast, kann so nicht gespeichert werden. Prüfe es und versuche es erneut.';
 }

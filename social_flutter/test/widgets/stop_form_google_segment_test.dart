@@ -386,6 +386,36 @@ void main() {
     expect(h.previews.fetched, isEmpty);
   });
 
+  testWidgets(
+      'a map link past 500 characters holds Save off and is never cut; back '
+      'under the cap, it saves', (tester) async {
+    final h = await _pumpForm(tester);
+    await _openGoogleSegment(tester, h);
+    await tester.enterText(_nameField, 'Tower');
+
+    final link = find.widgetWithText(TextFormField, h.l10n.mapLinkHint);
+    await tester.ensureVisible(link);
+    const base =
+        'https://www.google.com/maps/place/Eiffel+Tower/@48.8583,2.2944,17z/data=';
+    final long = base + '!3m1' * 120; // well past 500
+    await tester.enterText(link, long);
+    await tester.pumpAndSettle();
+
+    final save = find.widgetWithText(TextButton, h.l10n.save);
+    expect(tester.widget<TextButton>(save).onPressed, isNull);
+    expect(find.text(h.l10n.textRuleTooLong(500)), findsOneWidget);
+    final field = tester.widget<TextFormField>(link);
+    expect(field.controller!.text, long, reason: 'never cut');
+
+    final fits = base + '!3m1' * 20;
+    await tester.enterText(link, fits);
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextButton>(save).onPressed, isNotNull);
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    expect(h.savedStop['map_url'], fits);
+  });
+
   group('editing a stop', () {
     testWidgets(
         'Given a Google stop, When only its name changes, Then the save leaves '

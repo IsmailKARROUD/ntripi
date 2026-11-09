@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/media/image_pick.dart';
 import 'package:ntripi/core/moderation/nsfw_precheck.dart';
+import 'package:ntripi/core/text/text_limits.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
 import 'package:ntripi/core/ui/toggle_feedback.dart';
@@ -50,6 +51,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
   // No new link in the name (text_rules.dart); the bio's own editor holds it
   // to the same rule. An old link never blocks Save until it is edited.
   late final _displayNameField = RuledField(_displayNameController,
+      rules: const TextRules(TextLimits.displayName),
       initial: widget.user.displayName);
   late bool? _editIsPrivate;
   late List<String> _editPassportCountries;
@@ -153,6 +155,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
       title: l10n.bioLabel,
       helpTitle: l10n.bioLabel,
       helpMessage: l10n.bioHelpMessage,
+      rules: const TextRules(TextLimits.bio),
     );
     if (result == null || !mounted) return;
     setState(() => _bioController.text = result);

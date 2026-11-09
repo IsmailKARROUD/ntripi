@@ -224,11 +224,70 @@ void main() {
       });
 
       test(
-          'Given DioException with non-string detail value, '
+          'Given a detail that is neither text nor a list, '
           'When extractErrorMessage called, '
-          'Then coerces it via toString', () {
-        // FastAPI's HTTPException can carry a list/dict in detail when
-        // validation errors are involved. Helper should not crash.
+          'Then returns the generic fallback, never the value', () {
+        final e = DioException(
+          requestOptions: requestOptions,
+          type: DioExceptionType.badResponse,
+          response: Response(
+            requestOptions: requestOptions,
+            statusCode: 400,
+            data: const {
+              'detail': {'reason': 'opaque'}
+            },
+          ),
+        );
+
+        expect(extractErrorMessage(e), 'An error occurred.');
+      });
+    });
+
+    group('a validation refusal (FastAPI 422 list)', () {
+      // What FastAPI answers for a text over its cap: the list carries the
+      // whole refused text as `input` — the reason it is never printed.
+      DioException tooLong(String input, {int max = 4000}) => DioException(
+            requestOptions: requestOptions,
+            type: DioExceptionType.badResponse,
+            response: Response(
+              requestOptions: requestOptions,
+              statusCode: 422,
+              data: {
+                'detail': [
+                  {
+                    'type': 'string_too_long',
+                    'loc': ['body', 'recommended_period_note'],
+                    'msg': 'String should have at most $max characters',
+                    'input': input,
+                    'ctx': {'max_length': max},
+                  },
+                ],
+              },
+            ),
+          );
+
+      test(
+          'Given a text over its cap, When extracted, Then the message names '
+          'the cap in the reader\'s language and never quotes the text', () {
+        final fr = lookupAppLocalizations(const Locale('fr'));
+        final input = 'Le printemps est doux. ' * 200;
+
+        final message = extractErrorMessage(tooLong(input), fr);
+
+        expect(message, fr.textRuleTooLong(4000));
+        expect(message, isNot(contains('printemps')));
+      });
+
+      test(
+          'Given no localizations, When extracted, Then an English message '
+          'with the cap', () {
+        expect(extractErrorMessage(tooLong('x' * 201, max: 200)),
+            'Too long — 200 characters at most.');
+      });
+
+      test(
+          'Given any other validation error, When extracted, Then a plain '
+          '"check what you entered", never the list', () {
         final e = DioException(
           requestOptions: requestOptions,
           type: DioExceptionType.badResponse,
@@ -237,19 +296,20 @@ void main() {
             statusCode: 422,
             data: const {
               'detail': [
-                {'msg': 'field required'}
-              ]
+                {
+                  'type': 'string_pattern_mismatch',
+                  'loc': ['body', 'place_type'],
+                  'msg': "String should match pattern '^(eatDrink|sleep)\$'",
+                  'input': 'secret-input',
+                },
+              ],
             },
           ),
         );
+        final de = lookupAppLocalizations(const Locale('de'));
 
-        // We don't assert the exact stringification — only that it's
-        // non-empty and not the generic fallback, so future Dart changes to
-        // List.toString don't break the test.
-        final result = extractErrorMessage(e);
-        expect(result, isNot('An error occurred.'));
-        expect(result, isNot('An error occurred. Please try again.'));
-        expect(result, contains('field required'));
+        expect(extractErrorMessage(e, de), de.errorInvalidInput);
+        expect(extractErrorMessage(e), isNot(contains('secret-input')));
       });
     });
 

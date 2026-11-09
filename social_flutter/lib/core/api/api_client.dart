@@ -411,6 +411,23 @@ String? apiErrorCode(dynamic e) {
 }
 
 /// Helper: extract a human-readable message from any exception.
+/// FastAPI's 422 `detail` list in plain words: the cap of the first text
+/// over its cap (`string_too_long`), else a generic "check what you entered".
+/// Never the list itself — it holds the text that was refused.
+String validationErrorMessage(List<dynamic> errors, [AppLocalizations? l10n]) {
+  for (final error in errors) {
+    if (error is! Map || error['type'] != 'string_too_long') continue;
+    final context = error['ctx'];
+    final limit = context is Map ? context['max_length'] : null;
+    if (limit is int) {
+      return l10n?.textRuleTooLong(limit) ??
+          'Too long — $limit characters at most.';
+    }
+  }
+  return l10n?.errorInvalidInput ??
+      "Something you entered can't be saved as it is. Check it and try again.";
+}
+
 String extractErrorMessage(dynamic e, [AppLocalizations? l10n]) {
   // The itinerary repository turns the edit guard's rejections into typed
   // exceptions before they reach here, so the DioException branch below never
@@ -467,7 +484,14 @@ String extractErrorMessage(dynamic e, [AppLocalizations? l10n]) {
           final localized = localizedApiError(code, l10n);
           if (localized != null) return localized;
         }
-        return data['detail']?.toString() ?? (l10n?.errorGeneric ?? 'An error occurred.');
+        final detail = data['detail'];
+        // A validation refusal's detail is FastAPI's list of errors, each
+        // carrying the input — a whole description, printed raw. Name the cap
+        // a text went over, as TextRulesNote does before a save; anything else
+        // is a form the app filled wrong, and says so in plain words.
+        if (detail is List) return validationErrorMessage(detail, l10n);
+        if (detail is String) return detail;
+        return l10n?.errorGeneric ?? 'An error occurred.';
       }
     } catch (_) {}
     return l10n?.errorGenericRetry ?? 'An error occurred. Please try again.';

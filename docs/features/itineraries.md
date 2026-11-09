@@ -122,10 +122,16 @@ column list. Field limits enforced in `schemas/itinerary.py`:
 | Field | Limit |
 |---|---|
 | `title` | 1–200 chars, required |
-| `description` | ≤ 4000 (`_MAX_DESCRIPTION`) |
+| `description` | ≤ 10,000 (`_MAX_DESCRIPTION`; 4,000 until 2026-11-09) |
 | `currency` | exactly 3 chars |
-| `recommended_period_note` | ≤ 200 (`_MAX_PERIOD_NOTE`) |
+| `recommended_period_note` | ≤ 4,000 (`_MAX_PERIOD_NOTE`; 200 until 2026-11-09) |
 | recommended period windows | ≤ 6 (`_MAX_PERIOD_WINDOWS`) |
+
+Characters are Unicode code points, as Pydantic counts them. A long text is
+moderated in pieces ([text-moderation.md](text-moderation.md)). The app holds
+the same caps in `lib/core/text/text_limits.dart` (`TextLimits`), and
+`test_text_limits.py` fails when the two disagree — see
+[constraints.md](../constraints.md).
 
 ## API surface
 
@@ -319,6 +325,26 @@ registered from the same router under the `/users` prefix.
   List/Map toggle is hidden while the server has no embed key. The OSM
   `flutter_map` that drew every stop with coordinates, alternatives included,
   is gone from this screen. See [places-and-maps.md](places-and-maps.md).
+- **Long texts fold** (since 2026-11-09) — on the trip page the description
+  folds to three lines and the best-time note ("Why this time?") to two, each
+  with "view more" opening it in place (`FoldedMarkdown`,
+  `widgets/markdown_notes_editor.dart`, through `ExpandableText`). The folded
+  lines are the text's words without the markup
+  (`shared/utils/markdown_plain_text.dart`: an image is its description, a
+  link its label, a list item keeps its bullet); unfolded, it is formatted by
+  `InertMarkdownBody`. A text short enough to need no fold shows formatted at
+  once. Stop-card notes (two lines) and review notes (one) fold the same way —
+  until then a short note showed its `**` and `#` as typed, because only
+  "view more" formatted it. In edit mode the description and note rows show a
+  plain preview (three and two lines, ellipsised), and the form's Best time
+  row a single line. Regression tests: `test/widgets/trip_long_texts_test.dart`,
+  `test/widgets/expandable_text_test.dart`,
+  `test/shared/utils/markdown_plain_text_test.dart`.
+- **The note is written like the description** (since 2026-11-09) —
+  `RecommendedPeriodScreen` puts `MarkdownNotesEditor` (bold, italic,
+  headings, lists, Preview) under "Why this time?", with the hint
+  `periodWhyHint`. Done follows the text rules: no new link, at most 4,000
+  characters, counted from 3,600 ([constraints.md](../constraints.md)).
 - **Model** — `Itinerary` (`features/itineraries/domain/itinerary.dart`), manual
   `fromJson`/`toJson`. `_parseTracks()` is where stop roles are derived.
 
@@ -343,6 +369,12 @@ registered from the same router under the `/users` prefix.
 - **A failed delete after a removal is not retried.** The row is committed
   without the cover and the object stays reachable at its key; the failure is
   logged at ERROR and nothing comes back for it.
+- **Builds from before 2026-11-09 and the long texts.** Their note field has
+  `maxLength: 200`: a longer note saved from a new build is cut to 200
+  characters at the first keystroke in an old one, and the cut is what its
+  Done saves. They draw the note as plain text, markup and all, show the whole
+  description unfolded, and name a text over its cap with the server's raw
+  list. Nothing on the server can tell them apart.
 - **A refused cover can leave a text verdict behind.** The image reject path
   commits the session, text decision included, so a `review` verdict on text
   the same request then did not save sits in the moderator queue. A

@@ -115,6 +115,7 @@ RELEASES: tuple[Release, ...] = (
             "**Tippen Sie auf das Titelbild einer Reise, um es ganz zu sehen.** Auf der Seite einer Reise öffnet ein Tippen das Titelbild im Vollbild, wie ein Profilfoto — zum Zoomen mit zwei Fingern aufziehen oder doppelt tippen.",
             "**Der Google-Maps-Link eines Stopps führt nur zu Google Maps.** Eine Google-Adresse, die Leser auf eine andere Website weiterleiten würde, wird abgelehnt, und bereits gespeicherte werden entfernt. Aus Google Maps kopierte Links funktionieren wie bisher.",
             "**Keine Links in dem, was man schreibt.** Titel, Beschreibungen, Notizen, Bewertungen, Namen und Bios nehmen keine Webadressen, E-Mail-Adressen oder Seitennamen mehr an — eine rote Zeile nennt, was zu entfernen ist —, und ein in einen Text geschriebenes Bild wird nie angezeigt. Der Google-Maps-Link eines Stopps, in seinem eigenen Feld, ist der einzige verbliebene Link. Die öffentliche Seite einer Reise zeigt jetzt Fettdruck, Listen und Überschriften ihrer Beschreibung.",
+            "**Längere Beschreibungen und Platz für das Warum.** Die Beschreibung einer Reise fasst jetzt bis zu 10.000 Zeichen und **Warum diese Zeit?** unter der besten Reisezeit bis zu 4.000 – mit Fett, Listen und Überschriften wie die Beschreibung. Auf der Seite einer Reise werden sie auf drei und zwei Zeilen eingeklappt, mit **mehr anzeigen** für den Rest, und eine kurze Notiz erscheint gleich formatiert. Nahe am Limit eines Textes erscheint darunter ein Zähler, und darüber hinaus wartet Speichern – nichts, was Sie tippen oder einfügen, wird je abgeschnitten.",
         ),
     ),
     Release(
@@ -221,7 +222,8 @@ Neue Reisen sind **nur für Sie** sichtbar, bis Sie das ändern — Ausprobieren
 - **Titel** — worum es geht. „Vier Tage in Marrakesch“ ist besser als „Marokko“.
 - **Währung** — jede Kostenangabe verwendet sie, damit die Summe stimmt. Wählen Sie die, die Sie tatsächlich ausgeben.
 - **Titelbild** — optional, und später nachtragbar. Es ist das, was andere im Feed und in einem geteilten Link sehen.
-- **Beste Reisezeit** — die Monate, in denen diese Reise funktioniert. Nützlich bei allem Saisonalen.""",
+- **Beste Reisezeit** — die Monate, in denen diese Reise funktioniert, und unter **Warum diese Zeit?** Ihre Gründe: Wetter, Feste, Andrang. Bis zu 4.000 Zeichen, mit Fett, Listen und Überschriften wie in der Beschreibung.
+- **Beschreibung** — entsteht auf der Seite der Reise, sobald sie angelegt ist: Tippen Sie im Bearbeitungsmodus auf **Beschreibung**. Bis zu 10.000 Zeichen; Lesende sehen die ersten drei Zeilen und tippen für den Rest auf **mehr anzeigen**.""",
             ),
             Block(
                 anchor="add-stops",
@@ -278,7 +280,7 @@ Siehe [wie Sie eine Reise teilen, ohne sie zu veröffentlichen](/help/share-an-i
             "planung",
         ),
         related=("plan-alternative-options", "share-an-itinerary-privately", "getting-started"),
-        updated="2026-10-31",
+        updated="2026-11-09",
         cta="Planen Sie Ihre eigene Reiseroute — etwa zehn Minuten.",
     ),
     Article(
@@ -1261,7 +1263,7 @@ Eine private Reise steht bewusst in keinem Feed und in keiner Suche; der einzige
 - bei einem Stopp unter Dauer und Kosten — seine Notizen, seine farbigen Notizen und die Gedanken zu den Teilstrecken dorthin und von dort zusammen;
 - unter jeder Rezension auf der Seite „Bewertungen“.
 
-Die Übersetzung ersetzt den Text und ist mit **Automatisch übersetzt** gekennzeichnet. Tippen Sie auf **Original anzeigen**, um zurückzukehren; erneutes Umschalten geht sofort, weil die Übersetzung erhalten bleibt.""",
+Die Übersetzung ersetzt den Text und ist mit **Automatisch übersetzt** gekennzeichnet. Tippen Sie auf **Original anzeigen**, um zurückzukehren; erneutes Umschalten geht sofort, weil die Übersetzung erhalten bleibt. Eine lange Beschreibung oder Notiz zur besten Reisezeit bleibt beim Umschalten, wie Sie sie verlassen haben — eingeklappt oder mit **mehr anzeigen** geöffnet.""",
             ),
             Block(
                 anchor="which-language",
@@ -1331,7 +1333,7 @@ Jede Übersetzung wird mit dem Text gespeichert, aus dem sie entstanden ist, und
             "app-settings", "save-trips-and-find-new-ones", "rate-a-trip",
             "your-data-and-privacy",
         ),
-        updated="2026-10-08",
+        updated="2026-11-09",
         cta="Lesen Sie die Reise, egal in welcher Sprache sie geschrieben ist.",
     ),
     Article(
@@ -1914,6 +1916,14 @@ Es gibt zwei Auswege, und beide erhalten Ihre Arbeit: die Reise zurückholen und
 Der einzige Link, den ein Stopp annimmt, ist sein Google-Maps-Link, in einem eigenen Feld — fügen Sie einen in die Ortssuche ein, und Ntripi bietet an, ihn dort einzutragen. Auch ein Benutzername darf nicht wie eine Webadresse aussehen: anna.paris endet wie eine, anna_paris dagegen passt.""",
             ),
             Block(
+                anchor="text-too-long",
+                heading="„Zu lang“ unter meinem Text",
+                kind=KIND_FAQ,
+                body="""Jeder Text hat ein Limit: die Beschreibung einer Reise 10.000 Zeichen, ihre Notiz zur besten Reisezeit 4.000, die Notizen eines Stopps, eine farbige Notiz und eine Bewertung 2.000, eine Bio 500, ein Name 50. Kurz davor erscheint unter dem Feld ein Zähler; über dem Limit wird er rot, **Zu lang** nennt das Limit, und Speichern bleibt ausgegraut, bis der Text kürzer ist.
+
+Nichts, was Sie tippen oder einfügen, wird je abgeschnitten — kürzen Sie selbst. Ein Teil einer langen Beschreibung gehört oft ohnehin in die Notizen eines Stopps.""",
+            ),
+            Block(
                 anchor="image-rejected",
                 heading="Mein Foto wurde beim Hochladen abgelehnt",
                 kind=KIND_FAQ,
@@ -1971,9 +1981,11 @@ Der Balken verschwindet von selbst, sobald die Verbindung zurück ist — es gib
             "links",
             "webseite",
             "ausgegraut",
+            "zu lang",
+            "zeichenlimit",
         ),
         related=("contact", "getting-started"),
-        updated="2026-11-08",
+        updated="2026-11-09",
     ),
     Article(
         slug="report-a-bug",

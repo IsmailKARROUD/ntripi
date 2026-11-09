@@ -115,6 +115,7 @@ RELEASES: tuple[Release, ...] = (
             "**Appuyez sur la couverture d’un voyage pour la voir en entier.** Sur la page d’un voyage, appuyer sur la couverture l’ouvre en plein écran, comme la photo d’un profil — pincez ou appuyez deux fois pour zoomer.",
             "**Le lien Google Maps d’une étape ne mène qu’à Google Maps.** Une adresse Google qui renverrait les lecteurs vers un autre site est refusée, et celles déjà enregistrées sont supprimées. Les liens copiés depuis Google Maps fonctionnent comme avant.",
             "**Pas de liens dans ce que l’on écrit.** Titres, descriptions, notes, avis, noms et bios n’acceptent plus d’adresses web, d’adresses e-mail ni de noms de site — une ligne rouge indique quoi retirer — et une image écrite dans un texte n’est jamais affichée. Le lien Google Maps d’une étape, dans son propre champ, est le seul lien qui reste. La page publique d’un voyage affiche désormais le gras, les listes et les titres de sa description.",
+            "**Des descriptions plus longues, et la place de dire pourquoi.** La description d’un voyage accepte désormais jusqu’à 10 000 caractères, et **Pourquoi cette période ?**, sous la meilleure période, jusqu’à 4 000, avec gras, listes et titres comme la description. Sur la page d’un voyage, elles se replient sur trois et deux lignes, avec **voir plus** pour la suite, et une note courte s’affiche mise en forme d’emblée. Près de la limite d’un texte, un compteur apparaît dessous, et au-delà Enregistrer attend — rien de ce que vous tapez ou collez n’est jamais coupé.",
         ),
     ),
     Release(
@@ -222,7 +223,8 @@ Les nouveaux voyages ne sont visibles que par **vous seul** tant que vous ne cha
 - **Titre** — ce qu’est le voyage. « Quatre jours à Marrakech » vaut mieux que « Maroc ».
 - **Devise** — chaque coût que vous notez l’utilise, pour que le total ait un sens. Choisissez celle que vous allez réellement dépenser.
 - **Image de couverture** — facultative, et vous pouvez l’ajouter plus tard. C’est ce que les gens voient dans le fil et dans un lien partagé.
-- **Meilleure période** — les mois où ce voyage fonctionne. Utile pour tout ce qui est saisonnier.""",
+- **Meilleure période** — les mois où ce voyage fonctionne et, sous **Pourquoi cette période ?**, vos raisons : météo, fêtes, affluence. Jusqu’à 4 000 caractères, avec gras, listes et titres, comme la description.
+- **Description** — elle s’écrit sur la page du voyage une fois créé : en mode modification, appuyez sur **Description**. Jusqu’à 10 000 caractères ; les lecteurs en voient les trois premières lignes et touchent **voir plus** pour la suite.""",
             ),
             Block(
                 anchor="add-stops",
@@ -279,7 +281,7 @@ Voir [comment partager un voyage sans le rendre public](/help/share-an-itinerary
             "planification",
         ),
         related=("plan-alternative-options", "share-an-itinerary-privately", "getting-started"),
-        updated="2026-10-31",
+        updated="2026-11-09",
         cta="Planifiez votre propre itinéraire — comptez une dizaine de minutes.",
     ),
     Article(
@@ -1267,7 +1269,7 @@ Un voyage privé n’est dans aucun fil ni aucune recherche, par conception ; le
 - sur une étape, sous la durée et le coût — ses notes, ses notes colorées et les réflexions sur les transports qui y mènent et qui en partent ensemble ;
 - sous chaque avis, sur la page Évaluations.
 
-La traduction remplace le texte et porte la mention **Traduit automatiquement**. Touchez **Voir l’original** pour revenir ; repasser à la traduction est instantané, car elle est conservée.""",
+La traduction remplace le texte et porte la mention **Traduit automatiquement**. Touchez **Voir l’original** pour revenir ; repasser à la traduction est instantané, car elle est conservée. Une longue description ou une note sur la meilleure période reste comme vous l’avez laissée — repliée, ou ouverte avec **voir plus** — quand elle bascule.""",
             ),
             Block(
                 anchor="which-language",
@@ -1337,7 +1339,7 @@ Chaque traduction est conservée avec le texte dont elle est issue et réutilis�
             "app-settings", "save-trips-and-find-new-ones", "rate-a-trip",
             "your-data-and-privacy",
         ),
-        updated="2026-10-08",
+        updated="2026-11-09",
         cta="Lisez le voyage, quelle que soit sa langue.",
     ),
     Article(
@@ -1925,6 +1927,14 @@ Deux sorties possibles, et toutes deux préservent votre travail : reprenez le v
 Le seul lien qu’accepte une étape est son lien Google Maps, dans son propre champ — collez-en un dans la recherche de lieu et Ntripi propose de l’y placer. Un identifiant ne peut pas non plus ressembler à une adresse de site : anna.paris se termine comme une adresse, alors qu’anna_paris convient.""",
             ),
             Block(
+                anchor="text-too-long",
+                heading="« Trop long » sous ce que j’écris",
+                kind=KIND_FAQ,
+                body="""Chaque texte a une limite : la description d’un voyage 10 000 caractères, sa note sur la meilleure période 4 000, les notes d’une étape, une note colorée et un avis 2 000, une bio 500, un nom 50. À l’approche de la limite, un compteur apparaît sous le champ ; au-delà, il passe au rouge, **Trop long** indique la limite, et Enregistrer reste grisé tant que le texte n’est pas plus court.
+
+Rien de ce que vous tapez ou collez n’est jamais coupé — raccourcissez-le vous-même. Une partie d’une longue description a souvent sa place dans les notes d’une étape.""",
+            ),
+            Block(
                 anchor="image-rejected",
                 heading="Ma photo a été refusée lors de l’envoi",
                 kind=KIND_FAQ,
@@ -1982,9 +1992,11 @@ La barre disparaît d’elle-même au retour de la connexion — il n’y a rien
             "liens",
             "site web",
             "grisé",
+            "trop long",
+            "limite de caractères",
         ),
         related=("contact", "getting-started"),
-        updated="2026-11-08",
+        updated="2026-11-09",
     ),
     Article(
         slug="report-a-bug",

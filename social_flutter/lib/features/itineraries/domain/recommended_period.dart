@@ -18,6 +18,7 @@
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:intl/intl.dart' as intl;
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/utils/markdown_plain_text.dart';
 
 /// Days per month with February at 29 — a window has no year, so a boundary on
 /// the leap day is a real choice. Mirrors _DAYS_IN_MONTH in the backend schema.
@@ -219,11 +220,14 @@ class RecommendedPeriod {
   }
 
   /// One line for a collapsed picker row — dates if any, else weekdays, else
-  /// the note. Null when nothing is set.
+  /// the note's words without its markdown. Null when nothing is set.
   String? shortLabel(AppLocalizations l10n, String localeName) =>
       dateLabel(localeName) ??
       weekdaysLabel(l10n, localeName) ??
-      _trimmedNote;
+      switch (_trimmedNote) {
+        final note? => markdownPlainText(note, singleLine: true),
+        null => null,
+      };
 
   @override
   bool operator ==(Object other) =>

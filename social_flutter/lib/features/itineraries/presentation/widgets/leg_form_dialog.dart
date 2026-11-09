@@ -17,6 +17,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ntripi/core/text/text_limits.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
 import 'package:ntripi/core/ui/toggle_feedback.dart';
@@ -81,13 +82,17 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
   late TextEditingController _lineCtrl;
   late TextEditingController _directionCtrl;
   late TextEditingController _notesCtrl;
-  // No new link in the leg's text (text_rules.dart); an old one never blocks
-  // Save until its own text is edited.
-  late final _lineField = RuledField(_lineCtrl, initial: widget.existing?.line);
-  late final _directionField =
-      RuledField(_directionCtrl, initial: widget.existing?.direction);
-  late final _notesField =
-      RuledField(_notesCtrl, initial: widget.existing?.notes);
+  // The leg's text rules (text_rules.dart): no new link — an old one never
+  // blocks Save until its own text is edited — and each field's cap.
+  late final _lineField = RuledField(_lineCtrl,
+      rules: const TextRules(TextLimits.legLine),
+      initial: widget.existing?.line);
+  late final _directionField = RuledField(_directionCtrl,
+      rules: const TextRules(TextLimits.legDirection),
+      initial: widget.existing?.direction);
+  late final _notesField = RuledField(_notesCtrl,
+      rules: const TextRules(TextLimits.legNotes),
+      initial: widget.existing?.notes);
   int _durationDays = 0;
   int _durationHours = 0;
   int _durationMinutes = 0;

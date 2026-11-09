@@ -17,7 +17,6 @@ import 'package:ntripi/features/itineraries/presentation/widgets/edit_pencil_but
 import 'package:ntripi/features/itineraries/presentation/widgets/long_press_to_edit.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
-import 'package:ntripi/shared/widgets/expandable_text.dart';
 
 class StopCard extends StatelessWidget {
   final Stop stop;
@@ -144,10 +143,10 @@ class StopCard extends StatelessWidget {
                             padding: const EdgeInsets.only(top: 6),
                             // Two-line preview; the card's own tap opens the
                             // stop, so only the link unfolds it.
-                            child: ExpandableText(
+                            child: FoldedMarkdown(
                               stop.notes!,
-                              expandedBuilder: (context, notes) =>
-                                  InertMarkdownBody(data: notes),
+                              style: TextStyle(
+                                  fontSize: 13, height: 1.4, color: nt.text2),
                             ),
                           ),
 

@@ -1,11 +1,16 @@
 // shared/widgets/expandable_text.dart — a text folded to a few lines, with
 // "… view more" / "view less" when it does not fit.
 //
-// The one widget for it: stop-card notes, review notes and a transport leg's
-// thoughts. Two private copies had grown apart, and both measured the overflow
-// with a bare TextPainter — no theme font, no text scaler, no bold-text — so
-// under large accessibility text a note rendered ellipsised with no link to the
-// rest of it.
+// The one widget for it: a trip's description and best-time note, stop-card
+// notes, review notes and a transport leg's thoughts. Two private copies had
+// grown apart, and both measured the overflow with a bare TextPainter — no
+// theme font, no text scaler, no bold-text — so under large accessibility text
+// a note rendered ellipsised with no link to the rest of it.
+//
+// A markdown text folds to its words without the markup ([foldedText]) and
+// opens to the formatted text ([expandedBuilder]); one short enough to need no
+// fold shows formatted at once. Until 2026-11-09 a short note showed its `**`
+// and `#` as typed, because only "view more" ever formatted it.
 //
 // Never place it under IntrinsicHeight: the overflow check is a LayoutBuilder,
 // which throws on an intrinsic query (the 2026-09-29 parallel-stops freeze,
@@ -20,6 +25,7 @@ class ExpandableText extends StatefulWidget {
     this.text, {
     super.key,
     this.maxLines = 2,
+    this.foldedText,
     this.style,
     this.linkStyle,
     this.expandedBuilder,
@@ -31,14 +37,19 @@ class ExpandableText extends StatefulWidget {
   /// Lines shown while folded.
   final int maxLines;
 
+  /// What the fold measures and shows, when not [text] itself — a markdown
+  /// text's words without the markup (markdown_plain_text.dart).
+  final String? foldedText;
+
   /// Defaults to 13/1.4 in `nt.text2`.
   final TextStyle? style;
 
   /// The "view more" / "view less" link. Defaults to 12/w600 in `nt.forest`.
   final TextStyle? linkStyle;
 
-  /// Renders the unfolded text — markdown notes pass `InertMarkdownBody`.
-  /// Defaults to the same plain text, unclamped.
+  /// Renders the unfolded text, and a text short enough to need no fold —
+  /// markdown passes `InertMarkdownBody`. Defaults to the same plain text,
+  /// unclamped.
   final Widget Function(BuildContext context, String text)? expandedBuilder;
 
   /// Tapping the folded text unfolds it too. Off where the text sits inside
@@ -55,13 +66,14 @@ class _ExpandableTextState extends State<ExpandableText> {
   /// Whether the text needs more than [ExpandableText.maxLines] at [maxWidth],
   /// measured with everything `Text` renders it with — measuring with less is
   /// how a folded note ended up with no link.
-  bool _overflows(BuildContext context, TextStyle style, double maxWidth) {
+  bool _overflows(
+      BuildContext context, String text, TextStyle style, double maxWidth) {
     var effective = DefaultTextStyle.of(context).style.merge(style);
     if (MediaQuery.boldTextOf(context)) {
       effective = effective.merge(const TextStyle(fontWeight: FontWeight.bold));
     }
     final painter = TextPainter(
-      text: TextSpan(text: widget.text, style: effective),
+      text: TextSpan(text: text, style: effective),
       maxLines: widget.maxLines,
       textDirection: Directionality.of(context),
       textScaler: MediaQuery.textScalerOf(context),
@@ -85,22 +97,29 @@ class _ExpandableTextState extends State<ExpandableText> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final overflows = _overflows(context, style, constraints.maxWidth);
+        final foldedText = widget.foldedText ?? widget.text;
+        final overflows =
+            _overflows(context, foldedText, style, constraints.maxWidth);
         final Widget body;
-        if (_expanded) {
-          body = widget.expandedBuilder?.call(context, widget.text) ??
-              Text(widget.text, style: style);
+        if (_expanded || !overflows) {
+          final builder = widget.expandedBuilder;
+          final formatted =
+              builder?.call(context, widget.text) ?? Text(widget.text, style: style);
+          // A short text inside something with a tap of its own (a stop card
+          // opens its stop) must not take that tap: selectable markdown would.
+          body = builder != null && !_expanded && !widget.expandOnTextTap
+              ? IgnorePointer(child: formatted)
+              : formatted;
         } else {
           final folded = Text(
-            widget.text,
+            foldedText,
             style: style,
             maxLines: widget.maxLines,
             overflow: TextOverflow.ellipsis,
           );
           body = widget.expandOnTextTap
               ? GestureDetector(
-                  // No-op when it already fits.
-                  onTap: overflows ? _toggle : null,
+                  onTap: _toggle,
                   behavior: HitTestBehavior.opaque,
                   child: folded,
                 )

@@ -77,6 +77,13 @@
   {% endif %}
 </div>
 
+{% if itinerary.recommended_period_note %}
+<h2>Why this time? (best time to visit)</h2>
+<div class="card">
+  <div style="white-space:pre-wrap">{{ itinerary.recommended_period_note }}</div>
+</div>
+{% endif %}
+
 {% if itinerary.annotations %}
 <h2>Trip-wide notes</h2>
 <div class="card">

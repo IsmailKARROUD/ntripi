@@ -216,6 +216,14 @@ RELEASES: tuple[Release, ...] = (
             "picture written into a text is never shown. A stop's Google Maps "
             "link, in its own field, is the one link left. A trip's public page "
             "now shows its description's bold, lists and headings.",
+            "**Longer descriptions, and room to say why.** A trip's description "
+            "now takes up to 10,000 characters, and **Why this time?** under "
+            "the best time to visit up to 4,000, written with bold, lists and "
+            "headings like the description. On a trip's page they fold to three "
+            "and two lines, with **view more** for the rest, and a short note "
+            "shows its formatting at once. Near a text's limit a count appears "
+            "under it, and past it Save waits — nothing you type or paste is "
+            "ever cut.",
         ),
     ),
     Release(
@@ -351,7 +359,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="getting-started",
         schema=SCHEMA_HOWTO,
-        updated="2026-10-31",
+        updated="2026-11-09",
         keywords=(
             "trip planner", "travel itinerary", "itineraries", "day by day",
             "plan a holiday", "vacation planner", "route", "schedule",
@@ -384,8 +392,14 @@ ARTICLES: tuple[Article, ...] = (
                     "adds up. Pick the one you will actually be spending.\n"
                     "- **Cover image** — optional, and you can add it later. It is "
                     "what people see in the feed and in a shared link.\n"
-                    "- **Best time to visit** — the months this trip works. Useful "
-                    "for anything seasonal."
+                    "- **Best time to visit** — the months this trip works, and "
+                    "under **Why this time?** your reasons: weather, festivals, "
+                    "crowds. Up to 4,000 characters, with bold, lists and "
+                    "headings, as in the description.\n"
+                    "- **Description** — written on the trip's page once it "
+                    "exists: in edit mode, tap **Description**. Up to 10,000 "
+                    "characters; readers see the first three lines and tap "
+                    "**view more** for the rest."
                 ),
             ),
             Block(
@@ -1772,7 +1786,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="community",
         schema=SCHEMA_FAQ,
-        updated="2026-10-08",
+        updated="2026-11-09",
         keywords=(
             "translate", "translator", "translation", "foreign language",
             "other language", "machine translation", "auto translate", "multilingual",
@@ -1806,7 +1820,9 @@ ARTICLES: tuple[Article, ...] = (
                     "- under each review on the Ratings page.\n\n"
                     "The translation replaces the text and is marked **Automatically "
                     "translated**. Tap **See original** to go back; switching again is "
-                    "instant, because the translation is kept."
+                    "instant, because the translation is kept. A long description or "
+                    "best-time note stays as you left it — folded, or opened with "
+                    "**view more** — when it switches."
                 ),
             ),
             Block(
@@ -2648,12 +2664,13 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="troubleshooting",
         schema=SCHEMA_FAQ,
-        updated="2026-11-08",
+        updated="2026-11-09",
         keywords=(
             "error", "problem", "problems", "broken", "not working", "failed",
             "failing", "stuck", "cannot save", "can not save", "reload",
             "offline", "crash", "bug", "fix", "help",
             "link", "links", "website", "greyed out",
+            "too long", "character limit", "counter",
         ),
         related=("contact", "getting-started"),
         intro=(
@@ -2717,6 +2734,22 @@ ARTICLES: tuple[Article, ...] = (
                     "field — paste one into the place search and Ntripi offers to put "
                     "it there. A username can't look like a website address either: "
                     "anna.paris ends like one, while anna_paris is fine."
+                ),
+            ),
+            Block(
+                anchor="text-too-long",
+                heading="\"Too long\" under what I'm writing",
+                kind=KIND_FAQ,
+                body=(
+                    "Every text has a limit: a trip's description 10,000 "
+                    "characters, its best-time note 4,000, a stop's notes, a "
+                    "coloured note and a review 2,000, a bio 500, a name 50. As "
+                    "you get close, a count appears under the field; past the "
+                    "limit it turns red, **Too long** gives the limit, and Save "
+                    "stays greyed out until the text is shorter.\n\n"
+                    "Nothing you type or paste is ever cut — shorten it yourself. "
+                    "Part of a long description often belongs in a stop's notes "
+                    "anyway."
                 ),
             ),
             Block(

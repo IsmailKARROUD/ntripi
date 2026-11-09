@@ -9,6 +9,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/text/text_limits.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
 import 'package:ntripi/features/itineraries/domain/annotation.dart';
@@ -60,9 +61,11 @@ class AnnotationScreen extends StatefulWidget {
 class _AnnotationScreenState extends State<AnnotationScreen> {
   late AnnotationType _type;
   late final TextEditingController _contentController;
-  // No new link in the note (text_rules.dart); an old one never blocks Save.
-  late final RuledField _contentField =
-      RuledField(_contentController, initial: widget.initialContent);
+  // The note's text rules (text_rules.dart): no new link — an old one never
+  // blocks Save — and the server's cap.
+  late final RuledField _contentField = RuledField(_contentController,
+      rules: const TextRules(TextLimits.annotation),
+      initial: widget.initialContent);
   bool _saving = false;
 
   // Baseline of the editable fields, captured after seeding from widget, so

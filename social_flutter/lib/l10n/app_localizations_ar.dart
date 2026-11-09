@@ -3494,4 +3494,23 @@ class AppLocalizationsAr extends AppLocalizations {
   String usernameLooksLikeLink(String match) {
     return 'لا يمكن أن يبدو اسم المستخدم كعنوان موقع إلكتروني («$match»).';
   }
+
+  @override
+  String textRuleTooLong(int limit) {
+    String _temp0 = intl.Intl.pluralLogic(
+      limit,
+      locale: localeName,
+      other: 'طويل جدًا — $limit حرف على الأكثر.',
+      many: 'طويل جدًا — $limit حرفًا على الأكثر.',
+      few: 'طويل جدًا — $limit أحرف على الأكثر.',
+      two: 'طويل جدًا — حرفان على الأكثر.',
+      one: 'طويل جدًا — حرف واحد على الأكثر.',
+      zero: 'طويل جدًا — $limit حرف على الأكثر.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get errorInvalidInput =>
+      'لا يمكن حفظ بعض ما أدخلته كما هو. يرجى التحقق منه والمحاولة مجددًا.';
 }

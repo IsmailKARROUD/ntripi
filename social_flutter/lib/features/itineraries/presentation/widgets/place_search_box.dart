@@ -21,7 +21,8 @@
 // A link is never searched (link_rule.dart): what a Google pick keeps is the
 // typed text, which may hold no link. A pasted Google Maps link is offered as
 // the stop's own link instead ([onMapLink]); any other link is named as the
-// thing to remove.
+// thing to remove. Nor is a text past its cap (TextLimits.placeSearch, the
+// Google proxy's and the stored search text's): it is named, never sent.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,6 +30,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/services/geocoding_service.dart';
 import 'package:ntripi/core/text/link_rule.dart';
+import 'package:ntripi/core/text/text_limits.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/features/itineraries/data/google_maps_links.dart';
 import 'package:ntripi/features/itineraries/data/places_repository.dart';
@@ -48,6 +50,7 @@ class PlaceSearchBox extends ConsumerStatefulWidget {
   static const noticeKey = Key('placeSearch.notice');
   static const useAsMapLinkKey = Key('placeSearch.useAsMapLink');
   static const linkNoticeKey = Key('placeSearch.linkNotice');
+  static const tooLongKey = Key('placeSearch.tooLong');
 
   final TextEditingController controller;
 
@@ -115,6 +118,9 @@ class _PlaceSearchBoxState extends ConsumerState<PlaceSearchBox> {
 
   String get _text => widget.controller.text.trim();
 
+  /// Past the cap the server puts on a search: answered, never searched.
+  bool get _tooLong => textLength(_text) > TextLimits.placeSearch;
+
   void _openList() {
     if (!_listOpen) setState(() => _listOpen = true);
   }
@@ -134,8 +140,8 @@ class _PlaceSearchBoxState extends ConsumerState<PlaceSearchBox> {
   void _submit() {
     if (_text.isEmpty) return;
     _openList(); // the arrow can be tapped with the list folded
-    // A link is answered under the field, never sent to a search.
-    if (findLink(_text) != null) return;
+    // A link or an over-long text is answered under the field, never sent.
+    if (findLink(_text) != null || _tooLong) return;
     if (_onGoogle) {
       ref.read(googlePlaceSearchProvider.notifier).searchNow(_text,
           language: widget.language, bias: widget.bias());
@@ -156,7 +162,7 @@ class _PlaceSearchBoxState extends ConsumerState<PlaceSearchBox> {
       _reset();
       return;
     }
-    if (_onGoogle && findLink(value) == null) {
+    if (_onGoogle && findLink(value) == null && !_tooLong) {
       ref.read(googlePlaceSearchProvider.notifier).typed(value,
           language: widget.language, bias: widget.bias());
     }
@@ -245,6 +251,13 @@ class _PlaceSearchBoxState extends ConsumerState<PlaceSearchBox> {
         if (_listOpen)
           if (findLink(_text) case final link?)
             _linkAnswer(l10n, link)
+          else if (_tooLong)
+            KeyedSubtree(
+              key: PlaceSearchBox.tooLongKey,
+              child: _Notice(
+                  text: l10n.textRuleTooLong(TextLimits.placeSearch),
+                  error: true),
+            )
           else
             _onGoogle
                 ? _googleResults(nt, l10n)

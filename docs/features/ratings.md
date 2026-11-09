@@ -168,7 +168,12 @@ ratings: [RatingWithUser]}`.
   `/itineraries/:id/ratings/:dimension`).
 - **`rate_itinerary_dialog.dart`** — shows Overall plus the review note first,
   and reveals the five optional dimensions only once Overall is rated.
-  Crowdedness renders **person glyphs instead of stars**.
+  Crowdedness renders **person glyphs instead of stars**. The note takes 2,000
+  characters, counted from 1,800, and Submit waits past the cap (text_rules.dart).
+- **A review's note folds to one line** on the Ratings page (`FoldedMarkdown`):
+  the words without the markup, a tap or "view more" opening it formatted, and
+  a note short enough to need no fold formatted at once — until 2026-11-09 a
+  short note showed its `**` as typed ([itineraries.md](itineraries.md)).
 - **`DimensionKey`** (`features/itineraries/domain/dimension_key.dart:9`) —
   `overall, safety, experience, accessibility, familyFriendly, crowdedness`, with
   `fromPath()` mapping the route segment (`family_friendly` → `familyFriendly`).

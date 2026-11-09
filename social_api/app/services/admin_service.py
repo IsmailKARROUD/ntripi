@@ -64,6 +64,7 @@ def snapshot_itinerary(itinerary: Itinerary, report: ContentReport | None = None
     snap: dict = {
         "title": itinerary.title,
         "description": itinerary.description,
+        "recommended_period_note": itinerary.recommended_period_note,
         "cover_image_url": itinerary.cover_image_url,
         "visibility": itinerary.visibility,
         "owner": {"id": str(itinerary.user_id)},

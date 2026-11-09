@@ -1451,5 +1451,18 @@
   "textRuleNoLinks": "لا يمكن إضافة روابط هنا — احذف «{match}».",
   "apiErrorTextContainsLink": "لا يمكن إضافة روابط هنا.",
   "useAsMapLink": "استخدمه رابطًا لخرائط Google لهذه المحطة",
-  "usernameLooksLikeLink": "لا يمكن أن يبدو اسم المستخدم كعنوان موقع إلكتروني («{match}»)."
+  "usernameLooksLikeLink": "لا يمكن أن يبدو اسم المستخدم كعنوان موقع إلكتروني («{match}»).",
+  "textRuleTooLong": "{limit, plural, zero{طويل جدًا — {limit} حرف على الأكثر.} one{طويل جدًا — حرف واحد على الأكثر.} two{طويل جدًا — حرفان على الأكثر.} few{طويل جدًا — {limit} أحرف على الأكثر.} many{طويل جدًا — {limit} حرفًا على الأكثر.} other{طويل جدًا — {limit} حرف على الأكثر.}}",
+  "@textRuleTooLong": {
+    "description": "Under a field past its cap, and the server's string_too_long answer. limit is the cap in characters.",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "errorInvalidInput": "لا يمكن حفظ بعض ما أدخلته كما هو. يرجى التحقق منه والمحاولة مجددًا.",
+  "@errorInvalidInput": {
+    "description": "A server validation refusal other than a text over its cap — never the server's raw list."
+  }
 }

@@ -1111,5 +1111,18 @@
   "textRuleNoLinks": "Links sind hier nicht erlaubt – entferne „{match}“.",
   "apiErrorTextContainsLink": "Links sind hier nicht erlaubt.",
   "useAsMapLink": "Als Google-Maps-Link dieses Stopps verwenden",
-  "usernameLooksLikeLink": "Ein Benutzername darf nicht wie eine Webadresse aussehen („{match}“)."
+  "usernameLooksLikeLink": "Ein Benutzername darf nicht wie eine Webadresse aussehen („{match}“).",
+  "textRuleTooLong": "{limit, plural, one{Zu lang – höchstens {limit} Zeichen.} other{Zu lang – höchstens {limit} Zeichen.}}",
+  "@textRuleTooLong": {
+    "description": "Under a field past its cap, and the server's string_too_long answer. limit is the cap in characters.",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "errorInvalidInput": "Etwas, das du eingegeben hast, kann so nicht gespeichert werden. Prüfe es und versuche es erneut.",
+  "@errorInvalidInput": {
+    "description": "A server validation refusal other than a text over its cap — never the server's raw list."
+  }
 }

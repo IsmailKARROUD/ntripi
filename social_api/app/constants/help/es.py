@@ -115,6 +115,7 @@ RELEASES: tuple[Release, ...] = (
             "**Toca la portada de un viaje para verla entera.** En la página de un viaje, tocar la portada la abre a pantalla completa, como la foto de un perfil; pellizca o toca dos veces para hacer zoom.",
             "**El enlace de Google Maps de una parada solo lleva a Google Maps.** Se rechaza una dirección de Google que llevaría a los lectores a otro sitio, y las que ya estaban guardadas se eliminan. Los enlaces copiados de Google Maps funcionan como antes.",
             "**Sin enlaces en lo que se escribe.** Títulos, descripciones, notas, reseñas, nombres y biografías ya no admiten direcciones web, de correo ni nombres de sitio —una línea roja indica qué quitar— y una imagen escrita en un texto nunca se muestra. El enlace de Google Maps de una parada, en su propio campo, es el único enlace que queda. La página pública de un viaje muestra ahora las negritas, listas y títulos de su descripción.",
+            "**Descripciones más largas, y espacio para explicar por qué.** La descripción de un viaje admite ahora hasta 10 000 caracteres, y **¿Por qué esta época?**, bajo la mejor época para viajar, hasta 4000, con negrita, listas y títulos como la descripción. En la página de un viaje se pliegan a tres y dos líneas, con **ver más** para el resto, y una nota corta se ve con su formato desde el principio. Cerca del límite de un texto aparece un contador debajo, y pasado el límite Guardar espera: nunca se corta nada de lo que escribes o pegas.",
         ),
     ),
     Release(
@@ -221,7 +222,8 @@ Los viajes nuevos son visibles **solo para ti** hasta que lo cambies, así que e
 - **Título** — qué es el viaje. «Cuatro días en Marrakech» es mejor que «Marruecos».
 - **Moneda** — cada coste que anotes la usa, para que el total tenga sentido. Elige la que vayas a gastar de verdad.
 - **Imagen de portada** — opcional, y puedes añadirla más tarde. Es lo que la gente ve en el feed y en un enlace compartido.
-- **Mejor época** — los meses en que este viaje funciona. Útil para todo lo estacional.""",
+- **Mejor época para viajar** — los meses en que este viaje funciona y, en **¿Por qué esta época?**, tus razones: el clima, las fiestas, la afluencia. Hasta 4000 caracteres, con negrita, listas y títulos, como la descripción.
+- **Descripción** — se escribe en la página del viaje una vez creado: en modo edición, toca **Descripción**. Hasta 10 000 caracteres; los lectores ven las tres primeras líneas y tocan **ver más** para el resto.""",
             ),
             Block(
                 anchor="add-stops",
@@ -278,7 +280,7 @@ Consulta [cómo compartir un viaje sin hacerlo público](/help/share-an-itinerar
             "planificación",
         ),
         related=("plan-alternative-options", "share-an-itinerary-privately", "getting-started"),
-        updated="2026-10-31",
+        updated="2026-11-09",
         cta="Planifica tu propio itinerario: son unos diez minutos.",
     ),
     Article(
@@ -1264,7 +1266,7 @@ Un viaje privado no está en ningún feed ni en ninguna búsqueda, por diseño; 
 - en una parada, bajo su duración y coste: sus notas, sus notas de color y las impresiones sobre el transporte que llega a ella y el que sale, juntas;
 - bajo cada reseña, en la página Valoraciones.
 
-La traducción sustituye al texto y lleva la marca **Traducido automáticamente**. Toca **Ver original** para volver; cambiar de nuevo es instantáneo, porque la traducción se conserva.""",
+La traducción sustituye al texto y lleva la marca **Traducido automáticamente**. Toca **Ver original** para volver; cambiar de nuevo es instantáneo, porque la traducción se conserva. Una descripción larga o una nota sobre la mejor época se queda como la dejaste —plegada, o abierta con **ver más**— cuando cambia.""",
             ),
             Block(
                 anchor="which-language",
@@ -1334,7 +1336,7 @@ Cada traducción se guarda junto al texto del que procede y se reutiliza para el
             "app-settings", "save-trips-and-find-new-ones", "rate-a-trip",
             "your-data-and-privacy",
         ),
-        updated="2026-10-08",
+        updated="2026-11-09",
         cta="Lee el viaje, esté en el idioma que esté.",
     ),
     Article(
@@ -1920,6 +1922,14 @@ Tienes dos salidas, y las dos conservan tu trabajo: recupera el viaje y guarda, 
 El único enlace que admite una parada es su enlace de Google Maps, en su propio campo: pega uno en la búsqueda de lugares y Ntripi te ofrece ponerlo ahí. Un nombre de usuario tampoco puede parecer una dirección web: anna.paris termina como una, mientras que anna_paris sirve.""",
             ),
             Block(
+                anchor="text-too-long",
+                heading="«Demasiado largo» bajo lo que escribo",
+                kind=KIND_FAQ,
+                body="""Cada texto tiene un límite: la descripción de un viaje, 10 000 caracteres; su nota sobre la mejor época, 4000; las notas de una parada, una nota de color y una reseña, 2000; una biografía, 500; un nombre, 50. Al acercarte, aparece un contador bajo el campo; pasado el límite se vuelve rojo, **Demasiado largo** indica el límite, y Guardar sigue en gris hasta que el texto sea más corto.
+
+Nunca se corta nada de lo que escribes o pegas: acórtalo tú. Parte de una descripción larga suele estar mejor en las notas de una parada.""",
+            ),
+            Block(
                 anchor="image-rejected",
                 heading="Mi foto se rechazó al subirla",
                 kind=KIND_FAQ,
@@ -1978,9 +1988,11 @@ La barra desaparece sola cuando vuelve la conexión: no hay nada que tocar.""",
             "enlaces",
             "sitio web",
             "en gris",
+            "demasiado largo",
+            "límite de caracteres",
         ),
         related=("contact", "getting-started"),
-        updated="2026-11-08",
+        updated="2026-11-09",
     ),
     Article(
         slug="report-a-bug",

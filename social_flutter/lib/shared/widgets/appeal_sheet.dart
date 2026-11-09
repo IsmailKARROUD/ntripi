@@ -8,12 +8,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/text/text_limits.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/features/profile/domain/violation.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:ntripi/shared/widgets/keyboard_avoidance.dart';
+import 'package:ntripi/shared/widgets/text_rules.dart';
 
 /// Opens the appeal composer for [targetType]/[targetId].
 ///
@@ -73,6 +75,9 @@ class _AppealSheetState extends ConsumerState<AppealSheet> {
   // returns kills the controller while the sheet's exit animation is still
   // building the TextField ("used after being disposed").
   final _controller = TextEditingController();
+  // Only the cap: an appeal may quote a link, and only the operator reads it.
+  late final _field = RuledField(_controller,
+      rules: const TextRules(TextLimits.appealReason, refuseLinks: false));
   bool _busy = false;
   String? _error;
 
@@ -123,16 +128,19 @@ class _AppealSheetState extends ConsumerState<AppealSheet> {
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
       actions: SheetActionBar(
         inset: 20,
-        child: FilledButton(
-          key: const Key('appealSubmitButton'),
-          onPressed: _busy ? null : _submit,
-          child: _busy
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(l10n.appealSubmit),
+        child: TextRulesGate(
+          fields: [_field],
+          builder: (context, ok) => FilledButton(
+            key: const Key('appealSubmitButton'),
+            onPressed: _busy || !ok ? null : _submit,
+            child: _busy
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(l10n.appealSubmit),
+          ),
         ),
       ),
       child: Column(
@@ -153,13 +161,13 @@ class _AppealSheetState extends ConsumerState<AppealSheet> {
             style: TextStyle(fontSize: 13, color: nt.text2),
           ),
           const SizedBox(height: 14),
-          // The whole box, counter and error rise above the keyboard together.
-          RevealTogether(
+          // The whole box, its count and error rise above the keyboard together.
+          TextRulesField(
+            field: _field,
             child: TextField(
               key: const Key('appealReasonField'),
               controller: _controller,
               maxLines: 5,
-              maxLength: 2000,
               enabled: !_busy,
               decoration: InputDecoration(
                 labelText: l10n.appealReasonLabel,
