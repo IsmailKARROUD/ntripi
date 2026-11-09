@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:dio_cache_interceptor_hive_store/dio_cache_interceptor_hive_store.dart';
-import 'package:feedback/feedback.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,9 +19,7 @@ import 'package:ntripi/core/storage/secure_storage.dart';
 import 'package:ntripi/features/auth/presentation/widgets/tos_gate.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/orientation_policy.dart';
-import 'package:ntripi/features/bug_report/presentation/bug_report_localizations.dart';
-import 'package:ntripi/features/bug_report/presentation/bug_report_sheet.dart';
-import 'package:ntripi/features/bug_report/presentation/bug_report_theme.dart';
+import 'package:ntripi/features/bug_report/presentation/ntripi_feedback.dart';
 import 'package:ntripi/features/bug_report/presentation/shake_to_report.dart';
 import 'package:ntripi/features/notifications/presentation/widgets/notification_poller.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
@@ -96,41 +93,10 @@ class NtripiApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-      // Shake-to-report. BetterFeedback must sit ABOVE MaterialApp: its bottom
-      // sheet builds a bare Navigator, and inside MaterialApp that Navigator
-      // would inherit the app's HeroController — which asserts, because a
-      // HeroController cannot be shared by two Navigators.
-      child: BetterFeedback(
-        // Above MaterialApp there is no Theme to read, so both brightnesses are
-        // supplied and BetterFeedback picks one from themeMode, exactly as
-        // MaterialApp does below.
-        theme: ntripiFeedbackTheme(NtripiColors.light),
-        darkTheme: ntripiFeedbackTheme(NtripiColors.dark),
+      // Shake-to-report's layer — above MaterialApp, see NtripiFeedback.
+      child: NtripiFeedback(
         themeMode: themeMode,
-        // FeedbackApp builds its own Localizations scope from exactly these
-        // delegates. The app's own are listed so the compose sheet — which
-        // renders in that scope, not MaterialApp's — can still use l10n.
-        localizationsDelegates: [
-          const NtripiFeedbackLocalizationsDelegate(),
-          ...AppLocalizations.localizationsDelegates,
-        ],
-        // That scope otherwise resolves the *platform* locale, ignoring the
-        // in-app language picker. It also drives Directionality, so this is
-        // what makes the sheet lay out RTL in Arabic.
-        localeOverride: locale,
-        feedbackBuilder: (ctx, onSubmit, scrollController) => Theme(
-          // The sheet is outside MaterialApp, so the app theme has to be handed
-          // to it explicitly — see ntripiFeedbackAppTheme.
-          data: ntripiFeedbackAppTheme(ctx, themeMode),
-          child: BugReportSheet(
-            onSubmit: onSubmit,
-            scrollController: scrollController,
-          ),
-        ),
-        // The 3.0 default yields a ~1290×2796 PNG on a modern phone, against a
-        // 10 MB request cap and a mobile uplink. The backend downscales to a
-        // 1600 px long side anyway.
-        pixelRatio: 2.0,
+        locale: locale,
         child: MaterialApp.router(
           title: 'NTripi',
           debugShowCheckedModeBanner: false,

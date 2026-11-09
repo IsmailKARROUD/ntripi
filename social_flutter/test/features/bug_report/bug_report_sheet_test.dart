@@ -27,15 +27,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
-import 'package:ntripi/features/bug_report/presentation/bug_report_localizations.dart';
 import 'package:ntripi/features/bug_report/presentation/bug_report_sheet.dart';
-import 'package:ntripi/features/bug_report/presentation/bug_report_theme.dart';
+import 'package:ntripi/features/bug_report/presentation/ntripi_feedback.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 
-/// Mirrors the mount in lib/main.dart: ProviderScope above everything, then
-/// BetterFeedback, then MaterialApp. `home` is what a real screen sees.
+/// The mount in lib/main.dart: ProviderScope above everything, then the app's
+/// own NtripiFeedback, then MaterialApp. `home` is what a real screen sees.
 Widget _appHarness({required Widget home, Locale locale = const Locale('en')}) {
   return ProviderScope(
     child: _feedbackApp(home: home, locale: locale),
@@ -43,22 +42,9 @@ Widget _appHarness({required Widget home, Locale locale = const Locale('en')}) {
 }
 
 Widget _feedbackApp({required Widget home, required Locale locale}) {
-  return BetterFeedback(
-    theme: ntripiFeedbackTheme(NtripiColors.light),
-    darkTheme: ntripiFeedbackTheme(NtripiColors.dark),
+  return NtripiFeedback(
     themeMode: ThemeMode.light,
-    localizationsDelegates: [
-      const NtripiFeedbackLocalizationsDelegate(),
-      ...AppLocalizations.localizationsDelegates,
-    ],
-    localeOverride: locale,
-    feedbackBuilder: (ctx, onSubmit, scrollController) => Theme(
-      data: ntripiFeedbackAppTheme(ctx, ThemeMode.light),
-      child: BugReportSheet(
-        onSubmit: onSubmit,
-        scrollController: scrollController,
-      ),
-    ),
+    locale: locale,
     child: MaterialApp(
       locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,

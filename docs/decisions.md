@@ -3628,3 +3628,67 @@ after the long-texts work:
   `XAU` on a card is not a price; the server accepts what the picker offers.
 - **Naming a taken-down trip to its owner**: the title is often what was taken
   down, and a push shows on a lock screen.
+
+### 2026-11-09 — The bug reporter's pens are the same in both themes; one `BetterFeedback` configuration
+
+**Context.** Shaking a Pixel to test the bug reporter froze the app, and Android
+then reported it as not responding. The phone was in dark mode, and the app was
+set to Light. The phone's own ANR report showed the Dart isolate paused, not
+busy: the VS Code debugger had stopped on a failed assertion. On Android,
+Flutter runs Dart on the main thread, so a paused isolate is an ANR.
+
+The assertion is the `feedback` package's own. Version 3.2.0 takes its pen once,
+when its layer is first built: `drawColors[0]` of the theme in force then. Its
+draw controls then assert that the pens on offer still include that pen. The app
+gave the package a different set of pens per theme.
+
+The layer is first built before the saved theme mode lands. `themeModeProvider`
+answers `system` until the keystore answers over its platform channel. So the
+pen came from the phone's dark theme, and the shake offered the light pens. The
+same thing happens if the phone flips dark mode while the app follows the
+system, if the user switches the theme in Settings, and if a pen was picked
+before any of those changes.
+
+Without a debugger, the error replaced the whole app with the red error screen.
+Release builds have no assertion, so they never froze; they only showed no pen
+as selected. Every reporter test used a hand copy of `main.dart`'s
+`BetterFeedback` with the light theme fixed, so none saw it. 3.2.0 is the
+package's latest release.
+
+**Decision.**
+- **One set of pens for both themes**: `NtripiBrand.markerPens` holds red
+  `#BA1A1A`, gold `#C89030` and green `#089000`. The owner chose these three
+  because each reads on a light screenshot and on a dark one. The ink pen went:
+  near-black disappears on a dark screen, and off-white on a light one.
+- **One `BetterFeedback` configuration**: `NtripiFeedback`
+  (`features/bug_report/presentation/ntripi_feedback.dart`). `main.dart` mounts
+  it, and so do the reporter's tests. `test/feedback_mount_guard_test.dart`
+  fails on any other `BetterFeedback(` in `lib/`.
+- **Tests for the whole class**, in
+  `test/features/bug_report/bug_report_theme_change_test.dart`:
+  - every way the theme can change between launch and a shake, plus controls
+    where it doesn't;
+  - the theme changing under an open reporter;
+  - a pen kept across openings;
+  - the language landing after launch;
+  - the pens' invariant.
+
+  The real preference providers run on a keystore faked at its platform channel.
+  The fake answers once the app is up, as a phone's keystore does. With the
+  in-memory mock, the saved choice landed first and the user's case passed;
+  every test that changes the theme failed on the old pens.
+
+**Consequences.**
+- The reporter offers three pens instead of four, the same shades in both
+  themes. No help article or app string named them.
+- A theme change can no longer reach the package's pen state, whatever happens
+  after launch.
+
+**Alternatives rejected.**
+- **Forking or vendoring `feedback` to reset the pen on a theme change**: we
+  would maintain a fork to keep pens that differ by theme.
+- **Keying `BetterFeedback` on the brightness**: a new key remounts its child,
+  which is the whole app, and every screen's state would be lost on a theme
+  change.
+- **The four light-theme pens in both themes**: the ink pen (`#1A2A1E`) is
+  invisible on a dark screenshot, at 1.4:1.

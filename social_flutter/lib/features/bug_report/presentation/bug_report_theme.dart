@@ -4,8 +4,9 @@
 // so the screenshot/draw layer it renders looks like Ntripi rather than the
 // package's grey-and-blue default.
 //
-// Every value comes from NtripiColors — no Color literal appears here, which
-// keeps app_theme.dart the single source of truth for colour (see its header).
+// Every value comes from NtripiColors or NtripiBrand — no Color literal appears
+// here, which keeps app_theme.dart the single source of truth for colour (see
+// its header).
 
 import 'package:feedback/feedback.dart';
 import 'package:flutter/material.dart';
@@ -34,9 +35,9 @@ FeedbackThemeData ntripiFeedbackTheme(NtripiColors nt) {
     dragHandleColor: nt.text3,
     // Tints the active Navigate/Draw toggle and the package's own submit label.
     activeFeedbackModeColor: nt.forest,
-    // Marker colours offered in the draw palette. editBlue is deliberately
-    // absent — it is reserved for itinerary structure-editing affordances.
-    drawColors: [nt.danger, nt.amber, nt.forest, nt.bark],
+    // The same pens in both themes — NtripiBrand.markerPens says why. editBlue
+    // is deliberately absent: it is reserved for structure-editing affordances.
+    drawColors: NtripiBrand.markerPens,
     bottomSheetDescriptionStyle: TextStyle(
       fontSize: 13.5,
       height: 1.5,

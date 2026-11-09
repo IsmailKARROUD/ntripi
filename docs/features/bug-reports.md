@@ -84,6 +84,36 @@ against a user.
   sheet shows it beside Send. A failed send's error rides in the bar, above
   Send. Regression tests: `test/features/bug_report/bug_report_sheet_test.dart`
   ("on a phone").
+- **One `BetterFeedback` configuration: `NtripiFeedback`**
+  (`ntripi_feedback.dart`, since 2026-11-09).
+  - `main.dart` mounts it around `MaterialApp.router`, and the reporter's tests
+    mount the same widget, so a test opens the reporter users open.
+  - Before it, the tests used a hand copy of `main.dart`'s `BetterFeedback`
+    with the light theme fixed, and stayed green over the pen bug below.
+  - `test/feedback_mount_guard_test.dart` fails on any other `BetterFeedback(`
+    in `lib/`.
+- **The pens are one set in both themes: `NtripiBrand.markerPens`, red, gold and
+  green** (since 2026-11-09).
+  - `feedback` 3.2.0 takes its pen once, when its layer is first built:
+    `drawColors[0]` of the theme in force then. Its draw controls assert that
+    the pens on offer still include that pen.
+  - The layer is built before the saved theme mode lands, because
+    `themeModeProvider` answers `system` until the keystore answers. With a
+    different set per theme, the assertion failed whenever the theme changed
+    between launch and a shake: a phone in dark mode with the app set to Light,
+    the phone's dark mode flipping under System, a switch in Settings, or a pen
+    picked before any of those.
+  - In a debug run, the debugger stopped on the assertion. On Android, where
+    Dart runs on the main thread, that is an ANR. Without a debugger, the red
+    error screen replaced the app. Release builds only showed no pen as
+    selected.
+  - Each pen reads on a light screenshot and on a dark one, so the ink pen went.
+  - Regression tests: `test/features/bug_report/bug_report_theme_change_test.dart`.
+    It covers every way the theme changes between launch and a shake or under
+    an open reporter, a pen kept across openings, the language landing after
+    launch, and the pens' invariant. Its keystore fake answers over the
+    platform channel once the app is up, as a phone's does. An in-memory mock
+    answers first and hides the bug.
 - **`BetterFeedback` must wrap `MaterialApp`, not sit inside
   `MaterialApp.builder`.** Its bottom sheet builds a bare `Navigator`; inside
   `MaterialApp` that Navigator inherits the app's `HeroController` and Flutter
@@ -211,6 +241,9 @@ from id.atlassian.com. The Jira Cloud REST API carries no per-call charge.
   / Send report pinned below in a `SheetActionBar`
   (`shared/widgets/editorial_widgets.dart`).
 - **`ShakeToReport`** — inside `MaterialApp.builder`.
+- **`NtripiFeedback`** (`ntripi_feedback.dart`) — the one `BetterFeedback`
+  configuration, around `MaterialApp.router` in `main.dart`; the pens are
+  `NtripiBrand.markerPens` (`core/ui/app_theme.dart`), the same in both themes.
 - **`ReportBugScreen`** — route `/settings/help/report-bug`, which on web is the
   only entry point (it explains the shake gesture on mobile).
 - **Providers** — `bugReportRepositoryProvider`, `packageInfoProvider`

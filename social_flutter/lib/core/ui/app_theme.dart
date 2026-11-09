@@ -25,6 +25,7 @@ export 'app_layout.dart';
 // repeated literal. Digits uppercase, `0x` lowercase. Names describe the
 // swatch, not its role (one swatch may back several roles).
 const _forest         = Color(0xFF1F6E3A); // deep brand green
+const _forestDark     = Color(0xFF089000); // brand green · dark
 const _canopy         = Color(0xFF2D7D52); // mid green
 const _canopyDark     = Color(0xFF57BB83); // mid green · dark
 const _leaf           = Color(0xFF74D098); // bright interactive green
@@ -65,6 +66,11 @@ abstract final class NtripiBrand {
   static const chrome40 = Color(0x66FFFFFF); // 40% chrome — splash motto
   static const scrimInk = _bark; // gradient scrim base over photos
   static const backdrop = Colors.black;      // fullscreen photo-viewer bg, over-tile shadows
+
+  // The bug reporter's pens: feedback keeps the pen it started with for good
+  // and asserts it is still on offer, so they never flip with brightness.
+  // Each reads on a light screenshot and a dark one alike.
+  static const markerPens = <Color>[_danger, _amber, _forestDark];
 
   // Third-party sign-in buttons. These are the PROVIDER's brand, not ours, and
   // their guidelines fix the colors — a Google button is white and an Apple
@@ -318,7 +324,7 @@ class NtripiColors extends ThemeExtension<NtripiColors> {
   // luminance relationship inverts (elevated layers get lighter).
   static const dark = NtripiColors(
     brightness: Brightness.dark,
-    forest: Color(0xFF089000),
+    forest: _forestDark,
     canopy: _canopyDark,
     mist: _mistDark,
     amber: _amberDark,
