@@ -206,31 +206,10 @@ moment; giving each provider a `refresh()` and calling it would close the gap.
 ## Moderation coverage (the 2026-11-08 audit)
 
 Found while writing down the rule that the server moderates everything users
-write (decisions.md 2026-11-08). The owner chose to fix them in their own change,
-right after the long-texts work.
-
-### planned — the follow-up moderation change
-
-Each with a test, in one change:
-
-- **The Google sign-up username** is built from the e-mail's local part
-  (`auth_service.py`, `generate_username_from`) and never scanned, unlike a
-  registration's; it cannot be changed later. Scan it — and hold it to the link
-  rule, since `anna.paris` is a site name — falling back to the existing
-  `traveler` + number on a refusal; never block the sign-up.
-- **The Google sign-up photo** is stored as Google's URL (`avatar_url=picture`):
-  no image scan, no EXIF strip, outside the CDN so Cloudflare's CSAM scan never
-  sees it — the bypass `validators/image_url.py` refuses on `PATCH /users/me`.
-  Copy it once through `process_and_store`; refused or unreachable → no photo.
-  Existing Google avatars need the same copy.
-- **The words in a stop's map link** (a search link's text shows in the map's
-  search box) are not scanned: send them with the stop's other text, in the same
-  request.
-- **A trip's currency** accepts any 3 characters, shown on every card: accept
-  only ISO 4217 codes.
-- **A hidden, removed or deleted trip's title** still shows in the notification
-  feed and a push (`notifications.py`, `notification_service.py` read the title
-  with no takedown check): drop it, as a hidden profile's name already falls back.
+write (decisions.md 2026-11-08). The four gaps it found — the Google sign-up
+username and photo, the words in a stop's map link, a trip's currency, and a
+taken-down trip's title in notifications — were closed on 2026-11-09
+(decisions.md). What is left:
 
 ### idea — a flagged @username cannot be hidden
 

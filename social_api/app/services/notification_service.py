@@ -32,6 +32,7 @@ from app.models.notification import (
 )
 from app.models.user import User
 from app.services import block_service, push_service
+from app.services.itinerary_access import is_listed
 from app.services.token_util import as_aware_utc
 from app.services.user_service import public_profile_text
 
@@ -115,7 +116,10 @@ def _queue_push(
     title: str | None = None
     if notification.entity_type == "itinerary" and notification.entity_id:
         itinerary = db.get(Itinerary, notification.entity_id)
-        title = itinerary.title if itinerary is not None else None
+        # A taken-down trip is never named in a tray — its owner's takedown
+        # notice included, on a lock screen anyone may read; the feed's rule.
+        if itinerary is not None and is_listed(itinerary, db):
+            title = itinerary.title
 
     db.info.setdefault(push_service.PENDING_KEY, []).append(
         push_service.PendingPush(

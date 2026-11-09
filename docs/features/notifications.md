@@ -75,6 +75,19 @@ Nine call sites: `follows.py:147,294`, `users.py:181`,
   share. Naming someone else's itinerary is safe here and only here: the grant
   being announced is what confers the right to see it. `add_editor`'s `grant_view`
   writes its allowlist row inline and sends **only** the editor notice.
+- **A taken-down trip is named in no notification — to its owner neither**
+  (since 2026-11-09). The feed (`_resolve`) names a trip only while
+  `itinerary_access.public_listing_criteria(db, viewer)` lists it: not hidden,
+  not removed, its owner not suspended, no block either way. The push snapshot
+  applies the same rule to the row in hand (`itinerary_access.is_listed`, the
+  row-level twin of the moderation clauses — a moderation write sets `hidden_at`
+  on the object before anything is flushed, and the session does not autoflush,
+  so a query would still read the trip as live). Every type falls back to its
+  untitled sentence ("One of your itineraries was hidden"). So a takedown
+  notice never puts the taken-down title on a lock screen; its owner finds which
+  trip on Account status (`ViolationItem.item_title`), where the notice already
+  leads. A restored trip is named again in the feed. Until 2026-11-09 both read
+  the title with no takedown check.
 
 ### Preferences
 
@@ -114,7 +127,7 @@ constraint regardless.
   first page only and keeps the older pages already loaded.
 - `_resolve` resolves actor and entity in **two queries per page, not 2N**;
   actor display names go through `public_profile_text`; `entity_title` is null
-  when the entity is gone.
+  when the trip is taken down (above), and when the entity is gone.
 
 ### Retention — two cutoffs
 

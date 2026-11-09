@@ -30,8 +30,18 @@ annotations, ratings, saves, editors — hangs off it.
   but a Python property on the ORM model (`models/itinerary.py:195`); the three
   list endpoints eager-load `tracks → stops` specifically to keep it free of an
   N+1 (`itineraries.py:710,756,789`).
-- **`currency` is a fixed-length 3-char field** (`min_length=3, max_length=3`),
-  default `EUR`. No currency table, no validation against ISO-4217.
+- **`currency` is a code from the ISO 4217 list** (since 2026-11-09), default
+  `EUR`. The list is `constants/currencies.py`: exactly the app's picker
+  (`social_flutter/assets/data/currencies.json`, its `"type": "currency"`
+  entries — no metals, bond or accounting units, `XTS` or `XXX`), held equal by
+  `test_currency.py`. The four trip writes call `validators/currency.py`
+  `refuse_unknown_currency` before their text scan → **422
+  `currency_not_supported`**. **A value the trip already has is never
+  refused**, as the link rule refuses only a changed text: the form sends the
+  currency on every save, so a trip priced before the rule, or in a currency
+  later withdrawn from the list, stays editable. Until then any three characters
+  were stored — text no moderation read, shown on every card. The app's picker
+  never offered anything else, so only a direct API call could have stored one.
 - **`visibility` is owner-only to change.** `require_edit_access` admits editors,
   but `update_itinerary`'s body rejects the *presence* of the key for a non-owner
   — so `visibility: null` 403s exactly as a real value does. The cover image is
@@ -128,7 +138,7 @@ column list. Field limits enforced in `schemas/itinerary.py`:
 |---|---|
 | `title` | 1–200 chars, required |
 | `description` | ≤ 10,000 (`_MAX_DESCRIPTION`; 4,000 until 2026-11-09) |
-| `currency` | exactly 3 chars |
+| `currency` | a code from `constants/currencies.py` (unchanged stored values pass) |
 | `recommended_period_note` | ≤ 4,000 (`_MAX_PERIOD_NOTE`; 200 until 2026-11-09) |
 | recommended period windows | ≤ 6 (`_MAX_PERIOD_WINDOWS`) |
 | `recommended_duration_min` | 1 … 527,039 or null (`_MAX_RECOMMENDED_DURATION_MIN`: the wheel's 365 d 23 h 59 min); null clears it |
@@ -391,6 +401,11 @@ registered from the same router under the `/users` prefix.
 
 ## Known gaps / TODOs
 
+- **A currency stored before 2026-11-09 outside the list stays until someone
+  changes it.** No clean-up was run: the picker never offered such a value, so
+  only a direct API call could have stored one, and there is no right currency
+  to replace it with. `SELECT id, currency FROM itineraries WHERE currency NOT
+  IN (…)` with the codes of `constants/currencies.py` finds any.
 - `ItineraryFormScreen` in edit mode opens on `mayEdit` and hides each owner-only
   control individually rather than gating the whole screen — a deliberate reversal
   of `1d3cf4a` on the same day (see [decisions.md](../decisions.md)).
@@ -441,10 +456,6 @@ registered from the same router under the `/users` prefix.
 
 ## OPEN QUESTIONS
 
-- **`currency` is validated only for length.** Any three characters are accepted,
-  so `"XXX"` or `"abc"` persists. Whether a whitelist was considered and rejected
-  (the client offers a fixed picker via `core/services/currency.dart`) is not
-  recorded.
 - **`Itinerary.stops_count`'s fallback branch may be unreachable.** The property
   (`models/itinerary.py:195`) reads
   `sum(len(t.stops) for t in self.tracks) if self.tracks else len(self.stops)`.

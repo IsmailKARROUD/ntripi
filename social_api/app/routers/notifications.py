@@ -24,7 +24,9 @@ leaves it unchanged, silently swallowing the arrival.
 
 Actor and entity are resolved here rather than stored on the row, in ONE query
 each per page. Resolution goes through user_service.public_profile_text so a
-moderated display name degrades to the @username fallback instead of leaking.
+moderated display name degrades to the @username fallback instead of leaking,
+and a trip is named only while itinerary_access.public_listing_criteria lists
+it: a taken-down title degrades to the client's untitled sentence the same way.
 """
 
 from __future__ import annotations
@@ -46,6 +48,7 @@ from app.schemas.notification import (
     UnreadCountResponse,
 )
 from app.services import notification_service
+from app.services.itinerary_access import public_listing_criteria
 from app.services.user_service import public_profile_text
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
@@ -71,10 +74,15 @@ def _resolve(
     }
     titles: dict[uuid.UUID, str] = {}
     if itinerary_ids:
+        # Only a trip still listed is named — not one hidden, removed, whose
+        # owner is suspended, or behind a block; its owner reads "one of your
+        # itineraries" too, and finds which on Account status.
         titles = dict(
             db.execute(
                 select(Itinerary.id, Itinerary.title)
-                .where(Itinerary.id.in_(itinerary_ids))
+                .join(User, User.id == Itinerary.user_id)
+                .where(Itinerary.id.in_(itinerary_ids),
+                       *public_listing_criteria(db, viewer_id))
             ).all()
         )
 
@@ -97,8 +105,8 @@ def _resolve(
                 actor_avatar_url=actor.avatar_url if actor else None,
                 entity_type=row.entity_type,
                 entity_id=row.entity_id,
-                # Null when the itinerary is gone — the reference is polymorphic
-                # and unenforced, so a missing target is expected, not an error.
+                # Null when the itinerary is gone or taken down — the reference
+                # is polymorphic and unenforced, so that is expected, not an error.
                 entity_title=(
                     titles.get(row.entity_id) if row.entity_id else None
                 ),

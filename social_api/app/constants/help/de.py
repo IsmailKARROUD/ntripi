@@ -117,6 +117,9 @@ RELEASES: tuple[Release, ...] = (
             "**Keine Links in dem, was man schreibt.** Titel, Beschreibungen, Notizen, Bewertungen, Namen und Bios nehmen keine Webadressen, E-Mail-Adressen oder Seitennamen mehr an — eine rote Zeile nennt, was zu entfernen ist —, und ein in einen Text geschriebenes Bild wird nie angezeigt. Der Google-Maps-Link eines Stopps, in seinem eigenen Feld, ist der einzige verbliebene Link. Die öffentliche Seite einer Reise zeigt jetzt Fettdruck, Listen und Überschriften ihrer Beschreibung.",
             "**Längere Beschreibungen und Platz für das Warum.** Die Beschreibung einer Reise fasst jetzt bis zu 10.000 Zeichen und **Warum diese Zeit?** unter der besten Reisezeit bis zu 4.000 – mit Fett, Listen und Überschriften wie die Beschreibung. Auf der Seite einer Reise werden sie auf drei und zwei Zeilen eingeklappt, mit **mehr anzeigen** für den Rest, und eine kurze Notiz erscheint gleich formatiert. Nahe am Limit eines Textes erscheint darunter ein Zähler, und darüber hinaus wartet Speichern – nichts, was Sie tippen oder einfügen, wird je abgeschnitten.",
             "**Sagen, wie lange eine Reise dauert.** Unter der besten Reisezeit legt **Empfohlene Aufenthaltsdauer** fest, wie viel Zeit eine Reise mindestens braucht – auf den Rädern für Tage, Stunden und Minuten. Sie wird zur Dauer der Reise auf ihrer Seite, auf Karten und beim Teilen, angezeigt als „3T+“; die aus den Stopps errechnete Summe erscheint nur, wenn keine festgelegt ist.",
+            "**Der Name einer ausgeblendeten Reise bleibt vom Sperrbildschirm fern.** Eine Benachrichtigung über eine ausgeblendete oder entfernte Reise zeigt ihren Titel nicht mehr, für niemanden — **Einstellungen ▸ Kontostatus** sagt, um welche Reise es geht.",
+            "**Mit Google registrieren, geprüft wie alles andere.** Der aus Ihrer E-Mail-Adresse gebildete Benutzername, Ihr Google-Name und Ihr Profilfoto durchlaufen dieselben Prüfungen wie das, was Sie schreiben oder hochladen — ein Name mit Punkt wie `anna.paris` wird zu `anna_paris` —, und die Registrierung gelingt immer.",
+            "**Auch die Wörter in einem Google-Maps-Link werden geprüft.** Wonach ein Link sucht, erscheint auf der Karte des Stopps; deshalb gelten dafür dieselben Regeln wie für Name und Notizen des Stopps.",
         ),
     ),
     Release(
@@ -148,7 +151,9 @@ ARTICLES: tuple[Article, ...] = (
 
 Sie werden nach einem Anzeigenamen, einem Benutzernamen und Ihrem Geburtsdatum gefragt. Ntripi hat ein Mindestalter von 16 Jahren. Ihr Geburtsdatum erscheint nie in Ihrem Profil, und kein anderer Nutzer kann es sehen.
 
-Ihr Anzeigename kann beliebig sein, in jeder Sprache, bis zu 50 Zeichen. Ihr Benutzername ist der `@name`, über den andere Sie finden, und er wird angezeigt, wenn Sie nie einen Anzeigenamen festlegen.""",
+Ihr Anzeigename kann beliebig sein, in jeder Sprache, bis zu 50 Zeichen. Ihr Benutzername ist der `@name`, über den andere Sie finden, und er wird angezeigt, wenn Sie nie einen Anzeigenamen festlegen.
+
+Wenn Sie sich mit Google registrieren, werden Sie nicht nach einem Benutzernamen gefragt: Er wird aus Ihrer E-Mail-Adresse gebildet, aus dem Teil vor dem @. Ein Punkt, durch den er wie eine Webadresse aussähe, wird zum Unterstrich — aus `anna.paris@…` wird `@anna_paris` —, und einer, der gegen die Community-Richtlinien verstößt, wird durch einen neutralen Namen ersetzt, `@traveler`. Ihr Google-Name und Ihr Profilfoto werden ebenfalls übernommen und geprüft wie alles, was Sie schreiben oder hochladen; was nicht besteht, wird weggelassen, und Sie können in Ihrem Profil eigene hinzufügen.""",
             ),
             Block(
                 anchor="verify-your-email",
@@ -203,7 +208,7 @@ Neue Reisen sind **nur für Sie** sichtbar, bis Sie das ändern — Ausprobieren
             "starten",
         ),
         related=("plan-a-trip-itinerary", "share-an-itinerary-privately"),
-        updated="2026-11-07",
+        updated="2026-11-09",
         cta="Lust, etwas zu planen? Legen Sie Ihre erste Reise an.",
     ),
     Article(
@@ -535,7 +540,9 @@ Wählen Sie einen Vorschlag, und der Ort erscheint auf der Karte von Google. Um 
                 kind=KIND_STEP,
                 body="""Fügen Sie die URL in das Linkfeld unter der Suche ein. Ntripi behält den Link so, wie Sie ihn eingefügt haben, und öffnet ihn nicht — geben Sie den Namen des Stopps also selbst ein.
 
-Ein langer Link aus Ihrem Browser kann auf der Karte der Reise erscheinen. Ein kurzer Teilen-Link (maps.app.goo.gl) kann das nicht — er sagt nicht, um welchen Ort es geht —, deshalb schlägt Ntripi vor, den Ort stattdessen zu suchen. Angenommen werden nur Links, die Google Maps selbst erzeugt, etwa die über seine Teilen-Schaltfläche kopierten. Ein Link zu etwas anderem wird abgelehnt, statt gespeichert und still ignoriert zu werden — ebenso eine Google-Adresse, die Leser auf eine andere Website weiterleiten würde.""",
+Ein langer Link aus Ihrem Browser kann auf der Karte der Reise erscheinen. Ein kurzer Teilen-Link (maps.app.goo.gl) kann das nicht — er sagt nicht, um welchen Ort es geht —, deshalb schlägt Ntripi vor, den Ort stattdessen zu suchen. Angenommen werden nur Links, die Google Maps selbst erzeugt, etwa die über seine Teilen-Schaltfläche kopierten. Ein Link zu etwas anderem wird abgelehnt, statt gespeichert und still ignoriert zu werden — ebenso eine Google-Adresse, die Leser auf eine andere Website weiterleiten würde.
+
+Die Wörter in einem Link — wonach er sucht, der Name eines Ortes — erscheinen auf der Karte des Stopps; deshalb werden sie geprüft wie der Text des Stopps selbst.""",
             ),
             Block(
                 anchor="pick-on-the-map",
@@ -591,7 +598,7 @@ Die **Karten**-Ansicht einer Reise zeigt dieselbe Route auf der Karte von Google
             "nicht gefunden",
         ),
         related=("add-places-to-an-itinerary", "permissions"),
-        updated="2026-11-08",
+        updated="2026-11-09",
         cta="Setzen Sie Ihren ersten Stopp auf die Karte.",
     ),
     Article(
@@ -1813,7 +1820,7 @@ Schreiben Sie danach an **[abuse@ntripi.app](mailto:abuse@ntripi.app)**, das gen
         summary="Was es heißt, wenn eine Reise oder Rezension ausgeblendet ist, wo der Grund steht und wie ein Mensch noch einmal draufschaut.",
         category="safety",
         schema=SCHEMA_FAQ,
-        intro="Wurde etwas von Ihnen Veröffentlichtes ausgeblendet, bekommen Sie eine Benachrichtigung samt Grund, und **Einstellungen ▸ Kontostatus** führt das Protokoll. Gegen die meisten Entscheidungen ist ein Einspruch möglich, und ein Einspruch wird von einem Menschen gelesen.",
+        intro="Wurde etwas von Ihnen Veröffentlichtes ausgeblendet, bekommen Sie eine Benachrichtigung, und **Einstellungen ▸ Kontostatus** führt das Protokoll samt Grund. Die Benachrichtigung nennt die Reise nie — sie kann auf einem gesperrten Bildschirm erscheinen —, welche es ist, sehen Sie also dort. Gegen die meisten Entscheidungen ist ein Einspruch möglich, und ein Einspruch wird von einem Menschen gelesen.",
         blocks=(
             Block(
                 anchor="what-hidden-means",
@@ -1878,7 +1885,7 @@ Wird eine Entscheidung aufgehoben, kommt der Inhalt so zurück, wie er war — i
             "wiederhergestellt",
         ),
         related=("report-and-block", "sign-in-and-account-security", "contact"),
-        updated="2026-09-01",
+        updated="2026-11-09",
     ),
     Article(
         slug="troubleshooting",

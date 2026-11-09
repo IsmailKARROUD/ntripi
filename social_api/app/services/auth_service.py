@@ -22,6 +22,7 @@ from app.services import (
     account_service,
     email_service,
     email_token_service,
+    google_avatar,
     google_people,
     pwned_service,
     refresh_token_service,
@@ -29,6 +30,7 @@ from app.services import (
 )
 from app.services.age_service import MINIMUM_AGE, is_old_enough
 from app.services.auth import create_access_token, hash_password, verify_password
+from app.validators.links import find_link
 from app.validators.username import (
     validate_username,
     normalize_username,
@@ -316,13 +318,12 @@ def login_or_register_google(
             code="underage",
         )
 
-    username = generate_username_from(
-        email,
-        is_taken=lambda lo: db.execute(
-            select(User).where(User.username_lower == lo)
-        ).scalar_one_or_none()
-        is not None,
-    )
+    def is_taken(lowered: str) -> bool:
+        return db.execute(
+            select(User).where(User.username_lower == lowered)
+        ).scalar_one_or_none() is not None
+
+    username = _google_username(email, is_taken)
 
     display_name = None
     if name:
@@ -330,24 +331,27 @@ def login_or_register_google(
             display_name = validate_display_name(name.strip()[:50])
         except ValueError:
             display_name = None  # unusual Google name — drop rather than fail signup
+    if display_name and find_link(display_name) is not None:
+        display_name = None  # the link rule, as at registration; settable later
 
-    # Scan the Google profile name, but never let it refuse the signup: the name
-    # is Google's, not something the user typed here, so a 422 would lock a real
-    # person out with no way to fix it. On a reject we drop the name exactly as
-    # validate_display_name does above; the decision row is the record.
-    ctx = text_moderation_service.TextModerationContext(
-        db=db, settings=get_settings(), target_type="user", author=None,
-    )
-    if display_name:
-        try:
-            text_moderation_service.moderate_fields_or_raise(
-                {"display_name": display_name}, ctx
-            )
-        except text_moderation_service.TextModerationRejectedError:
-            display_name = None
-            # Nothing offensive is stored, so the profile itself is clean —
-            # flagging it would hide a bio that never existed.
-            ctx.status = "approved"
+    # Scan the username and the Google profile name, but never let either refuse
+    # the signup: neither was typed here (one comes from the e-mail address, the
+    # other from Google), so a 422 would lock a real person out with no way to
+    # fix it. One request for both. On a reject the name is dropped — it can be
+    # set again on the profile — and the username, which can never be changed,
+    # is kept only if it passes alone; otherwise it is the fallback an unusable
+    # address already gets (traveler, traveler1, …). The decision rows are the
+    # record.
+    scans = [_scan_google_profile({"username": username, "display_name": display_name}, db)]
+    if not scans[-1][1] and display_name is not None:
+        display_name = None
+        scans.append(_scan_google_profile({"username": username}, db))
+    ctx, kept = scans[-1]
+    if not kept:
+        username = generate_username_from("", is_taken)
+        # Nothing offensive is stored, so the profile itself is clean —
+        # flagging it would hide a bio that never existed.
+        ctx.status = "approved"
 
     new_user = User(
         username=username,
@@ -357,7 +361,7 @@ def login_or_register_google(
         google_sub=google_sub,
         email_verified=bool(email_verified),
         display_name=display_name,
-        avatar_url=picture,
+        avatar_url=None,  # Google's photo is copied in below, never linked to
         date_of_birth=dob,
         dob_source=dob_source,
         moderation_status=ctx.status,
@@ -368,7 +372,8 @@ def login_or_register_google(
     )
     db.add(new_user)
     db.flush()
-    text_moderation_service.attach_target(ctx, new_user.id)
+    for scan, _ in scans:
+        text_moderation_service.attach_target(scan, new_user.id)
     # Lazy: moderation_actions pulls in admin_service, which imports this module.
     from app.services import moderation_actions
 
@@ -377,7 +382,42 @@ def login_or_register_google(
     )
     db.commit()
     db.refresh(new_user)
+
+    # After the account's commit: a refused photo commits the session for its
+    # audit row. Copied like an upload, or no photo at all (google_avatar.py).
+    avatar_url = google_avatar.copy_photo_from_worker(db, new_user, picture)
+    if avatar_url is not None:
+        new_user.avatar_url = avatar_url
+        db.commit()
+        db.refresh(new_user)
     return new_user, create_access_token(subject=str(new_user.id))
+
+
+def _google_username(email: str, is_taken) -> str:
+    """A Google sign-up's username, from the e-mail address's local part — held
+    to the link rule like one typed at registration (validators/links.py): a
+    local part such as `anna.paris` is a site name, so its dots become
+    underscores, which no site name can hold (`anna_paris`)."""
+    username = generate_username_from(email, is_taken=is_taken)
+    if find_link(username) is None:
+        return username
+    local_part = email.split("@", 1)[0]
+    return generate_username_from(local_part.replace(".", "_"), is_taken=is_taken)
+
+
+def _scan_google_profile(
+    fields: dict[str, str | None], db: Session,
+) -> tuple[text_moderation_service.TextModerationContext, bool]:
+    """Scan text a Google sign-up did not type: its context, and False on a
+    reject — the caller drops the text instead of refusing the account."""
+    ctx = text_moderation_service.TextModerationContext(
+        db=db, settings=get_settings(), target_type="user", author=None,
+    )
+    try:
+        text_moderation_service.moderate_fields_or_raise(fields, ctx)
+    except text_moderation_service.TextModerationRejectedError:
+        return ctx, False
+    return ctx, True
 
 
 # ---------------------------------------------------------------------------

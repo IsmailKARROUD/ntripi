@@ -54,6 +54,7 @@ from app.services import (
     translation_service,
 )
 from app.services.moderation_email_service import build_reason, send_auto_action_email
+from app.validators.map_link import map_link_words
 
 logger = logging.getLogger(__name__)
 
@@ -214,6 +215,7 @@ def _itinerary_fields(row: Itinerary) -> dict:
         fields[f"stop:{stop.id}:place_address"] = stop.place_address
         fields[f"stop:{stop.id}:notes"] = stop.notes
         fields[f"stop:{stop.id}:google_place_query"] = stop.google_place_query
+        fields[f"stop:{stop.id}:map_url"] = map_link_words(stop.map_url)
         for note in sorted(stop.annotations, key=lambda a: str(a.id)):
             fields[f"annotation:{note.id}"] = note.content
     for note in sorted(row.annotations, key=lambda a: str(a.id)):

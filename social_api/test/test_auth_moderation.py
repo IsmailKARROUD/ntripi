@@ -237,8 +237,11 @@ def test_a_duplicate_username_is_still_rejected(client, provider):
 # ---------------------------------------------------------------------------
 
 def test_google_name_that_would_be_rejected_drops_the_name(client, provider, monkeypatch):
-    """The name is Google's, not something the user typed here — dropping it is
-    the same fallback validate_display_name already uses."""
+    """The name is Google's and the username the e-mail address's, not
+    something the user typed here — dropping them is the same fallback
+    validate_display_name already uses. This provider rejects everything, so
+    the username, rescanned alone, falls back too
+    (test_google_signup_safety.py tells the two apart)."""
     provider.scores = REJECT
     _patch_google(monkeypatch, sub="g-vile", email="vile@gmail.com", name="vile")
 
@@ -248,10 +251,11 @@ def test_google_name_that_would_be_rejected_drops_the_name(client, provider, mon
     user = _user_or_none("vile@gmail.com")
     assert user is not None
     assert user.display_name is None
+    assert user.username == "traveler"
     # The offending text was never stored, so the profile itself is clean.
     assert user.moderation_status == "approved"
-    # It is still on the record.
-    assert len(_decisions()) == 1
+    # Both scans are still on the record: the pair, then the username alone.
+    assert len(_decisions()) == 2
 
 
 def test_google_flagged_name_is_kept_and_queued(client, provider, monkeypatch):
@@ -285,11 +289,11 @@ def test_returning_google_user_costs_no_call(client, provider, monkeypatch):
     assert provider.calls == []
 
 
-def test_google_signup_without_a_name_costs_no_call(client, provider, monkeypatch):
+def test_google_signup_without_a_name_scans_only_the_username(client, provider, monkeypatch):
     _patch_google(monkeypatch, sub="g-noname", email="noname@gmail.com", name=None)
 
     assert _google(client).status_code == 200
-    assert provider.calls == []
+    assert provider.calls == ["noname"]
     assert _user_or_none("noname@gmail.com").moderation_status == "approved"
 
 

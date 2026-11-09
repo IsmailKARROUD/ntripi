@@ -17,6 +17,8 @@ TARGET_WIDTH = 1200
 TARGET_HEIGHT = 630
 AVATAR_SIZE = 800  # square; rendered inside a circle on the client
 MIN_DIMENSION = 600
+# A profile photo copied from a sign-in provider: Google's default size is 96 px.
+IMPORTED_AVATAR_MIN_DIMENSION = 96
 SCREENSHOT_MAX_SIDE = 1600  # longest side of a stored bug-report screenshot
 SCREENSHOT_MIN_DIMENSION = 200  # a phone screenshot is never legitimately smaller
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
@@ -105,6 +107,18 @@ def process_avatar_image(raw_bytes: bytes) -> bytes:
     client's square crop must be preserved end-to-end.
     """
     img = _decode_and_validate(raw_bytes)
+    img = _crop_to_aspect(img, AVATAR_SIZE, AVATAR_SIZE)
+    img = img.resize((AVATAR_SIZE, AVATAR_SIZE), Resampling.LANCZOS)
+    return _encode_jpeg(img)
+
+
+def process_imported_avatar_image(raw_bytes: bytes) -> bytes:
+    """process_avatar_image for a profile photo copied from a sign-in provider
+    (services/google_avatar.py): the same 800×800 square, EXIF stripped, but
+    without the 600 px floor — nobody chose this picture to upload, so there is
+    no one to ask for a bigger one, and a Google photo may be small.
+    """
+    img = _decode_and_validate(raw_bytes, min_dimension=IMPORTED_AVATAR_MIN_DIMENSION)
     img = _crop_to_aspect(img, AVATAR_SIZE, AVATAR_SIZE)
     img = img.resize((AVATAR_SIZE, AVATAR_SIZE), Resampling.LANCZOS)
     return _encode_jpeg(img)

@@ -71,7 +71,10 @@ def test_new_google_user_is_created_verified(client, monkeypatch):
     assert user.email_verified is True
     assert user.password_hash is None          # Google-only account, no password
     assert user.display_name == "New User"
-    assert user.avatar_url == "https://lh3.example/p.png"
+    # Google's photo is copied in like an upload, never linked to — and this
+    # one is not on Google's photo host, so it is never fetched at all
+    # (test_google_signup_safety.py has the copy).
+    assert user.avatar_url is None
     assert user.username.lower() == "new.user"  # derived from the email local-part
 
 

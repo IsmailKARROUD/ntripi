@@ -1,6 +1,6 @@
 # API error codes
 
-Every machine-readable error code the backend raises. **69 codes.**
+Every machine-readable error code the backend raises. **70 codes.**
 
 ## How the mechanism works
 
@@ -31,7 +31,7 @@ Two service layers raise their own exception types that routers convert to
    `code == 'text_contains_link'` → `textRuleNoLinks(match)`, quoting the link
    the server found (`usernameLooksLikeLink` when `field` is `username`).
 4. `localizedApiError(code, l10n)` (`lib/core/api/api_error_codes.dart`) — a
-   localized string for **57 of the 69 codes** (re-counted 2026-11-08).
+   localized string for **57 of the 70 codes** (re-counted 2026-11-09).
 5. Fall back to the server's `detail` when it is a string — **English,
    untranslated**. When it is FastAPI's validation list (a 422 with no `code`),
    never the list itself, which carries each refused text as `input`:
@@ -149,6 +149,11 @@ so the blocked user is never told. There is no dedicated code for it.
 | `allowlist_user_exists` | 409 | `itineraries.py:934` | localized |
 | `allowlist_user_not_found` | 404 | `itineraries.py:1006` | localized |
 | `cannot_save_own_itinerary` | 400 | `itineraries.py:1889` | — |
+| `currency_not_supported` | **422** | `validators/currency.py` `refuse_unknown_currency`: both creates and both PATCHes, before the text scan | — |
+
+`currency_not_supported` refuses a currency outside `constants/currencies.py`
+(the app picker's ISO codes) — only when the write changes it: a stored value
+outside the list passes unchanged. A shape error, so 422.
 
 `itinerary_not_owner` is deliberately the same code and wording whether the
 caller was never granted edit rights or was granted them and lost view access.
@@ -282,7 +287,7 @@ non-200, or an answer that is not JSON — after the request was counted. With
 
 ## Unmapped codes
 
-These **12** have no `localizedApiError` case. None of them can reach an app
+These **13** have no `localizedApiError` case. None of them can reach an app
 user, which is why they stay unmapped — a string in six languages for a message
 nobody can see is dead weight:
 
@@ -293,6 +298,7 @@ nobody can see is dead weight:
 | `appeal_already_decided` | raised only by `decide_appeal`, the operator's `/admin` path |
 | `bug_report_empty` | the bug-report sheet's Send stays disabled until the message has non-whitespace text |
 | `cannot_save_own_itinerary` | the bookmark is not rendered for the owner |
+| `currency_not_supported` | the currency picker offers only the codes the server accepts — one list, held equal by `test_currency.py` |
 | `google_reauth_required` | the Google delete path always sends a fresh token |
 | `reauth_required` | fail-closed branch for an account with neither a password nor a provider |
 | `unauthorized`, `not_found` | raised only by `/internal/moderation-sweep`, which has no app client |

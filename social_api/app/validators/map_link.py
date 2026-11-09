@@ -26,6 +26,7 @@ sample list, social_flutter/test/support/map_link_samples.json.
 from __future__ import annotations
 
 import re
+from urllib.parse import unquote_plus
 
 _HOSTS = frozenset({
     "maps.app.goo.gl", "goo.gl", "google.com", "www.google.com", "maps.google.com",
@@ -118,3 +119,42 @@ def is_google_maps_link(url: str | None) -> bool:
         if part and _EMBEDDED_ADDRESS.search(_decode_ascii_escapes(part)):
             return False
     return True
+
+
+# What a person types into a Google Maps link and Google shows back in the
+# map's search box: the name in a place, search or directions path, and these
+# query parameters. Everything else in a link is coordinates, ids and Google's
+# own flags.
+_WORD_PARAMS = frozenset({
+    "q", "query", "destination", "origin", "waypoints", "daddr", "saddr",
+})
+_ROUTE_SEGMENTS = frozenset({"maps", "place", "search", "dir"})
+
+
+def map_link_words(url: str | None) -> str | None:
+    """The words in a Google Maps link, decoded, one piece per line — or None
+    for a short link (its code is opaque until Google redirects it, and the
+    server never fetches a link) and for a link that carries none.
+
+    A link such as `google.com/maps/search/<words>` shows those words in the
+    map's search box, so they are moderated with the stop's other text
+    (routers/itineraries.py) and re-checked by the sweep. They are not held to
+    the link rule: they sit inside the one link a stop may have.
+    """
+    if url is None:
+        return None
+    parts = _PARTS.match(strip_link(url))
+    if parts is None or parts["authority"].lower() in ("maps.app.goo.gl", "goo.gl"):
+        return None
+    pieces = [
+        unquote_plus(segment) for segment in parts["path"].split("/")
+        if segment
+        and segment.lower() not in _ROUTE_SEGMENTS
+        and not segment.startswith(("@", "data="))  # the viewport, Google's data
+    ]
+    for pair in (parts["query"] or "").split("&"):
+        name, _, value = pair.partition("=")
+        if value and unquote_plus(name).lower() in _WORD_PARAMS:
+            pieces.append(unquote_plus(value))
+    text = "\n".join(piece.strip() for piece in pieces if piece.strip())
+    return text or None

@@ -59,11 +59,34 @@ forgot-password. See [decisions.md](../decisions.md).
   account (`"google"` or `"self"`). No date at all → 400 `dob_required`; under
   16 → 400 `underage`.
 - Username is synthesised by `generate_username_from`
-  (`validators/username.py:74`).
-- **A moderation reject on the Google display name drops the name instead of
-  failing signup** (`auth_service.py:346`) and resets the status to `approved`.
-  The name is Google's, not something the user typed, so a 422 would lock a real
-  person out with no recourse — and nothing offensive was persisted.
+  (`validators/username.py`) from the e-mail address's local part, and **held
+  to the link rule** (`_google_username`): a local part that reads as a site
+  name — `anna.paris`, `.paris` being a real top-level domain — has its dots
+  turned into underscores (`anna_paris`), which no site name can hold. A Google
+  name holding a link is dropped, as registration refuses one.
+- **The username and the Google name are scanned in one request, and a reject
+  never fails the signup** (`_scan_google_profile`). Neither was typed on
+  Ntripi, so a 422 would lock a real person out with no recourse. On a reject
+  the name is dropped — it can be set again on the profile — and the username,
+  which can never be changed, is rescanned alone: kept if it passes, otherwise
+  the fallback an unusable address already gets (`traveler`, `traveler1`, …).
+  Nothing offensive is persisted, so the status is reset to `approved`; every
+  decision row is attached to the new account. Until 2026-11-09 only the name
+  was scanned.
+- **The Google profile photo is copied in like an upload, never linked to**
+  (`services/google_avatar.py`, after the account's commit). Until 2026-11-09
+  `avatar_url` was Google's URL: never scanned, never stripped of its metadata,
+  and served from outside the CDN Cloudflare's CSAM scan covers — the bypass
+  `validators/image_url.py` refuses on `PATCH /users/me`. Now `photo_source`
+  accepts only `https` on `lh<N>.googleusercontent.com` (no userinfo, port,
+  query or fragment) and asks for 800 px (`=s800-c`); `_fetch` reads it with a
+  5 s timeout, no redirect and the upload size limit; `process_and_store` makes
+  the account's square 800 px avatar (`process_imported_avatar_image`: no
+  600 px floor, Google's default being 96 px) and scans it. Refused,
+  unreachable, not an image, or storage down → the account starts without a
+  photo; the sign-up never fails over it. It costs the sign-up the time of one
+  fetch and one image scan. Accounts made before the change are copied by
+  `scripts/copy_google_avatars.py` (dry run first).
 
 ### Fields only branch 3 may read
 
@@ -140,6 +163,11 @@ sign-in: `DELETE /users/me` (account deletion) answers 401
 
 ## Known gaps / TODOs
 
+- **A photo Google will not serve at 800 px is scaled up.** `=s800-c` is how
+  Google's photo host is asked for a bigger square; if it answers smaller (down
+  to the 96 px floor), the stored avatar is that photo scaled to 800 px — no
+  sharper than the 96 px URL it replaces. Not verified against the live host
+  in tests, which never fetch.
 - **The Google-sourced birthday half is blocked on OAuth verification** for the
   `user.birthday.read` sensitive scope: a 100-test-user cap and an "unverified
   app" warning until it clears. The consent-sheet fallback means everything else
@@ -160,7 +188,8 @@ sign-in: `DELETE /users/me` (account deletion) answers 401
 - [authentication.md](authentication.md) — the session model this feeds
 - [legal-and-age-gate.md](legal-and-age-gate.md) — `tos_accepted` and the DOB rules
 - [accounts-and-profiles.md](accounts-and-profiles.md) — dual-method deletion
-- [text-moderation.md](text-moderation.md) — why a reject drops the name
+- [text-moderation.md](text-moderation.md) — why a reject drops the name, and the username's scan
+- [image-pipeline.md](image-pipeline.md) — the Google photo, copied in like an upload
 - [passwords-and-email.md](passwords-and-email.md) — the other verification path
 - [web-and-platform.md](web-and-platform.md) — the SPA meta-tag injection
 - [reference/error-codes.md](../reference/error-codes.md#google-sign-in)

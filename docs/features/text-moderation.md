@@ -67,9 +67,34 @@ down on 2026-11-08 (`docs/constraints.md`). Covered:
 
 itinerary title/description/`recommended_period_note` · stop
 name/address/notes · a Google place's search text (`google_place_query`, since
-2026-10-31) · both annotation tables · transport-leg line/direction/notes ·
-rating notes · profile display_name/bio · the `username` + `display_name` chosen
-at registration.
+2026-10-31) · the words in a stop's map link (since 2026-11-09) · both
+annotation tables · transport-leg line/direction/notes · rating notes · profile
+display_name/bio · the `username` + `display_name` chosen at registration · a
+Google sign-up's username and Google name (since 2026-11-09).
+
+**The words in a stop's map link** — what a search link looks for, a place's
+name in its path — show in the map's search box on the stop page.
+`validators/map_link.py` `map_link_words` reads them out of the link (the path
+after `/maps/place/`, `/maps/search/`, `/maps/dir/`, and the `q`, `query`,
+`destination`, `origin`, `waypoints`, `daddr` and `saddr` parameters, decoded);
+`add_stop` and `update_stop` send them with the stop's other text, in the same
+request, whenever the write sets a link (`_scan_itinerary_text(also_scan=)`).
+They are not held to the link rule — they live inside the one link a stop may
+have, so a search for `Hotel atlas.ma` stays legal. A short link
+(`maps.app.goo.gl`) carries no words: its code is opaque until Google redirects
+it, and the server never fetches a link. The sweep's re-check reads them too.
+
+**A Google sign-up is scanned, never refused** (`auth_service.
+login_or_register_google`). Neither its username, built from the e-mail
+address's local part, nor its Google name was typed on Ntripi, and the username
+can never be changed. The username is held to the link rule first — a local part
+that reads as a site name (`anna.paris`) has its dots turned into underscores
+(`anna_paris`), a name holding a link is dropped — then both go in one request.
+On a reject the name is dropped (it can be set again on the profile) and the
+username rescanned alone: kept if it passes, else the fallback an unusable
+address already gets (`traveler`, `traveler1`, …). Every decision row is
+attached to the new account. The Google profile photo is copied through the
+image pipeline the same way ([google-sign-in.md](google-sign-in.md)).
 
 **Long texts are read in pieces** (`score_text` for a write, `score_texts` for
 translation output): at most 2,000 characters and 4,000 UTF-8 bytes per piece,
@@ -99,10 +124,13 @@ both saw no cache row, and the second commit hit the primary key as a 500.
 `appeals.user_reason` and `bug_reports.message` (with its device details and
 screenshot) — a 422 there would block someone reporting hate speech who quotes
 it, a safety regression; admin-written text, waitlist email/WhatsApp and a
-session's User-Agent — no other user ever reads them. Known gaps, planned as
-their own change ([backlog.md](../backlog.md)): the Google sign-up username and
-photo, the words in a stop's map link, a trip's currency, and a hidden trip's
-title in notifications.
+session's User-Agent — no other user ever reads them. The four gaps found
+beside them on 2026-11-08 were closed on 2026-11-09 (decisions.md): a Google
+sign-up's username and photo (above, and google-sign-in.md), the words in a
+stop's map link (above), a trip's currency — no longer text at all, but a code
+from the ISO list ([itineraries.md](itineraries.md)) — and a taken-down trip's
+title, which no notification names any more
+([notifications.md](notifications.md)).
 
 **No user text may carry a link** except a stop's map link
 (`validators/links.py`, 422 `text_contains_link`): see

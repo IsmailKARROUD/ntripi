@@ -75,6 +75,15 @@ Google's route through the stops on screen.
   out of the link's own text into `google_place_id`
   (`services/stop_location.extract_place_id`). The stop page still unfurls a
   link for its preview, by the user's choice (decisions.md 2026-10-31).
+- **The words in a link are moderated with the stop's text** (since
+  2026-11-09): a search link's text, a place's name in the path, a directions
+  link's ends — what Google shows in the map's search box. `map_link_words`
+  (`validators/map_link.py`) reads them out of the link's own text, and
+  `add_stop` / `update_stop` scan them in the stop's one request whenever the
+  write sets a link; a reject is the usual 422 `text_moderation_rejected`. They
+  are not held to the link rule — a search for `Hotel atlas.ma` stays legal — and
+  a short link has none the server can read. See
+  [text-moderation.md](text-moderation.md#coverage).
 - **`services/stop_location.normalize` holds every client to this**, including
   installed builds that still send a link's coordinates: a `map_url` clears
   `lat`/`lng`; a Google stop stays Google while a body without `place_source`

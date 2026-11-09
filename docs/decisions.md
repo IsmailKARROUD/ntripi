@@ -3564,3 +3564,67 @@ the share caption and in the Itineraries tab's total.
   feed's and the detail's JSON.
 - **Its own read-mode row on the trip page**: the chip already says it, where
   readers look for a length.
+
+### 2026-11-09 — The moderation gaps of 2026-11-08 closed: Google sign-ups, map-link words, currency, takedown titles
+
+**Context.** Writing down "the server moderates everything users write"
+(2026-11-08) found four places where user-supplied content still reached other
+people unchecked, and the owner chose to close them in their own change, right
+after the long-texts work:
+- a Google sign-up's username, built from the e-mail address and permanent,
+  was never scanned or held to the link rule — and its photo was stored as
+  Google's URL, outside every image check and outside the CDN Cloudflare's CSAM
+  scan covers;
+- the words in a stop's map link (`/maps/search/<words>`) show in the map's
+  search box, and no scan read them;
+- a trip's currency took any three characters, shown on every card;
+- a hidden or removed trip's title kept showing in the notification feed and
+  went out in push text.
+
+**Decision.**
+- **A Google sign-up is checked, never refused.** The username is held to the
+  link rule — a local part that reads as a site name (`anna.paris`) has its dots
+  turned into underscores, which no site name can hold — and scanned with the
+  Google name in one request. On a reject the name is dropped and the username
+  rescanned alone: kept if it passes, else the `traveler` fallback. A Google
+  name holding a link is dropped.
+- **The Google photo is copied in like an upload**: fetched once at sign-up
+  from Google's photo host only (https, no redirect, under the upload limit),
+  asked for at 800 px, and stored through `process_and_store` — EXIF stripped,
+  scanned, the account's own avatar key. Refused or unreachable → no photo.
+  Existing accounts are copied by a one-off script with a dry run.
+- **A map link's words go with the stop's text, in the same request**
+  (`map_link_words`), not held to the link rule; the sweep's re-check reads them.
+- **A currency is a code from the ISO list the app's picker offers**,
+  `constants/currencies.py`, held equal to the app's `currencies.json` by a
+  test. 422 `currency_not_supported`, refused only when the value changes.
+- **A taken-down trip is named in no notification, to its owner neither**: the
+  feed names a trip only while `public_listing_criteria` lists it, and the push
+  snapshot applies the same rule to the row in hand. Every type falls back to
+  its untitled sentence.
+
+**Consequences.**
+- A Google sign-up costs one fetch and one image scan more, and at least one
+  text scan (two after a reject).
+- A takedown notice no longer says which trip, in the tray or the feed; the
+  owner finds it on Account status, where the notice leads.
+- A currency stored before the rule outside the list stays until someone changes
+  it; no clean-up was run, since only a direct API call could have stored one.
+- The flagged-username question (a username moderation cannot hide) stays an
+  idea in the backlog, for the owner.
+
+**Alternatives rejected.**
+- **Refusing a Google sign-up whose username or name is rejected**: neither was
+  typed on Ntripi, so the person could not fix it.
+- **One scan for the pair, dropping both on a reject**: the username is
+  permanent, and the name alone is usually what a reject is about.
+- **`traveler` for every site-name username**: `anna_paris` keeps the person's
+  own name and cannot read as a site.
+- **Keeping Google's photo URL and scanning it**: still served from outside the
+  CDN, unstripped, and changeable on Google's side after the scan.
+- **Holding a link's words to the link rule**: a search for a hotel named after
+  its site is a search, not a link in a text.
+- **Accepting every ISO 4217 code, metals and test codes included**: `XXX` or
+  `XAU` on a card is not a price; the server accepts what the picker offers.
+- **Naming a taken-down trip to its owner**: the title is often what was taken
+  down, and a push shows on a lock screen.

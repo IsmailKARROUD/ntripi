@@ -117,6 +117,9 @@ RELEASES: tuple[Release, ...] = (
             "**Pas de liens dans ce que l’on écrit.** Titres, descriptions, notes, avis, noms et bios n’acceptent plus d’adresses web, d’adresses e-mail ni de noms de site — une ligne rouge indique quoi retirer — et une image écrite dans un texte n’est jamais affichée. Le lien Google Maps d’une étape, dans son propre champ, est le seul lien qui reste. La page publique d’un voyage affiche désormais le gras, les listes et les titres de sa description.",
             "**Des descriptions plus longues, et la place de dire pourquoi.** La description d’un voyage accepte désormais jusqu’à 10 000 caractères, et **Pourquoi cette période ?**, sous la meilleure période, jusqu’à 4 000, avec gras, listes et titres comme la description. Sur la page d’un voyage, elles se replient sur trois et deux lignes, avec **voir plus** pour la suite, et une note courte s’affiche mise en forme d’emblée. Près de la limite d’un texte, un compteur apparaît dessous, et au-delà Enregistrer attend — rien de ce que vous tapez ou collez n’est jamais coupé.",
             "**Dire combien de temps prend un voyage.** Sous la meilleure période, **Temps recommandé à passer** fixe le temps minimum que demande un voyage, sur les roues jours, heures et minutes. Il devient la durée du voyage sur sa page, sur les cartes et quand vous le partagez, affiché « 3j+ » — le total calculé à partir des étapes ne s’affiche que si aucun temps n’est fixé.",
+            "**Le nom d’un voyage masqué reste hors de votre écran verrouillé.** Une notification sur un voyage masqué ou supprimé n’affiche plus son titre, pour personne — **Paramètres ▸ État du compte** indique de quel voyage il s’agit.",
+            "**S’inscrire avec Google, vérifié comme le reste.** Le nom d’utilisateur tiré de votre adresse e-mail, votre nom Google et votre photo de profil passent les mêmes vérifications que ce que vous écrivez ou téléversez — un nom avec un point, comme `anna.paris`, devient `anna_paris` — et l’inscription aboutit toujours.",
+            "**Les mots d’un lien Google Maps sont vérifiés aussi.** Ce qu’un lien recherche s’affiche sur la carte de l’étape : il suit donc les mêmes règles que le nom et les notes de l’étape.",
         ),
     ),
     Release(
@@ -148,7 +151,9 @@ ARTICLES: tuple[Article, ...] = (
 
 On vous demandera un nom affiché, un nom d’utilisateur et votre date de naissance. Ntripi impose un âge minimum de 16 ans. Votre date de naissance n’apparaît jamais sur votre profil et aucun autre utilisateur ne peut la voir.
 
-Votre nom affiché peut être n’importe quoi, dans n’importe quelle langue, jusqu’à 50 caractères. Votre nom d’utilisateur est le `@nom` que les autres utilisent pour vous trouver, et c’est lui qui s’affiche si vous ne définissez jamais de nom affiché.""",
+Votre nom affiché peut être n’importe quoi, dans n’importe quelle langue, jusqu’à 50 caractères. Votre nom d’utilisateur est le `@nom` que les autres utilisent pour vous trouver, et c’est lui qui s’affiche si vous ne définissez jamais de nom affiché.
+
+En vous inscrivant avec Google, on ne vous demande pas de nom d’utilisateur : il est tiré de votre adresse e-mail, de la partie avant le @. Un point qui le ferait ressembler à une adresse web devient un tiret bas — `anna.paris@…` devient `@anna_paris` —, et un nom contraire aux règles de la communauté est remplacé par un nom neutre, `@traveler`. Votre nom Google et votre photo de profil sont repris aussi, et vérifiés comme tout ce que vous écrivez ou téléversez ; ce qui ne passe pas est laissé de côté, et vous pouvez ajouter les vôtres sur votre profil.""",
             ),
             Block(
                 anchor="verify-your-email",
@@ -204,7 +209,7 @@ Les nouveaux voyages ne sont visibles que par **vous seul** tant que vous ne cha
             "prise en main",
         ),
         related=("plan-a-trip-itinerary", "share-an-itinerary-privately"),
-        updated="2026-11-07",
+        updated="2026-11-09",
         cta="Envie de planifier quelque chose ? Lancez votre premier voyage.",
     ),
     Article(
@@ -537,7 +542,9 @@ Choisissez une suggestion et le lieu apparaît sur la carte de Google. Pour en c
                 kind=KIND_STEP,
                 body="""Collez l’URL dans le champ de lien sous la recherche. Ntripi garde le lien tel que vous l’avez collé et ne l’ouvre pas : saisissez donc vous-même le nom de l’étape.
 
-Un lien long copié depuis votre navigateur peut apparaître sur la carte du voyage. Un lien de partage court (maps.app.goo.gl) ne le peut pas — il ne dit pas de quel lieu il s’agit — et Ntripi vous propose plutôt de chercher le lieu. Seuls les liens créés par Google Maps lui-même sont acceptés, comme ceux que copie son bouton Partager. Un lien vers autre chose est refusé plutôt que stocké et ignoré en silence — tout comme une adresse Google qui renverrait les lecteurs vers un autre site.""",
+Un lien long copié depuis votre navigateur peut apparaître sur la carte du voyage. Un lien de partage court (maps.app.goo.gl) ne le peut pas — il ne dit pas de quel lieu il s’agit — et Ntripi vous propose plutôt de chercher le lieu. Seuls les liens créés par Google Maps lui-même sont acceptés, comme ceux que copie son bouton Partager. Un lien vers autre chose est refusé plutôt que stocké et ignoré en silence — tout comme une adresse Google qui renverrait les lecteurs vers un autre site.
+
+Les mots d’un lien — ce qu’il recherche, le nom d’un lieu — s’affichent sur la carte de l’étape : ils sont donc vérifiés comme le texte de l’étape.""",
             ),
             Block(
                 anchor="pick-on-the-map",
@@ -593,7 +600,7 @@ La vue **Carte** d’un voyage montre ce même trajet sur la carte de Google, pa
             "introuvable",
         ),
         related=("add-places-to-an-itinerary", "permissions"),
-        updated="2026-11-08",
+        updated="2026-11-09",
         cta="Placez votre première étape sur la carte.",
     ),
     Article(
@@ -1823,7 +1830,7 @@ Débloquer ne rétablit pas l’abonnement supprimé par le blocage — l’un o
         summary="Ce que signifie un voyage ou un avis masqué, où en voir le motif, et comment demander qu’une personne le réexamine.",
         category="safety",
         schema=SCHEMA_FAQ,
-        intro="Si quelque chose que vous avez publié a été masqué, vous recevez une notification et un motif, et **Paramètres ▸ État du compte** en garde la trace. La plupart des décisions peuvent être contestées, et un recours est lu par une personne.",
+        intro="Si quelque chose que vous avez publié a été masqué, vous recevez une notification, et **Paramètres ▸ État du compte** en garde la trace, avec le motif. La notification ne nomme jamais le voyage — elle peut s’afficher sur un écran verrouillé —, c’est donc là que vous voyez lequel. La plupart des décisions peuvent être contestées, et un recours est lu par une personne.",
         blocks=(
             Block(
                 anchor="what-hidden-means",
@@ -1889,7 +1896,7 @@ Si une décision est annulée, le contenu revient tel qu’il était — rien n�
             "rétabli",
         ),
         related=("report-and-block", "sign-in-and-account-security", "contact"),
-        updated="2026-09-01",
+        updated="2026-11-09",
     ),
     Article(
         slug="troubleshooting",

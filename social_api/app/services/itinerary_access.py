@@ -51,6 +51,19 @@ def public_listing_criteria(db: Session | None = None,
     return criteria
 
 
+def is_listed(itinerary: Itinerary, db: Session) -> bool:
+    """The row-level twin of public_listing_criteria's moderation clauses: False
+    once the trip is soft-deleted, hidden, or its owner suspended. For a check
+    on a row already loaded in this transaction — a moderation write sets
+    hidden_at on the object before anything is flushed, and the session does not
+    autoflush, so a query would still read the trip as listed. Keep in lock-step
+    with public_listing_criteria."""
+    if itinerary.deleted_at is not None or itinerary.hidden_at is not None:
+        return False
+    owner = db.get(User, itinerary.user_id)
+    return owner is not None and owner.is_active
+
+
 # Content states that hide a record from everyone but its author. 'pending' and
 # 'flagged' stay visible on purpose: they are internal states, and announcing a
 # review that may come to nothing helps nobody.

@@ -29,12 +29,13 @@ never touches a filesystem path or an S3 client.
 3. `await storage().save(key, processed, "image/jpeg")`.
 4. Append `?v=<epoch_ms>` **if `cache_bust`**.
 
-### The three processors
+### The four processors
 
 | Processor | Output | Min input | Used by |
 |---|---|---|---|
 | `process_cover_image` | 1200×630 cover-crop JPEG | 600 px | itinerary covers, user cover images |
 | `process_avatar_image` | 800×800 square cover-crop JPEG | 600 px | avatars |
+| `process_imported_avatar_image` | 800×800 square cover-crop JPEG | **96 px** | a Google sign-up's photo (`services/google_avatar.py`) |
 | `process_screenshot_image` | aspect preserved, longest side ≤1600 | **200 px** | bug-report screenshots |
 
 - `ALLOWED_FORMATS = {JPEG, PNG, WEBP}`; `MAX_FILE_SIZE = 10 MB`.
@@ -45,6 +46,12 @@ never touches a filesystem path or an S3 client.
   cover-crop (destroying a portrait capture) and reject anything under 600 px.
   `process_screenshot_image` relaxes the floor via
   `_decode_and_validate(min_dimension=…)`.
+- **A Google sign-up's photo is copied in, never linked to** (since
+  2026-11-09): `google_avatar.copy_photo` fetches it from Google's photo host
+  only, at 800 px, and stores it under `avatars/{user_id}.jpg` through
+  `process_and_store` — scanned like an upload. Its processor drops the 600 px
+  floor to Google's default 96 px: nobody chose that picture, so there is no
+  one to ask for a bigger one. See [google-sign-in.md](google-sign-in.md).
 - `ImageProcessingError` → the router answers **400** with an **untranslated
   English message**.
 

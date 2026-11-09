@@ -230,6 +230,17 @@ RELEASES: tuple[Release, ...] = (
             "length on its page, on cards and when you share it, shown as "
             "\"3d+\" — the total worked out from the stops shows only when "
             "none is set.",
+            "**A hidden trip's name stays off your lock screen.** A notification "
+            "about a trip that was hidden or removed no longer shows its title, "
+            "to anyone — **Settings ▸ Account status** says which trip it was.",
+            "**Signing up with Google, checked like everything else.** The "
+            "username made from your email address, your Google name and your "
+            "profile photo pass the same checks as what you type or upload — a "
+            "username with a dot, such as `anna.paris`, becomes `anna_paris` — "
+            "and the sign-up always goes through.",
+            "**The words in a Google Maps link are checked too.** What a link "
+            "searches for shows on the stop's map, so it is held to the same "
+            "rules as the stop's name and notes.",
         ),
     ),
     Release(
@@ -263,7 +274,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="getting-started",
         schema=SCHEMA_HOWTO,
-        updated="2026-11-07",
+        updated="2026-11-09",
         keywords=(
             "sign up", "signup", "register", "registration", "new account",
             "first time", "beginner", "tour", "basics", "onboarding", "start",
@@ -291,7 +302,15 @@ ARTICLES: tuple[Article, ...] = (
                     "see it.\n\n"
                     "Your display name can be anything, in any language, up to 50 "
                     "characters. Your username is the `@name` other people use to "
-                    "find you, and it is what shows if you never set a display name."
+                    "find you, and it is what shows if you never set a display name.\n\n"
+                    "Signing up with Google, you are not asked for a username: it is "
+                    "made from your email address, from the part before the @. A dot "
+                    "that would make it read like a web address becomes an underscore "
+                    "— `anna.paris@…` becomes `@anna_paris` — and one that breaks the "
+                    "community guidelines is replaced by a neutral `@traveler` name. "
+                    "Your Google name and profile photo are brought in too, checked "
+                    "like anything you type or upload; one that does not pass is left "
+                    "out, and you can add your own on your profile."
                 ),
             ),
             Block(
@@ -785,7 +804,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="building",
         schema=SCHEMA_HOWTO,
-        updated="2026-11-08",
+        updated="2026-11-09",
         keywords=(
             "google maps", "search", "find a place", "autocomplete", "place id",
             "link", "paste", "short link", "coordinates", "gps", "pin",
@@ -835,7 +854,10 @@ ARTICLES: tuple[Article, ...] = (
                     "accepted, such as the ones its Share button copies. A link to "
                     "anywhere else is refused rather than stored and quietly "
                     "ignored — and so is a Google address that would pass readers "
-                    "on to another site."
+                    "on to another site.\n\n"
+                    "The words in a link — what it searches for, a place's name — "
+                    "show on the stop's map, so they are checked like the stop's own "
+                    "text."
                 ),
             ),
             Block(
@@ -2581,16 +2603,18 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="safety",
         schema=SCHEMA_FAQ,
-        updated="2026-09-01",
+        updated="2026-11-09",
         keywords=(
             "hidden", "removed", "takedown", "moderation", "appeal", "banned",
             "suspended", "warning", "blocked content", "restored",
         ),
         related=("report-and-block", "sign-in-and-account-security", "contact"),
         intro=(
-            "If something you published was hidden, you get a notification and a "
-            "reason, and **Settings ▸ Account status** keeps the record. Most "
-            "decisions can be appealed, and an appeal is read by a person."
+            "If something you published was hidden, you get a notification, and "
+            "**Settings ▸ Account status** keeps the record with the reason. The "
+            "notification never names the trip — it can show on a locked screen "
+            "— so that is where you see which one. Most decisions can be "
+            "appealed, and an appeal is read by a person."
         ),
         blocks=(
             Block(

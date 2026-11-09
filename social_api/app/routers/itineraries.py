@@ -129,7 +129,9 @@ from app.services.translation_service import purge_orphans, sync_translations
 from app.services.user_service import get_active_user_or_404, public_profile_text
 from app.storage.factory import storage
 from app.errors import ApiError
+from app.validators.currency import refuse_unknown_currency
 from app.validators.links import refuse_new_links
+from app.validators.map_link import map_link_words
 
 logger = logging.getLogger(__name__)
 
@@ -202,6 +204,7 @@ def _moderate_itinerary_text(
     current_user: User,
     *,
     stored=None,
+    also_scan: dict[str, str | None] | None = None,
 ):
     """Scan text belonging to an itinerary and stamp the outcome on it.
 
@@ -212,12 +215,12 @@ def _moderate_itinerary_text(
     Call from the endpoint BODY, after the ownership/If-Match checks: a 412
     must never spend a moderation call. `itinerary` is None on create (the row
     does not exist yet); the caller stamps the returned status itself.
-    `stored` is what `fields` replace (the row, or a mapping) — see
-    _scan_itinerary_text.
+    `stored` is what `fields` replace (the row, or a mapping), and `also_scan`
+    text scanned with them but outside the link rule — see _scan_itinerary_text.
     """
     ctx = _scan_itinerary_text(
         fields, itinerary.id if itinerary is not None else None, db, current_user,
-        stored=stored,
+        stored=stored, also_scan=also_scan,
     )
     if itinerary is not None:
         _stamp_itinerary_text(ctx, itinerary, db)
@@ -231,6 +234,7 @@ def _scan_itinerary_text(
     current_user: User,
     *,
     stored=None,
+    also_scan: dict[str, str | None] | None = None,
 ):
     """The scan half of _moderate_itinerary_text, touching no itinerary.
 
@@ -242,13 +246,15 @@ def _scan_itinerary_text(
     held (validators/links.py): `stored` is what the fields replace — the row,
     a mapping, or None on a create — and only a changed value may not carry a
     link. Checked before the scan, so a refused write costs no provider call.
+    `also_scan` is scanned in the same request but held to no link rule: the
+    words in a stop's map link, which live inside the one link a stop may have.
     """
     refuse_new_links(fields, stored)
     return moderate_or_422(
         db, get_settings(),
         target_type="itinerary",
         author=current_user,
-        fields=fields,
+        fields={**fields, **(also_scan or {})},
         target_id=itinerary_id,
     )
 
@@ -274,6 +280,14 @@ _ITINERARY_TEXT_FIELDS = ("title", "description", "recommended_period_note")
 # A stop's stored text: the search text of a Google place is the user's own
 # typing and is shown to readers, so it is moderated like the name.
 _STOP_TEXT_FIELDS = ("place_name", "place_address", "notes", "google_place_query")
+
+
+def _map_link_text(stop_fields: dict) -> dict[str, str | None]:
+    """The words in the map link a stop write sets: Google shows them in the
+    map's search box, so they are scanned with the stop's text, in its request."""
+    if "map_url" not in stop_fields:
+        return {}
+    return {"map_url": map_link_words(stop_fields["map_url"])}
 
 
 def _itinerary_text_fields(data: dict) -> dict[str, str | None]:
@@ -996,6 +1010,7 @@ def create_itinerary(
     current_user: User = Depends(require_verified_email),  # high-value: verified email required
     wants_trip: str | None = Depends(wants_itinerary),
 ) -> Response:
+    refuse_unknown_currency({"currency": body.currency})
     ctx = _scan_itinerary_text(
         _itinerary_text_fields(body.model_dump()), None, db, current_user,
     )
@@ -1028,6 +1043,7 @@ def create_itinerary_form(
     # A sync def like every text write: FastAPI has already parsed the multipart
     # body, so the image is a plain file here and the pipeline runs via anyio.
     body = _parse_form_fields(fields, ItineraryCreate)
+    refuse_unknown_currency({"currency": body.currency})
     ctx = _scan_itinerary_text(
         _itinerary_text_fields(body.model_dump()), None, db, current_user,
     )
@@ -1293,6 +1309,7 @@ def update_itinerary(
 ) -> Response:
     update_data = body.model_dump(exclude_unset=True)
     _require_visibility_owner(update_data, itinerary, current_user)
+    refuse_unknown_currency(update_data, itinerary)
 
     _moderate_itinerary_text(
         _itinerary_text_fields(update_data), itinerary, db, current_user,
@@ -1346,6 +1363,7 @@ def update_itinerary_form(
     _require_visibility_owner(update_data, itinerary, current_user)
     if image is not None:
         require_verified_email(current_user)  # what POST /image demands of an upload
+    refuse_unknown_currency(update_data, itinerary)
 
     # Both checks before the first write: either refusal commits the session.
     text_ctx = _scan_itinerary_text(
@@ -1855,7 +1873,7 @@ def add_stop(
     # Before the retry loop: a rank collision must not re-bill the moderation call.
     _moderate_itinerary_text(
         {key: stop_fields[key] for key in _STOP_TEXT_FIELDS},
-        itinerary, db, _verified,
+        itinerary, db, _verified, also_scan=_map_link_text(stop_fields),
     )
 
     for attempt in range(3):
@@ -1943,6 +1961,7 @@ def update_stop(
     _moderate_itinerary_text(
         {key: scalar_fields[key] for key in _STOP_TEXT_FIELDS if key in scalar_fields},
         itinerary, db, current_user, stored=stop,
+        also_scan=_map_link_text(scalar_fields),
     )
     for field, value in scalar_fields.items():
         setattr(stop, field, value)

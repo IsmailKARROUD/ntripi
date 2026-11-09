@@ -117,6 +117,9 @@ RELEASES: tuple[Release, ...] = (
             "**Sin enlaces en lo que se escribe.** Títulos, descripciones, notas, reseñas, nombres y biografías ya no admiten direcciones web, de correo ni nombres de sitio —una línea roja indica qué quitar— y una imagen escrita en un texto nunca se muestra. El enlace de Google Maps de una parada, en su propio campo, es el único enlace que queda. La página pública de un viaje muestra ahora las negritas, listas y títulos de su descripción.",
             "**Descripciones más largas, y espacio para explicar por qué.** La descripción de un viaje admite ahora hasta 10 000 caracteres, y **¿Por qué esta época?**, bajo la mejor época para viajar, hasta 4000, con negrita, listas y títulos como la descripción. En la página de un viaje se pliegan a tres y dos líneas, con **ver más** para el resto, y una nota corta se ve con su formato desde el principio. Cerca del límite de un texto aparece un contador debajo, y pasado el límite Guardar espera: nunca se corta nada de lo que escribes o pegas.",
             "**Di cuánto lleva un viaje.** Bajo la mejor época para viajar, **Tiempo recomendado de estancia** fija el tiempo mínimo que pide un viaje, en las ruedas de días, horas y minutos. Pasa a ser la duración del viaje en su página, en las tarjetas y al compartirlo, como «3d+»; el total calculado a partir de las paradas solo se muestra si no hay ninguno.",
+            "**El nombre de un viaje oculto no aparece en tu pantalla bloqueada.** Una notificación sobre un viaje ocultado o retirado ya no muestra su título, a nadie; **Ajustes ▸ Estado de la cuenta** dice de qué viaje se trata.",
+            "**Registrarse con Google, revisado como lo demás.** El nombre de usuario que sale de tu correo, tu nombre de Google y tu foto de perfil pasan las mismas revisiones que lo que escribes o subes —un nombre con punto, como `anna.paris`, pasa a ser `anna_paris`— y el registro siempre se completa.",
+            "**Las palabras de un enlace de Google Maps también se revisan.** Lo que busca un enlace aparece en el mapa de la parada, así que sigue las mismas normas que el nombre y las notas de la parada.",
         ),
     ),
     Release(
@@ -148,7 +151,9 @@ ARTICLES: tuple[Article, ...] = (
 
 Se te pedirá un nombre visible, un nombre de usuario y tu fecha de nacimiento. Ntripi tiene una edad mínima de 16 años. Tu fecha de nacimiento nunca aparece en tu perfil y ningún otro usuario puede verla.
 
-Tu nombre visible puede ser cualquier cosa, en cualquier idioma, hasta 50 caracteres. Tu nombre de usuario es el `@nombre` con el que los demás te encuentran, y es lo que se muestra si nunca defines un nombre visible.""",
+Tu nombre visible puede ser cualquier cosa, en cualquier idioma, hasta 50 caracteres. Tu nombre de usuario es el `@nombre` con el que los demás te encuentran, y es lo que se muestra si nunca defines un nombre visible.
+
+Al registrarte con Google, no se te pide un nombre de usuario: se crea a partir de tu correo electrónico, de la parte anterior a la @. Un punto que lo haría parecer una dirección web se convierte en un guion bajo —`anna.paris@…` pasa a ser `@anna_paris`—, y uno que incumpla las normas de la comunidad se sustituye por un nombre neutro, `@traveler`. Tu nombre de Google y tu foto de perfil también se traen, y se revisan como todo lo que escribes o subes; lo que no pasa se deja fuera, y puedes añadir los tuyos en tu perfil.""",
             ),
             Block(
                 anchor="verify-your-email",
@@ -203,7 +208,7 @@ Los viajes nuevos son visibles **solo para ti** hasta que lo cambies, así que e
             "comenzar",
         ),
         related=("plan-a-trip-itinerary", "share-an-itinerary-privately"),
-        updated="2026-11-07",
+        updated="2026-11-09",
         cta="¿Listo para planificar algo? Empieza tu primer viaje.",
     ),
     Article(
@@ -535,7 +540,9 @@ Elige una sugerencia y el lugar aparece en el mapa de Google. Para elegir otra, 
                 kind=KIND_STEP,
                 body="""Pega la URL en el campo de enlace bajo la búsqueda. Ntripi guarda el enlace tal como lo pegaste y no lo abre, así que escribe tú el nombre de la parada.
 
-Un enlace largo copiado del navegador puede aparecer en el mapa del viaje. Un enlace corto para compartir (maps.app.goo.gl) no puede — no dice de qué lugar se trata —, así que Ntripi te sugiere buscar el lugar. Solo se aceptan los enlaces que crea el propio Google Maps, como los que copia su botón Compartir. Un enlace a cualquier otro sitio se rechaza en lugar de guardarse e ignorarse en silencio, y lo mismo ocurre con una dirección de Google que llevaría a los lectores a otro sitio.""",
+Un enlace largo copiado del navegador puede aparecer en el mapa del viaje. Un enlace corto para compartir (maps.app.goo.gl) no puede — no dice de qué lugar se trata —, así que Ntripi te sugiere buscar el lugar. Solo se aceptan los enlaces que crea el propio Google Maps, como los que copia su botón Compartir. Un enlace a cualquier otro sitio se rechaza en lugar de guardarse e ignorarse en silencio, y lo mismo ocurre con una dirección de Google que llevaría a los lectores a otro sitio.
+
+Las palabras de un enlace —lo que busca, el nombre de un lugar— aparecen en el mapa de la parada, así que se revisan como el propio texto de la parada.""",
             ),
             Block(
                 anchor="pick-on-the-map",
@@ -591,7 +598,7 @@ La vista **Mapa** de un viaje muestra esa misma ruta en el mapa de Google, por l
             "no encontrado",
         ),
         related=("add-places-to-an-itinerary", "permissions"),
-        updated="2026-11-08",
+        updated="2026-11-09",
         cta="Coloca tu primera parada en el mapa.",
     ),
     Article(
@@ -1818,7 +1825,7 @@ Después escribe a **[abuse@ntripi.app](mailto:abuse@ntripi.app)**, que se vigil
         summary="Qué significa que un viaje o una reseña esté oculto, dónde ver el motivo y cómo pedir que una persona lo revise otra vez.",
         category="safety",
         schema=SCHEMA_FAQ,
-        intro="Si algo que publicaste se ocultó, recibes una notificación y un motivo, y **Ajustes ▸ Estado de la cuenta** guarda el registro. La mayoría de las decisiones se pueden recurrir, y un recurso lo lee una persona.",
+        intro="Si algo que publicaste se ocultó, recibes una notificación, y **Ajustes ▸ Estado de la cuenta** guarda el registro, con el motivo. La notificación nunca nombra el viaje —puede verse en la pantalla bloqueada—, así que es ahí donde ves cuál. La mayoría de las decisiones se pueden recurrir, y un recurso lo lee una persona.",
         blocks=(
             Block(
                 anchor="what-hidden-means",
@@ -1884,7 +1891,7 @@ Si una decisión se revoca, el contenido vuelve tal como estaba: no se había bo
             "restaurado",
         ),
         related=("report-and-block", "sign-in-and-account-security", "contact"),
-        updated="2026-09-01",
+        updated="2026-11-09",
     ),
     Article(
         slug="troubleshooting",
