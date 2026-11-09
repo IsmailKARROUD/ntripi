@@ -534,7 +534,9 @@ class TestSourceLangIsTheLastKey:
         segment = _segment(client, token, trip_id, stop_a["id"], stop_b["id"])
 
         detail = _detail(client, token, trip_id)
-        assert list(detail)[-2:] == ["can_edit", "source_lang"]
+        # The recommended time to spend came later still, appended after it.
+        assert list(detail)[-3:] == [
+            "can_edit", "source_lang", "recommended_duration_min"]
         # The place keys came later still, appended after source_lang.
         keys = list(stop_a)
         assert keys[keys.index("annotations"):] == [

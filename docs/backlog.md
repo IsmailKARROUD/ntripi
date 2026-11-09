@@ -388,6 +388,14 @@ router — those routes sit outside the shell on purpose, since nesting them
 froze the app — and guards so a click cannot leave a trip in edit mode or a
 form with unsaved text. → [features/web-and-platform.md](features/web-and-platform.md)
 
+### idea — sort and filter the feed by a trip's length
+
+Since 2026-11-09 a trip can carry its author's recommended time to spend
+(`recommended_duration_min`), and every list shows a trip's length as
+`TripLength.of` decides it. Nothing sorts or filters by it yet: "a weekend",
+"under a week" would need the feed query to order on the same rule — the
+author's minimum, else `total_duration_min` — and an index to keep it cheap.
+
 ### idea — a wide trip layout with the map beside the stops
 
 Every screen keeps to the 600 px column (2026-11-07). The trip page is the one

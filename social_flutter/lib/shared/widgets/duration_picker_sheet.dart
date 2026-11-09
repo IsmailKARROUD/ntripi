@@ -26,6 +26,23 @@ import 'package:ntripi/l10n/app_localizations.dart';
 /// same length of time but not the same answer to put back on the wheel.
 typedef DurationParts = ({int days, int hours, int minutes});
 
+/// [minutes] on the wheels: days, hours, minutes — all zero for null.
+DurationParts durationPartsOf(int? minutes) {
+  final total = minutes ?? 0;
+  return (
+    days: total ~/ (24 * 60),
+    hours: total % (24 * 60) ~/ 60,
+    minutes: total % 60,
+  );
+}
+
+/// What the wheels picked, in minutes — null when every wheel is at zero,
+/// which is how a value is cleared.
+int? minutesOrNull(DurationParts parts) {
+  final total = parts.days * 24 * 60 + parts.hours * 60 + parts.minutes;
+  return total > 0 ? total : null;
+}
+
 // CupertinoPicker's own eyeballed geometry (cupertino/picker.dart:20-22),
 // copied verbatim so the wheel keeps exactly the feel it had.
 const double _diameterRatio = 1.07;

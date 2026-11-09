@@ -1464,5 +1464,68 @@
   "errorInvalidInput": "لا يمكن حفظ بعض ما أدخلته كما هو. يرجى التحقق منه والمحاولة مجددًا.",
   "@errorInvalidInput": {
     "description": "A server validation refusal other than a text over its cap — never the server's raw list."
+  },
+  "formLabelRecommendedTime": "مدة الزيارة الموصى بها",
+  "@formLabelRecommendedTime": {
+    "description": "The trip form's row label for the recommended minimum time to spend, in capitals like the other form labels."
+  },
+  "recommendedTimeHelp": "اختياري. أقل وقت يحتاجه هذا المسار — ما كنت ستنصح صديقًا بتخصيصه له. أينما ظهرت مدة المسار، يحلّ محل المجموع المحسوب من المحطات، متبوعًا بكلمة «فأكثر». أعِد العجلة إلى الصفر لإزالته.",
+  "@recommendedTimeHelp": {
+    "description": "Help for a trip's recommended minimum time to spend."
+  },
+  "addRecommendedTime": "إضافة مدة الزيارة الموصى بها",
+  "@addRecommendedTime": {
+    "description": "The trip page's edit-mode row when no recommended time is set."
+  },
+  "tripLengthAtLeastShort": "{duration} فأكثر",
+  "@tripLengthAtLeastShort": {
+    "description": "A trip's length on a chip or card when it is the author's minimum: at least this long. duration is compact, e.g. 3d or 2d 4h.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "3d"
+      }
+    }
+  },
+  "recommendedTimeAtLeast": "{duration} على الأقل",
+  "@recommendedTimeAtLeast": {
+    "description": "The recommended time to spend, written out: at least this long. duration is spelled out, e.g. 3 days, 4 hours.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "3 days"
+      }
+    }
+  },
+  "durationDaysLong": "{count, plural, zero{{count} يوم} one{يوم واحد} two{يومان} few{{count} أيام} many{{count} يومًا} other{{count} يوم}}",
+  "@durationDaysLong": {
+    "description": "A number of days, spelled out.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationHoursLong": "{count, plural, zero{{count} ساعة} one{ساعة واحدة} two{ساعتان} few{{count} ساعات} many{{count} ساعة} other{{count} ساعة}}",
+  "@durationHoursLong": {
+    "description": "A number of hours, spelled out.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationMinutesLong": "{count, plural, zero{{count} دقيقة} one{دقيقة واحدة} two{دقيقتان} few{{count} دقائق} many{{count} دقيقة} other{{count} دقيقة}}",
+  "@durationMinutesLong": {
+    "description": "A number of minutes, spelled out.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationLongSeparator": " و",
+  "@durationLongSeparator": {
+    "description": "Between the parts of a spelled-out duration: 3 days, 4 hours. Leading and trailing spaces count."
   }
 }

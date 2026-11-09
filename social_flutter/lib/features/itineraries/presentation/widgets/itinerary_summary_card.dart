@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ntripi/core/cache/image_cache.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary.dart';
+import 'package:ntripi/features/itineraries/domain/trip_length.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/itinerary_cover_placeholder.dart';
 import 'package:ntripi/shared/widgets/visibility_badge.dart';
@@ -105,7 +106,7 @@ class ItinerarySummaryCard extends ConsumerWidget {
                     children: [
                       _MetaChip(
                         icon: Icons.schedule_rounded,
-                        label: itinerary.formattedDuration(l10n),
+                        label: TripLength.of(itinerary).compact(l10n),
                       ),
                       _MetaChip(
                         icon: Icons.payments_rounded,

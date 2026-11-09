@@ -116,6 +116,7 @@ RELEASES: tuple[Release, ...] = (
             "**Der Google-Maps-Link eines Stopps führt nur zu Google Maps.** Eine Google-Adresse, die Leser auf eine andere Website weiterleiten würde, wird abgelehnt, und bereits gespeicherte werden entfernt. Aus Google Maps kopierte Links funktionieren wie bisher.",
             "**Keine Links in dem, was man schreibt.** Titel, Beschreibungen, Notizen, Bewertungen, Namen und Bios nehmen keine Webadressen, E-Mail-Adressen oder Seitennamen mehr an — eine rote Zeile nennt, was zu entfernen ist —, und ein in einen Text geschriebenes Bild wird nie angezeigt. Der Google-Maps-Link eines Stopps, in seinem eigenen Feld, ist der einzige verbliebene Link. Die öffentliche Seite einer Reise zeigt jetzt Fettdruck, Listen und Überschriften ihrer Beschreibung.",
             "**Längere Beschreibungen und Platz für das Warum.** Die Beschreibung einer Reise fasst jetzt bis zu 10.000 Zeichen und **Warum diese Zeit?** unter der besten Reisezeit bis zu 4.000 – mit Fett, Listen und Überschriften wie die Beschreibung. Auf der Seite einer Reise werden sie auf drei und zwei Zeilen eingeklappt, mit **mehr anzeigen** für den Rest, und eine kurze Notiz erscheint gleich formatiert. Nahe am Limit eines Textes erscheint darunter ein Zähler, und darüber hinaus wartet Speichern – nichts, was Sie tippen oder einfügen, wird je abgeschnitten.",
+            "**Sagen, wie lange eine Reise dauert.** Unter der besten Reisezeit legt **Empfohlene Aufenthaltsdauer** fest, wie viel Zeit eine Reise mindestens braucht – auf den Rädern für Tage, Stunden und Minuten. Sie wird zur Dauer der Reise auf ihrer Seite, auf Karten und beim Teilen, angezeigt als „3T+“; die aus den Stopps errechnete Summe erscheint nur, wenn keine festgelegt ist.",
         ),
     ),
     Release(
@@ -223,6 +224,7 @@ Neue Reisen sind **nur für Sie** sichtbar, bis Sie das ändern — Ausprobieren
 - **Währung** — jede Kostenangabe verwendet sie, damit die Summe stimmt. Wählen Sie die, die Sie tatsächlich ausgeben.
 - **Titelbild** — optional, und später nachtragbar. Es ist das, was andere im Feed und in einem geteilten Link sehen.
 - **Beste Reisezeit** — die Monate, in denen diese Reise funktioniert, und unter **Warum diese Zeit?** Ihre Gründe: Wetter, Feste, Andrang. Bis zu 4.000 Zeichen, mit Fett, Listen und Überschriften wie in der Beschreibung.
+- **Empfohlene Aufenthaltsdauer** — die Zeit, die die Reise mindestens braucht, auf den Rädern für Tage, Stunden und Minuten. Überall, wo die Dauer der Reise steht, erscheint sie als „3T+“; stellen Sie jedes Rad auf null, um sie zu entfernen.
 - **Beschreibung** — entsteht auf der Seite der Reise, sobald sie angelegt ist: Tippen Sie im Bearbeitungsmodus auf **Beschreibung**. Bis zu 10.000 Zeichen; Lesende sehen die ersten drei Zeilen und tippen für den Rest auf **mehr anzeigen**.""",
             ),
             Block(
@@ -278,6 +280,7 @@ Siehe [wie Sie eine Reise teilen, ohne sie zu veröffentlichen](/help/share-an-i
             "budget",
             "kosten",
             "planung",
+            "reisedauer",
         ),
         related=("plan-alternative-options", "share-an-itinerary-privately", "getting-started"),
         updated="2026-11-09",
@@ -477,7 +480,9 @@ Ist ein Ort kostenlos, markieren Sie ihn als kostenlos, statt das Feld leer zu l
                 kind=KIND_STEP,
                 body="""Dieses Feld verhindert, dass ein Plan zur Fantasie wird. Vier Sehenswürdigkeiten an einem Nachmittag wirken als Liste vernünftig und werden unmöglich, sobald jede neunzig Minuten trägt.
 
-Planen Sie die Zeit ein, die Sie dort wirklich verbringen wollen, nicht das Minimum, in dem es machbar wäre.""",
+Planen Sie die Zeit ein, die Sie dort wirklich verbringen wollen, nicht das Minimum, in dem es machbar wäre.
+
+Die Zeiten der Stopps ergeben zusammen die Dauer der Reise, Optionen für dieselbe Zeit eingeschlossen. Wenn Sie besser wissen, wie lange die Reise dauert, tragen Sie ihre **Empfohlene Aufenthaltsdauer** ein — dann erscheint stattdessen sie, als „3T+“.""",
             ),
             Block(
                 anchor="notes",
@@ -505,7 +510,7 @@ Eine Notiz darf keinen Link enthalten — keine Webadresse, keine E-Mail-Adresse
             "museum",
         ),
         related=("plan-a-trip-itinerary", "add-locations-from-google-maps", "travel-notes-and-warnings"),
-        updated="2026-11-08",
+        updated="2026-11-09",
         cta="Legen Sie eine Reise an und fügen Sie den ersten Stopp hinzu.",
     ),
     Article(

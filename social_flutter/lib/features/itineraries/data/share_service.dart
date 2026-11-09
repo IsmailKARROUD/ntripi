@@ -8,6 +8,7 @@ import 'package:ntripi/core/api/api_endpoints.dart';
 import 'package:ntripi/features/itineraries/data/browser_share_io.dart'
     if (dart.library.js_interop) 'package:ntripi/features/itineraries/data/browser_share_web.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary.dart';
+import 'package:ntripi/features/itineraries/domain/trip_length.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/models/user.dart';
 
@@ -101,6 +102,6 @@ class ShareService {
         ? itinerary.stops.length
         : itinerary.stopsCount;
     return l10n.shareCaption(itinerary.title, l10n.stopCount(stopCount),
-        itinerary.formattedDuration(l10n));
+        TripLength.of(itinerary).compact(l10n));
   }
 }

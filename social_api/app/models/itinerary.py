@@ -109,8 +109,17 @@ class Itinerary(Base):
     recommended_periods: Mapped[list | None] = mapped_column(JSON, nullable=True)
     # ISO-8601 weekday numbers, 1 = Monday … 7 = Sunday.
     recommended_weekdays: Mapped[list | None] = mapped_column(JSON, nullable=True)
-    # The "why" — one line, moderated like any other stored user prose.
+    # The "why" — up to 4,000 characters of markdown, moderated like any other
+    # stored user prose.
     recommended_period_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # The author's recommended minimum time to spend on the trip, in minutes.
+    # Shown wherever the trip's length shows, as "at least"; NULL = not set,
+    # and the length computed from the stops (total_duration_min) shows
+    # instead. The range is the schema's to enforce, like a stop's duration.
+    recommended_duration_min: Mapped[int | None] = mapped_column(
+        Integer, nullable=True
+    )
 
     # ISO 639-1 language of title + description + period note, detected at
     # save time (services/language_detection.py). NULL = not detected

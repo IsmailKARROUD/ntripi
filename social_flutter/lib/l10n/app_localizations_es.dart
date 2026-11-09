@@ -3502,4 +3502,60 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get errorInvalidInput =>
       'Algo de lo que has introducido no se puede guardar así. Revísalo e inténtalo de nuevo.';
+
+  @override
+  String get formLabelRecommendedTime => 'TIEMPO RECOMENDADO DE ESTANCIA';
+
+  @override
+  String get recommendedTimeHelp =>
+      'Opcional. El tiempo mínimo que pide este viaje: lo que le dirías a un amigo que reserve. Donde se muestra la duración del viaje, sustituye al total calculado a partir de las paradas, seguido de un +. Vuelve a poner la rueda a cero para quitarlo.';
+
+  @override
+  String get addRecommendedTime => 'Añadir el tiempo recomendado de estancia';
+
+  @override
+  String tripLengthAtLeastShort(String duration) {
+    return '$duration+';
+  }
+
+  @override
+  String recommendedTimeAtLeast(String duration) {
+    return 'Al menos $duration';
+  }
+
+  @override
+  String durationDaysLong(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count días',
+      one: '$count día',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String durationHoursLong(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count horas',
+      one: '$count hora',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String durationMinutesLong(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count minutos',
+      one: '$count minuto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get durationLongSeparator => ', ';
 }

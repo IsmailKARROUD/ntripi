@@ -40,8 +40,13 @@ import 'package:ntripi/shared/widgets/loaders.dart';
 const _kCurrency = 'MAD';
 
 class _FakeRepo extends ItineraryRepository {
-  _FakeRepo({required this.canEdit, this.gate, this.updateGate, this.period})
-      : super(Dio());
+  _FakeRepo({
+    required this.canEdit,
+    this.gate,
+    this.updateGate,
+    this.period,
+    this.duration,
+  }) : super(Dio());
 
   final bool canEdit;
 
@@ -55,8 +60,14 @@ class _FakeRepo extends ItineraryRepository {
 
   final RecommendedPeriod? period;
 
+  /// The trip's recommended time to spend, in minutes.
+  final int? duration;
+
   /// The body of the last PATCH, or null if none went out.
   Map<String, dynamic>? lastUpdate;
+
+  /// GETs of the trip — a save answers with the trip, so none follows one.
+  int gets = 0;
 
   Itinerary _itinerary() {
     final ts = DateTime.utc(2026, 8, 15);
@@ -72,11 +83,13 @@ class _FakeRepo extends ItineraryRepository {
       updatedAt: ts,
       canEdit: canEdit,
       recommendedPeriod: period,
+      recommendedDurationMin: duration,
     );
   }
 
   @override
   Future<Itinerary> getItinerary(String id, {bool forceRefresh = false}) async {
+    gets++;
     if (gate != null) await gate!.future;
     return _itinerary();
   }
@@ -161,6 +174,7 @@ Future<_FakeRepo> _pump(
   Completer<void>? gate,
   Completer<void>? updateGate,
   RecommendedPeriod? period,
+  int? duration,
 }) async {
   // Tall enough that the whole form is laid out at once. Without this a
   // ListView simply never builds its off-screen children, so every findsNothing
@@ -172,7 +186,11 @@ Future<_FakeRepo> _pump(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final repo = _FakeRepo(
-      canEdit: canEdit, gate: gate, updateGate: updateGate, period: period);
+      canEdit: canEdit,
+      gate: gate,
+      updateGate: updateGate,
+      period: period,
+      duration: duration);
   final router = GoRouter(
     routes: [
       GoRoute(
@@ -565,6 +583,153 @@ void main() {
 
       expect(find.byType(NTripiRingLoader), findsNothing);
       expect(find.byType(SnackBar), findsOneWidget);
+    });
+  });
+
+  // ── The recommended time to spend ──────────────────────────────────────────
+  // One minimum on the duration wheels, its own row under Best time: in the
+  // form, and on the trip page in edit mode. A reader sees it as the length
+  // chip, "3d+".
+  const threeDays = 3 * 24 * 60;
+
+  /// Centres [label] on its wheel — the wheels scroll a tapped row to the
+  /// centre — then taps Done.
+  Future<void> pickOnWheel(WidgetTester tester, String label) async {
+    await tester.tap(find.text(label));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+  }
+
+  Finder formRow() => find
+      .ancestor(
+          of: find.text('RECOMMENDED TIME TO SPEND'),
+          matching: find.byType(InkWell))
+      .first;
+
+  group('recommended time to spend, in the form', () {
+    testWidgets('shows the trip\'s minimum, and Save sends it back',
+        (tester) async {
+      final repo = await _pump(
+          tester, const ItineraryFormScreen(itineraryId: 'itin-1'),
+          viewerId: 'user-1', canEdit: true, duration: threeDays);
+
+      expect(find.descendant(of: formRow(), matching: find.text('At least 3 days')),
+          findsOneWidget);
+
+      await tester.enterText(find.byType(TextFormField), 'Trip renamed');
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(repo.lastUpdate!['recommended_duration_min'], threeDays);
+    });
+
+    testWidgets('a value picked on the wheels is what Save sends',
+        (tester) async {
+      final repo = await _pump(
+          tester, const ItineraryFormScreen(itineraryId: 'itin-1'),
+          viewerId: 'user-2', canEdit: true, duration: threeDays);
+
+      await tester.tap(formRow());
+      await tester.pumpAndSettle();
+      await pickOnWheel(tester, '2 d');
+      expect(find.descendant(of: formRow(), matching: find.text('At least 2 days')),
+          findsOneWidget);
+
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      // An editor's form: the minimum is content, not an owner's setting.
+      expect(repo.lastUpdate!['recommended_duration_min'], 2 * 24 * 60);
+    });
+
+    testWidgets('unset reads "Not set", and Save sends null', (tester) async {
+      final repo = await _pump(
+          tester, const ItineraryFormScreen(itineraryId: 'itin-1'),
+          viewerId: 'user-1', canEdit: true);
+
+      expect(find.descendant(of: formRow(), matching: find.text('Not set')),
+          findsOneWidget);
+      await tester.enterText(find.byType(TextFormField), 'Trip renamed');
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(repo.lastUpdate!.containsKey('recommended_duration_min'), isTrue);
+      expect(repo.lastUpdate!['recommended_duration_min'], isNull);
+    });
+  });
+
+  group('recommended time to spend, on the trip page', () {
+    Finder editRow() => find
+        .ancestor(
+            of: find.text('Recommended time to spend'),
+            matching: find.byType(InkWell))
+        .first;
+
+    testWidgets('a reader sees the minimum as the length chip, "3d+"',
+        (tester) async {
+      await _pump(tester, const ItineraryDetailScreen(itineraryId: 'itin-1'),
+          viewerId: 'user-2', canEdit: false, duration: threeDays);
+
+      expect(find.text('3d+'), findsOneWidget);
+      // The row is edit mode's alone.
+      expect(find.text('Recommended time to spend'), findsNothing);
+    });
+
+    testWidgets(
+        'in edit mode the row says "At least 3 days"; a pick saves it in one '
+        'PATCH and nothing is downloaded after it', (tester) async {
+      final repo = await _pump(
+          tester, const ItineraryDetailScreen(itineraryId: 'itin-1'),
+          viewerId: 'user-1', canEdit: true, duration: threeDays);
+      await tester.tap(find.byType(EditPencilButton));
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: editRow(), matching: find.text('At least 3 days')),
+          findsOneWidget);
+      final getsBefore = repo.gets;
+
+      await tester.tap(editRow());
+      await tester.pumpAndSettle();
+      await pickOnWheel(tester, '2 d');
+
+      expect(repo.lastUpdate, {'recommended_duration_min': 2 * 24 * 60});
+      expect(repo.gets, getsBefore);
+    });
+
+    testWidgets('Done on the value already saved writes nothing',
+        (tester) async {
+      final repo = await _pump(
+          tester, const ItineraryDetailScreen(itineraryId: 'itin-1'),
+          viewerId: 'user-1', canEdit: true, duration: threeDays);
+      await tester.tap(find.byType(EditPencilButton));
+      await tester.pumpAndSettle();
+
+      await tester.tap(editRow());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      expect(repo.lastUpdate, isNull);
+    });
+
+    testWidgets('every wheel at zero clears it', (tester) async {
+      final repo = await _pump(
+          tester, const ItineraryDetailScreen(itineraryId: 'itin-1'),
+          viewerId: 'user-1', canEdit: true, duration: 24 * 60);
+      await tester.tap(find.byType(EditPencilButton));
+      await tester.pumpAndSettle();
+
+      await tester.tap(editRow());
+      await tester.pumpAndSettle();
+      await pickOnWheel(tester, '0 d');
+
+      expect(repo.lastUpdate, {'recommended_duration_min': null});
+    });
+
+    testWidgets('unset, the row offers to add one', (tester) async {
+      await _pump(tester, const ItineraryDetailScreen(itineraryId: 'itin-1'),
+          viewerId: 'user-1', canEdit: true);
+      await tester.tap(find.byType(EditPencilButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add the recommended time to spend'), findsOneWidget);
     });
   });
 }

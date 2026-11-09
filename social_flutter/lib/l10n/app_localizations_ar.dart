@@ -3513,4 +3513,72 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get errorInvalidInput =>
       'لا يمكن حفظ بعض ما أدخلته كما هو. يرجى التحقق منه والمحاولة مجددًا.';
+
+  @override
+  String get formLabelRecommendedTime => 'مدة الزيارة الموصى بها';
+
+  @override
+  String get recommendedTimeHelp =>
+      'اختياري. أقل وقت يحتاجه هذا المسار — ما كنت ستنصح صديقًا بتخصيصه له. أينما ظهرت مدة المسار، يحلّ محل المجموع المحسوب من المحطات، متبوعًا بكلمة «فأكثر». أعِد العجلة إلى الصفر لإزالته.';
+
+  @override
+  String get addRecommendedTime => 'إضافة مدة الزيارة الموصى بها';
+
+  @override
+  String tripLengthAtLeastShort(String duration) {
+    return '$duration فأكثر';
+  }
+
+  @override
+  String recommendedTimeAtLeast(String duration) {
+    return '$duration على الأقل';
+  }
+
+  @override
+  String durationDaysLong(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count يوم',
+      many: '$count يومًا',
+      few: '$count أيام',
+      two: 'يومان',
+      one: 'يوم واحد',
+      zero: '$count يوم',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String durationHoursLong(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ساعة',
+      many: '$count ساعة',
+      few: '$count ساعات',
+      two: 'ساعتان',
+      one: 'ساعة واحدة',
+      zero: '$count ساعة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String durationMinutesLong(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count دقيقة',
+      many: '$count دقيقة',
+      few: '$count دقائق',
+      two: 'دقيقتان',
+      one: 'دقيقة واحدة',
+      zero: '$count دقيقة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get durationLongSeparator => ' و';
 }

@@ -17,8 +17,8 @@ The load-bearing rules pinned here:
     edits a month grid, which can only ever produce separated runs — so the
     accepted shapes are exactly the ones that round-trip through the editor.
   * The note is stored user prose and therefore goes to the text moderator.
-  * The three fields stay OFF the summary payload — appending them there would
-    shift JSON keys in ItineraryDetail and ItineraryFeedItem.
+  * The three fields stay OFF the summary payload — a list has no use for
+    them, and key order is contract.
 """
 
 from __future__ import annotations
@@ -317,8 +317,9 @@ def test_patch_with_explicit_nulls_clears(client, owner):
 def test_summary_payload_unchanged(client, owner):
     """GET /itineraries/me returns ItinerarySummary, which must not carry these.
 
-    Appending them to the summary would shift JSON keys in both of its
-    subclasses (ItineraryDetail, ItineraryFeedItem), and key order is contract.
+    The period is the detail's alone: a list only shows how long a trip takes,
+    which is the one field every trip answer appends
+    (`recommended_duration_min`, test_recommended_duration.py).
     """
     token = owner["access_token"]
     _create_ok(client, token, recommended_period_note="Blossom season")

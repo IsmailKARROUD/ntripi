@@ -116,6 +116,7 @@ RELEASES: tuple[Release, ...] = (
             "**Le lien Google Maps d’une étape ne mène qu’à Google Maps.** Une adresse Google qui renverrait les lecteurs vers un autre site est refusée, et celles déjà enregistrées sont supprimées. Les liens copiés depuis Google Maps fonctionnent comme avant.",
             "**Pas de liens dans ce que l’on écrit.** Titres, descriptions, notes, avis, noms et bios n’acceptent plus d’adresses web, d’adresses e-mail ni de noms de site — une ligne rouge indique quoi retirer — et une image écrite dans un texte n’est jamais affichée. Le lien Google Maps d’une étape, dans son propre champ, est le seul lien qui reste. La page publique d’un voyage affiche désormais le gras, les listes et les titres de sa description.",
             "**Des descriptions plus longues, et la place de dire pourquoi.** La description d’un voyage accepte désormais jusqu’à 10 000 caractères, et **Pourquoi cette période ?**, sous la meilleure période, jusqu’à 4 000, avec gras, listes et titres comme la description. Sur la page d’un voyage, elles se replient sur trois et deux lignes, avec **voir plus** pour la suite, et une note courte s’affiche mise en forme d’emblée. Près de la limite d’un texte, un compteur apparaît dessous, et au-delà Enregistrer attend — rien de ce que vous tapez ou collez n’est jamais coupé.",
+            "**Dire combien de temps prend un voyage.** Sous la meilleure période, **Temps recommandé à passer** fixe le temps minimum que demande un voyage, sur les roues jours, heures et minutes. Il devient la durée du voyage sur sa page, sur les cartes et quand vous le partagez, affiché « 3j+ » — le total calculé à partir des étapes ne s’affiche que si aucun temps n’est fixé.",
         ),
     ),
     Release(
@@ -224,6 +225,7 @@ Les nouveaux voyages ne sont visibles que par **vous seul** tant que vous ne cha
 - **Devise** — chaque coût que vous notez l’utilise, pour que le total ait un sens. Choisissez celle que vous allez réellement dépenser.
 - **Image de couverture** — facultative, et vous pouvez l’ajouter plus tard. C’est ce que les gens voient dans le fil et dans un lien partagé.
 - **Meilleure période** — les mois où ce voyage fonctionne et, sous **Pourquoi cette période ?**, vos raisons : météo, fêtes, affluence. Jusqu’à 4 000 caractères, avec gras, listes et titres, comme la description.
+- **Temps recommandé à passer** — le temps minimum que demande le voyage, sur les roues jours, heures et minutes. C’est la durée du voyage partout où elle s’affiche, sous la forme « 3j+ » ; remettez chaque roue à zéro pour le retirer.
 - **Description** — elle s’écrit sur la page du voyage une fois créé : en mode modification, appuyez sur **Description**. Jusqu’à 10 000 caractères ; les lecteurs en voient les trois premières lignes et touchent **voir plus** pour la suite.""",
             ),
             Block(
@@ -279,6 +281,7 @@ Voir [comment partager un voyage sans le rendre public](/help/share-an-itinerary
             "budget",
             "coût",
             "planification",
+            "durée du voyage",
         ),
         related=("plan-alternative-options", "share-an-itinerary-privately", "getting-started"),
         updated="2026-11-09",
@@ -479,7 +482,9 @@ Si un lieu est gratuit, marquez-le gratuit plutôt que de laisser le champ vide.
                 kind=KIND_STEP,
                 body="""C’est le champ qui empêche un plan d’être un fantasme. Quatre sites en un après-midi paraît raisonnable en liste et devient impossible une fois que chacun porte quatre-vingt-dix minutes.
 
-Prévoyez le temps que vous voudriez vraiment y passer, pas le minimum en lequel c’est faisable.""",
+Prévoyez le temps que vous voudriez vraiment y passer, pas le minimum en lequel c’est faisable.
+
+Les temps des étapes s’additionnent pour donner la durée du voyage, options prévues pour un même moment comprises. Si vous savez mieux combien de temps demande le voyage, renseignez son **Temps recommandé à passer** : c’est lui qui s’affiche alors, sous la forme « 3j+ ».""",
             ),
             Block(
                 anchor="notes",
@@ -507,7 +512,7 @@ Une note ne peut pas contenir de lien — ni adresse web, ni adresse e-mail, ni 
             "musée",
         ),
         related=("plan-a-trip-itinerary", "add-locations-from-google-maps", "travel-notes-and-warnings"),
-        updated="2026-11-08",
+        updated="2026-11-09",
         cta="Lancez un voyage et ajoutez votre première étape.",
     ),
     Article(

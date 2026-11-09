@@ -55,6 +55,9 @@ _MAX_PERIOD_NOTE = 4000
 # 12 alternating months (Jan, Mar, May, …) is the densest arrangement of
 # disjoint non-adjacent windows, so 6 is the true ceiling, not a guess.
 _MAX_PERIOD_WINDOWS = 6
+# The recommended time to spend is set on the app's days/hours/minutes wheel,
+# whose largest value is 365 d 23 h 59 min.
+_MAX_RECOMMENDED_DURATION_MIN = 365 * 24 * 60 + 23 * 60 + 59  # 527,039
 
 # Days per month with February at 29: a window carries no year, so a boundary
 # on the leap day is a legitimate choice rather than an off-by-one.
@@ -594,6 +597,10 @@ class ItineraryCreate(_RecommendedPeriodInput):
     description: Optional[str] = Field(None, max_length=_MAX_DESCRIPTION)
     currency: str = Field(default="EUR", max_length=3, min_length=3)
     visibility: _VISIBILITY = 'only_me'
+    # The author's recommended minimum time to spend, in minutes. Not text: no
+    # moderation, no translation.
+    recommended_duration_min: Optional[int] = Field(
+        None, ge=1, le=_MAX_RECOMMENDED_DURATION_MIN)
 
 
 class ItineraryUpdate(_RecommendedPeriodInput):
@@ -601,6 +608,9 @@ class ItineraryUpdate(_RecommendedPeriodInput):
     description: Optional[str] = Field(None, max_length=_MAX_DESCRIPTION)
     currency: Optional[str] = Field(None, max_length=3, min_length=3)
     visibility: Optional[_VISIBILITY] = None
+    # null clears it — the trip then shows the length computed from its stops.
+    recommended_duration_min: Optional[int] = Field(
+        None, ge=1, le=_MAX_RECOMMENDED_DURATION_MIN)
 
     @model_validator(mode='after')
     def _no_null_columns(self) -> 'ItineraryUpdate':
@@ -709,7 +719,14 @@ class RatingSubmitWithPageResponse(RatingSubmitResponse):
     ratings_page: RatingsPageResponse
 
 
-class ItinerarySummary(BaseModel):
+class _ItinerarySummaryFields(BaseModel):
+    """The trip's summary fields, which every trip answer opens with.
+
+    Private and never a response on its own: base-class fields serialize first,
+    so a field added here would land in the middle of the feed's and the
+    detail's JSON. A field every trip answer gains is declared LAST in each of
+    the three classes below instead — `recommended_duration_min` is the first.
+    """
     id: uuid.UUID
     user_id: uuid.UUID
     title: str
@@ -727,6 +744,13 @@ class ItinerarySummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ItinerarySummary(_ItinerarySummaryFields):
+    # Appended last — field order is JSON key order. The author's recommended
+    # minimum time to spend, in minutes; null when not set, and the app shows
+    # total_duration_min instead.
+    recommended_duration_min: Optional[int] = None
+
+
 # ItineraryFeedItem extends ItinerarySummary with owner attribution — the discovery
 # feed lists itineraries across users, so each card needs to show who authored it.
 # RaterInfo is reused (same user_id/username/display_name/avatar_url shape).
@@ -735,7 +759,7 @@ class TitleTranslation(BaseModel):
     text: str
 
 
-class ItineraryFeedItem(ItinerarySummary):
+class ItineraryFeedItem(_ItinerarySummaryFields):
     owner: RaterInfo
     # Appended after owner — field order is JSON key order. The detected
     # language of the trip, and the cached title translation for the `lang` the
@@ -743,10 +767,12 @@ class ItineraryFeedItem(ItinerarySummary):
     # shared-with-me, which takes no language.
     source_lang: Optional[str] = None
     title_translation: Optional[TitleTranslation] = None
+    # Appended last, as on ItinerarySummary.
+    recommended_duration_min: Optional[int] = None
 
 
-# ItineraryDetail extends ItinerarySummary with tracks (ordered) + segments.
-class ItineraryDetail(ItinerarySummary):
+# ItineraryDetail extends the summary fields with tracks (ordered) + segments.
+class ItineraryDetail(_ItinerarySummaryFields):
     description: Optional[str]
     tracks: list[TrackResponse] = []
     segments: list[TransitSegmentResponse] = []
@@ -773,6 +799,8 @@ class ItineraryDetail(ItinerarySummary):
     # + period note, or null. Detail only: ItinerarySummary stays unchanged,
     # since a new key there would reorder /me, /saved and /feed.
     source_lang: Optional[str] = None
+    # Appended last, as on ItinerarySummary.
+    recommended_duration_min: Optional[int] = None
 
 
 class ItineraryEditResponse(BaseModel):

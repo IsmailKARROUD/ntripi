@@ -316,6 +316,7 @@ def _new_itinerary(body: ItineraryCreate, current_user: User, ctx, **columns) ->
         ),
         recommended_weekdays=body.recommended_weekdays,
         recommended_period_note=body.recommended_period_note,
+        recommended_duration_min=body.recommended_duration_min,
         total_duration_min=0,
         total_cost=Decimal("0.00"),
         moderation_status=ctx.status,

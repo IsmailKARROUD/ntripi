@@ -191,6 +191,7 @@ Conventions that hold everywhere:
 | `recommended_periods` | JSON | nullable |
 | `recommended_weekdays` | JSON | nullable |
 | `recommended_period_note` | TEXT | nullable |
+| `recommended_duration_min` | INTEGER | nullable — the author's recommended minimum time to spend, in minutes (1 … 527,039, enforced by the schema); NULL = not set, and the app shows `total_duration_min`. Migration `3b31cf3670bd` |
 | `source_lang` | TEXT | nullable — ISO 639-1 language of title + description + period note, detected at save time; NULL = not detected |
 | `moderation_status` | VARCHAR(20) | NOT NULL, default `approved` |
 | `hidden_at` | TIMESTAMPTZ | nullable — moderator-hidden → owner-only |

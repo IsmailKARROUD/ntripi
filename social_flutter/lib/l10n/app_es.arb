@@ -1124,5 +1124,68 @@
   "errorInvalidInput": "Algo de lo que has introducido no se puede guardar así. Revísalo e inténtalo de nuevo.",
   "@errorInvalidInput": {
     "description": "A server validation refusal other than a text over its cap — never the server's raw list."
+  },
+  "formLabelRecommendedTime": "TIEMPO RECOMENDADO DE ESTANCIA",
+  "@formLabelRecommendedTime": {
+    "description": "The trip form's row label for the recommended minimum time to spend, in capitals like the other form labels."
+  },
+  "recommendedTimeHelp": "Opcional. El tiempo mínimo que pide este viaje: lo que le dirías a un amigo que reserve. Donde se muestra la duración del viaje, sustituye al total calculado a partir de las paradas, seguido de un +. Vuelve a poner la rueda a cero para quitarlo.",
+  "@recommendedTimeHelp": {
+    "description": "Help for a trip's recommended minimum time to spend."
+  },
+  "addRecommendedTime": "Añadir el tiempo recomendado de estancia",
+  "@addRecommendedTime": {
+    "description": "The trip page's edit-mode row when no recommended time is set."
+  },
+  "tripLengthAtLeastShort": "{duration}+",
+  "@tripLengthAtLeastShort": {
+    "description": "A trip's length on a chip or card when it is the author's minimum: at least this long. duration is compact, e.g. 3d or 2d 4h.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "3d"
+      }
+    }
+  },
+  "recommendedTimeAtLeast": "Al menos {duration}",
+  "@recommendedTimeAtLeast": {
+    "description": "The recommended time to spend, written out: at least this long. duration is spelled out, e.g. 3 days, 4 hours.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "3 days"
+      }
+    }
+  },
+  "durationDaysLong": "{count, plural, one{{count} día} other{{count} días}}",
+  "@durationDaysLong": {
+    "description": "A number of days, spelled out.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationHoursLong": "{count, plural, one{{count} hora} other{{count} horas}}",
+  "@durationHoursLong": {
+    "description": "A number of hours, spelled out.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationMinutesLong": "{count, plural, one{{count} minuto} other{{count} minutos}}",
+  "@durationMinutesLong": {
+    "description": "A number of minutes, spelled out.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationLongSeparator": ", ",
+  "@durationLongSeparator": {
+    "description": "Between the parts of a spelled-out duration: 3 days, 4 hours. Leading and trailing spaces count."
   }
 }

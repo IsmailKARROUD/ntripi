@@ -26,3 +26,21 @@ String formatDuration(int? minutes, AppLocalizations l10n,
   ];
   return parts.join(' ');
 }
+
+/// [minutes] spelled out as the duration wheel picks it — days, hours,
+/// minutes, never years: "3 days, 4 hours" in English, "3 أيام و4 ساعات" in
+/// Arabic, each unit in its own plural form.
+///
+/// Returns [fallback] when [minutes] is null or not positive.
+String formatDurationLong(int? minutes, AppLocalizations l10n,
+    {String fallback = '—'}) {
+  if (minutes == null || minutes <= 0) return fallback;
+  final days = minutes ~/ (60 * 24);
+  final hours = minutes % (60 * 24) ~/ 60;
+  final mins = minutes % 60;
+  return [
+    if (days > 0) l10n.durationDaysLong(days),
+    if (hours > 0) l10n.durationHoursLong(hours),
+    if (mins > 0) l10n.durationMinutesLong(mins),
+  ].join(l10n.durationLongSeparator);
+}

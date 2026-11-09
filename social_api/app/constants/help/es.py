@@ -116,6 +116,7 @@ RELEASES: tuple[Release, ...] = (
             "**El enlace de Google Maps de una parada solo lleva a Google Maps.** Se rechaza una dirección de Google que llevaría a los lectores a otro sitio, y las que ya estaban guardadas se eliminan. Los enlaces copiados de Google Maps funcionan como antes.",
             "**Sin enlaces en lo que se escribe.** Títulos, descripciones, notas, reseñas, nombres y biografías ya no admiten direcciones web, de correo ni nombres de sitio —una línea roja indica qué quitar— y una imagen escrita en un texto nunca se muestra. El enlace de Google Maps de una parada, en su propio campo, es el único enlace que queda. La página pública de un viaje muestra ahora las negritas, listas y títulos de su descripción.",
             "**Descripciones más largas, y espacio para explicar por qué.** La descripción de un viaje admite ahora hasta 10 000 caracteres, y **¿Por qué esta época?**, bajo la mejor época para viajar, hasta 4000, con negrita, listas y títulos como la descripción. En la página de un viaje se pliegan a tres y dos líneas, con **ver más** para el resto, y una nota corta se ve con su formato desde el principio. Cerca del límite de un texto aparece un contador debajo, y pasado el límite Guardar espera: nunca se corta nada de lo que escribes o pegas.",
+            "**Di cuánto lleva un viaje.** Bajo la mejor época para viajar, **Tiempo recomendado de estancia** fija el tiempo mínimo que pide un viaje, en las ruedas de días, horas y minutos. Pasa a ser la duración del viaje en su página, en las tarjetas y al compartirlo, como «3d+»; el total calculado a partir de las paradas solo se muestra si no hay ninguno.",
         ),
     ),
     Release(
@@ -223,6 +224,7 @@ Los viajes nuevos son visibles **solo para ti** hasta que lo cambies, así que e
 - **Moneda** — cada coste que anotes la usa, para que el total tenga sentido. Elige la que vayas a gastar de verdad.
 - **Imagen de portada** — opcional, y puedes añadirla más tarde. Es lo que la gente ve en el feed y en un enlace compartido.
 - **Mejor época para viajar** — los meses en que este viaje funciona y, en **¿Por qué esta época?**, tus razones: el clima, las fiestas, la afluencia. Hasta 4000 caracteres, con negrita, listas y títulos, como la descripción.
+- **Tiempo recomendado de estancia** — el tiempo mínimo que pide el viaje, en las ruedas de días, horas y minutos. Es la duración del viaje allí donde se muestra, como «3d+»; pon todas las ruedas a cero para quitarlo.
 - **Descripción** — se escribe en la página del viaje una vez creado: en modo edición, toca **Descripción**. Hasta 10 000 caracteres; los lectores ven las tres primeras líneas y tocan **ver más** para el resto.""",
             ),
             Block(
@@ -278,6 +280,7 @@ Consulta [cómo compartir un viaje sin hacerlo público](/help/share-an-itinerar
             "presupuesto",
             "coste",
             "planificación",
+            "duración del viaje",
         ),
         related=("plan-alternative-options", "share-an-itinerary-privately", "getting-started"),
         updated="2026-11-09",
@@ -477,7 +480,9 @@ Si un lugar es gratis, márcalo como gratis en vez de dejar el campo vacío. Vac
                 kind=KIND_STEP,
                 body="""Este es el campo que impide que un plan sea una fantasía. Cuatro monumentos en una tarde parece razonable en una lista y resulta imposible cuando cada uno lleva noventa minutos.
 
-Reserva el tiempo que realmente querrías estar allí, no el mínimo en el que se puede hacer.""",
+Reserva el tiempo que realmente querrías estar allí, no el mínimo en el que se puede hacer.
+
+Los tiempos de las paradas se suman para dar la duración del viaje, incluidas las opciones para un mismo momento. Si sabes mejor cuánto lleva el viaje, indica su **Tiempo recomendado de estancia**: entonces se muestra ese, como «3d+».""",
             ),
             Block(
                 anchor="notes",
@@ -505,7 +510,7 @@ Una nota no puede contener enlaces: ni direcciones web, ni de correo, ni nombres
             "museo",
         ),
         related=("plan-a-trip-itinerary", "add-locations-from-google-maps", "travel-notes-and-warnings"),
-        updated="2026-11-08",
+        updated="2026-11-09",
         cta="Empieza un viaje y añade tu primera parada.",
     ),
     Article(

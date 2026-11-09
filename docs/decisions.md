@@ -3516,3 +3516,51 @@ own 2,000-character cut, so a full note was refused.
   and two.
 - **Showing a long text in full on the trip page**: 10,000 characters push the
   stops, the trip's substance, screens away.
+
+### 2026-11-09 — A trip's recommended time to spend: one minimum, set on the wheel, shown wherever the trip's length shows
+
+**Context.** The owner asked for "how much recommended minimum time to spend"
+on a trip (the 2026-11-08 grill). A trip had no length of its own: the only
+figure was `total_duration_min`, which the server adds up from every stop —
+parallel alternatives included, so a trip with two options for one afternoon
+counts both — plus the transport. It shows on the trip page, on trip cards, in
+the share caption and in the Itineraries tab's total.
+
+**Decision.**
+- **One minimum, not a range** (the owner's choice): `itineraries.
+  recommended_duration_min`, minutes, nullable; 1 … 527,039 — what the shared
+  days/hours/minutes wheel can pick (365 d 23 h 59 min), enforced by the
+  request schema as a stop's duration is. Null = not set. Not text, so neither
+  moderated nor translated. The owner and editors set it.
+- **It replaces the computed length everywhere a trip's length shows**, marked
+  as a minimum — "3d+" (each language its own way: "3ي فأكثر", "3天以上") — and
+  the computed length shows, unmarked, only when the author set none. One
+  helper decides it (`TripLength.of` / `ofAll`); `Itinerary.formattedDuration`
+  is removed so there is no second path. The Itineraries tab's total counts
+  each trip its own way and is marked as soon as one trip is a minimum.
+- **Set on its own row under Best time**, in the form and on the trip page in
+  edit mode, reusing the app's never-used `recommendedTimeLabel` ("Recommended
+  time to spend"). Every wheel at zero clears it. The rows spell it out —
+  "At least 3 days", plural forms per language (`formatDurationLong`).
+- **Every trip answer carries it, as its last key.** The thirteen summary
+  fields moved into a private `_ItinerarySummaryFields`; `ItinerarySummary`,
+  `ItineraryFeedItem` and `ItineraryDetail` each extend it and declare the
+  field last. Field order is JSON key order, and a field added to the shared
+  summary class would have landed in the middle of the feed's and the detail's
+  bodies — what installed builds parse.
+
+**Consequences.**
+- Installed builds ignore the key: they show the computed length and their
+  form neither shows nor sends it, so a save from one leaves it as it was.
+- The trip page shows readers no row of its own — the length chip is it.
+- Sorting or filtering the feed by length is an idea in the backlog.
+
+**Alternatives rejected.**
+- **A range (minimum and maximum), or a number of days only**: the owner chose
+  one minimum on the existing wheel.
+- **Showing it beside the computed length**: two lengths for one trip, and the
+  computed one is the less true of the two once an author has said.
+- **A field on `ItinerarySummary` inherited by the other two**: it reorders the
+  feed's and the detail's JSON.
+- **Its own read-mode row on the trip page**: the chip already says it, where
+  readers look for a length.

@@ -20,6 +20,7 @@ import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
 import 'package:ntripi/features/feed/domain/feed_item.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary.dart';
+import 'package:ntripi/features/itineraries/domain/trip_length.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/shared_itinerary_card.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
@@ -349,13 +350,15 @@ class _SummaryPillsRow extends StatelessWidget {
   const _SummaryPillsRow({required this.itineraries});
 
   String _totalTravelled(AppLocalizations l10n) {
-    final totalMin =
-        itineraries.fold(0, (sum, it) => sum + it.totalDurationMin);
-    if (totalMin <= 0) return '—';
-    final days = totalMin ~/ (60 * 24);
-    if (days >= 1) return '$days${l10n.daysLabel}';
-    final hours = totalMin ~/ 60;
-    return '$hours${l10n.hoursLabel}';
+    // Each trip by its own length — the author's minimum where set — so the
+    // total is a minimum too as soon as one of them is.
+    final total = TripLength.ofAll(itineraries);
+    if (total.minutes <= 0) return '—';
+    final days = total.minutes ~/ (60 * 24);
+    final text = days >= 1
+        ? '$days${l10n.daysLabel}'
+        : '${total.minutes ~/ 60}${l10n.hoursLabel}';
+    return total.mark(text, l10n);
   }
 
   @override

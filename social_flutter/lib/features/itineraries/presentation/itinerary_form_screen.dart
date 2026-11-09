@@ -47,6 +47,8 @@ import 'package:ntripi/features/itineraries/providers/edit_lock_provider.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/duration_picker_sheet.dart';
+import 'package:ntripi/shared/utils/duration_format.dart';
 import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:ntripi/shared/widgets/keyboard_avoidance.dart';
@@ -97,6 +99,8 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
 
   ItineraryVisibility _visibility = ItineraryVisibility.public;
   RecommendedPeriod? _recommendedPeriod;
+  // The recommended time to spend, in minutes; null = not set.
+  int? _recommendedDurationMin;
   bool _saving = false;
   // An editor's self-revoke is in flight.
   bool _leaving = false;
@@ -175,6 +179,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
         _visibility,
         // Compared by value — RecommendedPeriod/PeriodWindow implement ==.
         _recommendedPeriod,
+        _recommendedDurationMin,
         _pendingImageBytes != null,
         _removeExistingImage,
       ];
@@ -218,6 +223,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
       _currency = itinerary.currency;
       _visibility = itinerary.visibility;
       _recommendedPeriod = itinerary.recommendedPeriod;
+      _recommendedDurationMin = itinerary.recommendedDurationMin;
       _initialized = true;
     });
     // Capture baseline after fields are populated, so opening to edit and
@@ -279,6 +285,8 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
         // it is correct. toPayload always emits all three keys, so clearing a
         // part reaches the server as an explicit null rather than "don't touch".
         ...(_recommendedPeriod ?? const RecommendedPeriod()).toPayload(),
+        // Edited here too, and sent like the period: null clears it.
+        'recommended_duration_min': _recommendedDurationMin,
       };
 
       if (widget.mode == ItineraryFormMode.create) {
@@ -463,6 +471,20 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
     // An all-empty result means the user cleared it — keep null as the single
     // "unset" representation so the dirty check and the payload agree.
     setState(() => _recommendedPeriod = picked.isEmpty ? null : picked);
+  }
+
+  Future<void> _showRecommendedTimePicker() async {
+    final initial = durationPartsOf(_recommendedDurationMin);
+    final picked = await showDurationPickerSheet(
+      context: context,
+      title: AppLocalizations.of(context)!.recommendedTimeLabel,
+      days: initial.days,
+      hours: initial.hours,
+      minutes: initial.minutes,
+    );
+    if (picked == null || !mounted) return;
+    // Every wheel at zero clears it: null stays the one "not set".
+    setState(() => _recommendedDurationMin = minutesOrNull(picked));
   }
 
   // ── Build ────────────────────────────────────────────────────────────────────
@@ -747,9 +769,23 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                       loading: periodLoading,
                       onTap: _showRecommendedPeriodPicker,
                     ),
+                    const FieldDivider(),
+                    _PickerRow(
+                      icon: Icons.schedule_rounded,
+                      label: l10n.formLabelRecommendedTime,
+                      value: switch (_recommendedDurationMin) {
+                        final minutes? => l10n.recommendedTimeAtLeast(
+                            formatDurationLong(minutes, l10n)),
+                        null => l10n.notSet,
+                      },
+                      // Like Best time: a statement about what the server
+                      // holds, so nothing before the trip has loaded.
+                      loading: periodLoading,
+                      onTap: _showRecommendedTimePicker,
+                    ),
                     // Both owner-only, and the last two rows, so an editor's
-                    // Basics card simply ends after best-time — no dangling
-                    // divider. Who can see the trip is the owner's decision and
+                    // Basics card simply ends after the recommended time — no
+                    // dangling divider. Who can see the trip is the owner's decision and
                     // is not part of editing its content (the PATCH 403s on the
                     // key alone); granting edit rights is not delegable.
                     if (isOwner) ...[

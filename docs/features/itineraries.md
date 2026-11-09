@@ -108,8 +108,13 @@ annotations, ratings, saves, editors — hangs off it.
 - **JSON key order is the API contract.** `ItineraryDetail` declares `hidden`,
   the recommended-period fields and `can_edit` *inline and last* rather than by
   inheriting a mixin, because base-class fields serialize first and a mixin would
-  reorder the whole response (`schemas/itinerary.py:600`–`627`). The same reason
-  keeps `can_edit` off `ItinerarySummary`.
+  reorder the whole response. The same reason keeps `can_edit` off
+  `ItinerarySummary`. Since 2026-11-09 the thirteen summary fields live in a
+  private base, `_ItinerarySummaryFields`, which `ItinerarySummary`,
+  `ItineraryFeedItem` and `ItineraryDetail` each extend: a field every trip
+  answer gains is declared last in each of the three — `recommended_duration_min`
+  is the first. Added to a shared summary class, it would have landed in the
+  middle of the feed's and the detail's bodies.
 - **Lock state is deliberately absent from `ItineraryDetail`** — it changes on
   every heartbeat while this response's ETag does not, so it has its own endpoint.
 
@@ -126,6 +131,7 @@ column list. Field limits enforced in `schemas/itinerary.py`:
 | `currency` | exactly 3 chars |
 | `recommended_period_note` | ≤ 4,000 (`_MAX_PERIOD_NOTE`; 200 until 2026-11-09) |
 | recommended period windows | ≤ 6 (`_MAX_PERIOD_WINDOWS`) |
+| `recommended_duration_min` | 1 … 527,039 or null (`_MAX_RECOMMENDED_DURATION_MIN`: the wheel's 365 d 23 h 59 min); null clears it |
 
 Characters are Unicode code points, as Pydantic counts them. A long text is
 moderated in pieces ([text-moderation.md](text-moderation.md)). The app holds
@@ -145,9 +151,10 @@ the same caps in `lib/core/text/text_limits.dart` (`TextLimits`), and
 | PATCH | `/itineraries/{id}/form` | `require_edit_access` | multipart: `fields` (`ItineraryUpdate` as JSON), `image?`, `remove_cover?` | `ItinerarySummary` + `ETag`; with `?return=itinerary`, `ItineraryEditResponse` + `ETag` | as PATCH, plus 403 `itinerary_not_owner` for a cover part from an editor, 403 `email_unverified` for an image, 422 (shape; both cover parts together), 400, 422 `image_moderation_rejected` |
 | DELETE | `/itineraries/{id}` | **owner only** | — | 204 | 403, 428/412 |
 
-`ItineraryCreate` = `{title, description?, currency='EUR', visibility='only_me'}`
-plus the recommended-period fields.
-`ItineraryUpdate` is the same, all optional.
+`ItineraryCreate` = `{title, description?, currency='EUR', visibility='only_me',
+recommended_duration_min?}` plus the recommended-period fields.
+`ItineraryUpdate` is the same, all optional. `recommended_duration_min` is not
+text: no moderation call, no translation, and an editor may set it.
 
 **The form routes** are multipart because they carry a file. `fields` is one
 text part holding the same JSON the JSON route takes, validated with the same
@@ -174,13 +181,24 @@ requires it on every `EDIT_GUARDED` route and both creates.
 
 `ItinerarySummary` = `{id, user_id, title, cover_image_url,
 total_duration_min, total_cost, currency, visibility, created_at, updated_at,
-rating_avg, rating_count, stops_count}`.
+rating_avg, rating_count, stops_count, recommended_duration_min}`.
 
-`ItineraryDetail` = that **plus, in this order** `description`, `tracks`,
-`segments`, `annotations`, `hidden`, `recommended_periods`,
-`recommended_weekdays`, `recommended_period_note`, `can_edit`, `source_lang`.
+`ItineraryDetail` = the first thirteen **plus, in this order** `description`,
+`tracks`, `segments`, `annotations`, `hidden`, `recommended_periods`,
+`recommended_weekdays`, `recommended_period_note`, `can_edit`, `source_lang`,
+`recommended_duration_min`.
 
-`ItineraryFeedItem` = `ItinerarySummary` + `owner: RaterInfo`.
+`ItineraryFeedItem` = the first thirteen + `owner: RaterInfo`, `source_lang`,
+`title_translation`, `recommended_duration_min`.
+
+**The recommended time to spend** (`recommended_duration_min`, since
+2026-11-09) is the author's minimum: one value in minutes, set on the
+days/hours/minutes wheel. Every trip answer carries it, last, because it is the
+trip's length wherever one shows; null means not set, and the app shows
+`total_duration_min` — the sum of every stop, parallel alternatives included,
+and the transport — as before. Regression test: `test_recommended_duration.py`
+(the four writes, the bounds, an editor, no provider call, the key last in
+every answer).
 
 `GET /users/{user_id}/itineraries` lists another user's itineraries and is
 registered from the same router under the `/users` prefix.
@@ -345,6 +363,29 @@ registered from the same router under the `/users` prefix.
   headings, lists, Preview) under "Why this time?", with the hint
   `periodWhyHint`. Done follows the text rules: no new link, at most 4,000
   characters, counted from 3,600 ([constraints.md](../constraints.md)).
+- **A trip's length is `TripLength.of`** (since 2026-11-09,
+  `domain/trip_length.dart`) — the author's recommended minimum when set,
+  marked as one (`tripLengthAtLeastShort`: "3d+", "3j+", "3ي فأكثر", "3天以上"),
+  otherwise the computed `total_duration_min`, unmarked. The trip page's length
+  chip, a trip card, the share caption and the Itineraries tab's total
+  (`TripLength.ofAll`: each trip its own way, a minimum as soon as one is) all
+  read it; `Itinerary.formattedDuration` is gone, so there is no second path.
+- **Setting it** — a row under Best time, in the form's Basics card
+  (`formLabelRecommendedTime`) and on the trip page in edit mode
+  (`_RecommendedTimeEditRow`, labelled `recommendedTimeLabel` with
+  `recommendedTimeHelp`), both opening the shared duration wheels
+  (`showDurationPickerSheet`; `durationPartsOf` / `minutesOrNull`). Every wheel
+  at zero clears it. Each row reads "At least 3 days"
+  (`recommendedTimeAtLeast` + `formatDurationLong`, each unit in its own
+  plural form); unset, the form says "Not set" and the trip page offers
+  `addRecommendedTime`. The trip page claims the edit lock first, like Best
+  time, saves through `updateHeader` and downloads nothing after; Done on the
+  saved value writes nothing. The form always sends the key, null to clear.
+  Readers get no row: the chip is how they see it. Regression tests:
+  `test/models/trip_length_test.dart`,
+  `test/widgets/itinerary_edit_form_access_test.dart`,
+  `test/widgets/itinerary_list_filter_test.dart`,
+  `test/services/share_service_test.dart`.
 - **Model** — `Itinerary` (`features/itineraries/domain/itinerary.dart`), manual
   `fromJson`/`toJson`. `_parseTracks()` is where stop roles are derived.
 
@@ -369,6 +410,9 @@ registered from the same router under the `/users` prefix.
 - **A failed delete after a removal is not retried.** The row is committed
   without the cover and the object stays reachable at its key; the failure is
   logged at ERROR and nothing comes back for it.
+- **Builds from before the recommended time to spend** ignore
+  `recommended_duration_min`: they show the computed length, and their form
+  neither shows nor sends it — a save from one leaves it as it was.
 - **Builds from before 2026-11-09 and the long texts.** Their note field has
   `maxLength: 200`: a longer note saved from a new build is cut to 200
   characters at the first keystroke in an old one, and the cut is what its

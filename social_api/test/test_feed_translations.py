@@ -87,7 +87,9 @@ def test_with_translation_off_nothing_rides_along(client: TestClient, reader_and
 def test_new_keys_are_appended_after_owner(client: TestClient, reader_and_trip, engines):
     reader, _ = reader_and_trip
     keys = list(_feed(client, reader["access_token"], lang="fr")[0])
-    assert keys[-3:] == ["owner", "source_lang", "title_translation"]
+    # The recommended time to spend came later still, appended after them.
+    assert keys[-4:] == [
+        "owner", "source_lang", "title_translation", "recommended_duration_min"]
 
 
 def test_a_malformed_language_is_422(client: TestClient, reader_and_trip, engines):

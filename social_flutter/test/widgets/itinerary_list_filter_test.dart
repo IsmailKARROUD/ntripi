@@ -116,6 +116,29 @@ class _NoTripsRepo extends _EmptySharedRepo {
       const [];
 }
 
+/// Mine: a trip whose author set a recommended time to spend (3 days) and one
+/// that did not (two stops: two hours, computed).
+class _RecommendedTimeRepo extends _EmptySharedRepo {
+  @override
+  Future<List<Itinerary>> getMyItineraries({bool forceRefresh = false}) async =>
+      [
+        _itinerary(
+          id: 'set',
+          title: 'Set',
+          ownerId: 'me',
+          createdAt: DateTime.utc(2026, 8, 2),
+          stops: 2,
+        ).copyWith(recommendedDurationMin: 3 * 24 * 60),
+        _itinerary(
+          id: 'unset',
+          title: 'Unset',
+          ownerId: 'me',
+          createdAt: DateTime.utc(2026, 8, 1),
+          stops: 2,
+        ),
+      ];
+}
+
 /// Holds the shared list open until the test completes [gate], so the loading
 /// branch can be asserted without a real delay.
 class _PendingSharedRepo extends _FakeRepo {
@@ -273,6 +296,21 @@ void main() {
       // Shared: 2 trips, 7 stops.
       expect(find.text('2'), findsOneWidget);
       expect(find.text('7'), findsOneWidget);
+    });
+  });
+
+  group('a trip\'s length', () {
+    testWidgets(
+        'a card shows the author\'s minimum as "3d+" and the computed length '
+        'unmarked; the total counts each its own way and is a minimum', (
+      tester,
+    ) async {
+      await _pump(tester, repo: _RecommendedTimeRepo());
+
+      // The "Set" card, and the travelled pill: 3 days + 2 hours = 3d, at least.
+      expect(find.text('3d+'), findsNWidgets(2));
+      // The "Unset" card, by its stops.
+      expect(find.text('2h'), findsOneWidget);
     });
   });
 

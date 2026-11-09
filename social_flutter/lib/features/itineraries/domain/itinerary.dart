@@ -9,7 +9,6 @@ import 'package:ntripi/features/itineraries/domain/stop.dart';
 import 'package:ntripi/features/itineraries/domain/track.dart';
 import 'package:ntripi/features/itineraries/domain/transit_segment.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
-import 'package:ntripi/shared/utils/duration_format.dart';
 
 /// Four-level visibility for an itinerary.
 enum ItineraryVisibility {
@@ -101,6 +100,12 @@ class Itinerary {
   /// carry it; other summaries do not.
   final String? sourceLang;
 
+  /// The author's recommended minimum time to spend, in minutes; null when not
+  /// set. Every trip payload carries it. Never shown directly — a trip's
+  /// length is [TripLength.of] (domain/trip_length.dart), which prefers it
+  /// over [totalDurationMin].
+  final int? recommendedDurationMin;
+
   const Itinerary({
     required this.id,
     required this.userId,
@@ -124,6 +129,7 @@ class Itinerary {
     this.recommendedPeriod,
     this.canEdit = false,
     this.sourceLang,
+    this.recommendedDurationMin,
   });
 
   factory Itinerary.fromJson(Map<String, dynamic> json) {
@@ -165,6 +171,7 @@ class Itinerary {
       recommendedPeriod: RecommendedPeriod.fromItineraryJson(json),
       canEdit: json['can_edit'] as bool? ?? false,
       sourceLang: json['source_lang'] as String?,
+      recommendedDurationMin: json['recommended_duration_min'] as int?,
     );
   }
 
@@ -247,6 +254,8 @@ class Itinerary {
       'moderation_status': moderationStatus.wireValue,
       if (recommendedPeriod != null) ...recommendedPeriod!.toPayload(),
       if (sourceLang != null) 'source_lang': sourceLang,
+      if (recommendedDurationMin != null)
+        'recommended_duration_min': recommendedDurationMin,
     };
   }
 
@@ -281,6 +290,9 @@ class Itinerary {
     bool clearRecommendedPeriod = false,
     bool? canEdit,
     String? sourceLang,
+    int? recommendedDurationMin,
+    // Explicit clear — the `??` fallback below can't null a field, only replace it.
+    bool clearRecommendedDurationMin = false,
   }) {
     return Itinerary(
       id: id ?? this.id,
@@ -308,6 +320,9 @@ class Itinerary {
           : (recommendedPeriod ?? this.recommendedPeriod),
       canEdit: canEdit ?? this.canEdit,
       sourceLang: sourceLang ?? this.sourceLang,
+      recommendedDurationMin: clearRecommendedDurationMin
+          ? null
+          : (recommendedDurationMin ?? this.recommendedDurationMin),
     );
   }
 
@@ -329,11 +344,8 @@ class Itinerary {
   IconData get visibilityIcon => visibility.icon;
 
   // ---------------------------------------------------------------------------
-  // Duration / cost helpers
+  // Cost helper — the trip's length is TripLength.of (domain/trip_length.dart)
   // ---------------------------------------------------------------------------
-
-  String formattedDuration(AppLocalizations l10n) =>
-      formatDuration(totalDurationMin, l10n);
 
   String formattedCost(AppLocalizations l10n) {
     if (totalCost <= 0.0) return l10n.freeLegLabel;

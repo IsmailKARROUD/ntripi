@@ -224,6 +224,12 @@ RELEASES: tuple[Release, ...] = (
             "shows its formatting at once. Near a text's limit a count appears "
             "under it, and past it Save waits — nothing you type or paste is "
             "ever cut.",
+            "**Say how long a trip takes.** Under the best time to visit, "
+            "**Recommended time to spend** sets the least time a trip needs, "
+            "on the days, hours and minutes wheels. It becomes the trip's "
+            "length on its page, on cards and when you share it, shown as "
+            "\"3d+\" — the total worked out from the stops shows only when "
+            "none is set.",
         ),
     ),
     Release(
@@ -364,6 +370,7 @@ ARTICLES: tuple[Article, ...] = (
             "trip planner", "travel itinerary", "itineraries", "day by day",
             "plan a holiday", "vacation planner", "route", "schedule",
             "stops", "budget", "cost", "planning",
+            "trip length",
         ),
         related=(
             "plan-alternative-options",
@@ -396,6 +403,10 @@ ARTICLES: tuple[Article, ...] = (
                     "under **Why this time?** your reasons: weather, festivals, "
                     "crowds. Up to 4,000 characters, with bold, lists and "
                     "headings, as in the description.\n"
+                    "- **Recommended time to spend** — the least time the trip "
+                    "needs, on the days, hours and minutes wheels. It is the "
+                    "trip's length wherever one shows, as \"3d+\"; set every "
+                    "wheel to zero to remove it.\n"
                     "- **Description** — written on the trip's page once it "
                     "exists: in edit mode, tap **Description**. Up to 10,000 "
                     "characters; readers see the first three lines and tap "
@@ -675,7 +686,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="building",
         schema=SCHEMA_HOWTO,
-        updated="2026-11-08",
+        updated="2026-11-09",
         keywords=(
             "stop", "stops", "place", "places", "add", "budget", "price",
             "duration", "how long", "category", "restaurant", "hotel", "museum",
@@ -739,7 +750,11 @@ ARTICLES: tuple[Article, ...] = (
                     "sights in an afternoon looks reasonable as a list and "
                     "impossible once each one carries ninety minutes.\n\n"
                     "Allow the time you would actually want there, not the "
-                    "minimum it can be done in."
+                    "minimum it can be done in.\n\n"
+                    "The stops' times add up to the trip's length, options for "
+                    "the same time included. If you know better how long the "
+                    "trip takes, set its own **Recommended time to spend** — "
+                    "that shows instead, as \"3d+\"."
                 ),
             ),
             Block(

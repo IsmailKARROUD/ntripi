@@ -3286,4 +3286,57 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get errorInvalidInput => '你输入的部分内容无法按原样保存。请检查后重试。';
+
+  @override
+  String get formLabelRecommendedTime => '建议停留时间';
+
+  @override
+  String get recommendedTimeHelp =>
+      '可选。这趟行程至少需要的时间——你会建议朋友预留的时间。凡是显示行程时长的地方，都会用它代替根据停靠点算出的总时长，并在后面标上“以上”。把滚轮调回零即可移除。';
+
+  @override
+  String get addRecommendedTime => '添加建议停留时间';
+
+  @override
+  String tripLengthAtLeastShort(String duration) {
+    return '$duration以上';
+  }
+
+  @override
+  String recommendedTimeAtLeast(String duration) {
+    return '至少 $duration';
+  }
+
+  @override
+  String durationDaysLong(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 天',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String durationHoursLong(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 小时',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String durationMinutesLong(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 分钟',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get durationLongSeparator => ' ';
 }

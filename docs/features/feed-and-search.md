@@ -95,10 +95,12 @@ Being migration-only, **neither is exercised by the test suite** — see
 
 | Method | Path | Auth | Query | Response |
 |---|---|---|---|---|
-| GET | `/itineraries/feed` | user, 30/min | `sort=top\|recent` (default `recent`), `limit` 1–50 (default 20), `offset` ≥0, `lang` optional (`^[a-z]{2}$`) | `list[ItineraryFeedItem]` — `…, owner, source_lang, title_translation` |
+| GET | `/itineraries/feed` | user, 30/min | `sort=top\|recent` (default `recent`), `limit` 1–50 (default 20), `offset` ≥0, `lang` optional (`^[a-z]{2}$`) | `list[ItineraryFeedItem]` — `…, owner, source_lang, title_translation, recommended_duration_min` |
 | GET | `/users/search` | user, 30/min | `q` (min 1 char), `limit` 1–100 (default 20), `offset` ≥0 | `list[UserSearchResult]` |
 
-`ItineraryFeedItem` = `ItinerarySummary` + `owner: RaterInfo`.
+`ItineraryFeedItem` = the summary fields + `owner: RaterInfo`, `source_lang`,
+`title_translation` and, last, `recommended_duration_min`
+([itineraries.md](itineraries.md#api-surface)).
 
 Both are GETs, so both go through `ETagMiddleware` and answer 304 on an unchanged
 page.

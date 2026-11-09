@@ -1124,5 +1124,68 @@
   "errorInvalidInput": "你输入的部分内容无法按原样保存。请检查后重试。",
   "@errorInvalidInput": {
     "description": "A server validation refusal other than a text over its cap — never the server's raw list."
+  },
+  "formLabelRecommendedTime": "建议停留时间",
+  "@formLabelRecommendedTime": {
+    "description": "The trip form's row label for the recommended minimum time to spend, in capitals like the other form labels."
+  },
+  "recommendedTimeHelp": "可选。这趟行程至少需要的时间——你会建议朋友预留的时间。凡是显示行程时长的地方，都会用它代替根据停靠点算出的总时长，并在后面标上“以上”。把滚轮调回零即可移除。",
+  "@recommendedTimeHelp": {
+    "description": "Help for a trip's recommended minimum time to spend."
+  },
+  "addRecommendedTime": "添加建议停留时间",
+  "@addRecommendedTime": {
+    "description": "The trip page's edit-mode row when no recommended time is set."
+  },
+  "tripLengthAtLeastShort": "{duration}以上",
+  "@tripLengthAtLeastShort": {
+    "description": "A trip's length on a chip or card when it is the author's minimum: at least this long. duration is compact, e.g. 3d or 2d 4h.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "3d"
+      }
+    }
+  },
+  "recommendedTimeAtLeast": "至少 {duration}",
+  "@recommendedTimeAtLeast": {
+    "description": "The recommended time to spend, written out: at least this long. duration is spelled out, e.g. 3 days, 4 hours.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "3 days"
+      }
+    }
+  },
+  "durationDaysLong": "{count, plural, other{{count} 天}}",
+  "@durationDaysLong": {
+    "description": "A number of days, spelled out.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationHoursLong": "{count, plural, other{{count} 小时}}",
+  "@durationHoursLong": {
+    "description": "A number of hours, spelled out.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationMinutesLong": "{count, plural, other{{count} 分钟}}",
+  "@durationMinutesLong": {
+    "description": "A number of minutes, spelled out.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationLongSeparator": " ",
+  "@durationLongSeparator": {
+    "description": "Between the parts of a spelled-out duration: 3 days, 4 hours. Leading and trailing spaces count."
   }
 }

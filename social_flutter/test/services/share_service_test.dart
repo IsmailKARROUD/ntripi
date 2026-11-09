@@ -61,6 +61,19 @@ void main() {
       expect(link.text, '${link.caption}\n${link.url}');
     });
 
+    test(
+        'a trip whose author set a recommended time: the caption gives that, '
+        'as a minimum', () {
+      final trip = Itinerary.fromJson({
+        ...tripJson(title: 'Coast walk', totalDurationMin: 180),
+        'recommended_duration_min': 2 * 24 * 60,
+      });
+
+      final caption = ShareService().itineraryLink(trip, _l10n).caption;
+      expect(caption, contains('2d+'));
+      expect(caption, isNot(contains('3h')));
+    });
+
     test('a profile: the link by handle, and its caption', () {
       final user = User.fromJson({
         'id': 'u1',

@@ -57,6 +57,7 @@ import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
 import 'package:ntripi/features/itineraries/data/google_embed_urls.dart';
 import 'package:ntripi/features/itineraries/data/maps_launcher_service.dart';
 import 'package:ntripi/features/itineraries/domain/map_point.dart';
+import 'package:ntripi/features/itineraries/domain/trip_length.dart';
 import 'package:ntripi/features/itineraries/domain/trip_route.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/google_map_embed.dart';
 import 'package:ntripi/features/itineraries/providers/places_providers.dart';
@@ -71,6 +72,8 @@ import 'package:ntripi/features/itineraries/domain/recommended_period.dart';
 import 'package:ntripi/features/itineraries/presentation/annotation_screen.dart';
 import 'package:ntripi/features/itineraries/presentation/recommended_period_screen.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
+import 'package:ntripi/shared/widgets/duration_picker_sheet.dart';
+import 'package:ntripi/shared/utils/duration_format.dart';
 import 'package:ntripi/shared/utils/markdown_plain_text.dart';
 import 'package:ntripi/shared/models/user.dart';
 import 'package:ntripi/features/itineraries/domain/stop.dart';
@@ -139,6 +142,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   // its own to spin in: the picker pops on Done and the write happens here, so
   // without this the row just sits on the old value until the response lands.
   bool _savingPeriod = false;
+  // The same for the recommended time to spend, picked on the wheel sheet.
+  bool _savingTime = false;
   // Active parallel-stop index per track (trackId → page index).
   final Map<String, int> _activeParallelByTrack = {};
   // GlobalKey per track widget: a group's State (its page index) survives the
@@ -316,6 +321,42 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
       // `on Exception` does not catch an Error — one of those would otherwise
       // leave the row spinning at a value it is no longer saving.
       if (mounted) setState(() => _savingPeriod = false);
+    }
+  }
+
+  // The recommended time to spend, on the duration wheels. The PATCH needs a
+  // claim and the sheet never takes one — the same round trip as
+  // _editRecommendedPeriod, before the user picks. All wheels at zero clears it.
+  Future<void> _editRecommendedTime(int? current) async {
+    if (!_editMode) await _enterEditMode();
+    if (!mounted || !_editMode) return;
+    final initial = durationPartsOf(current);
+    final picked = await showDurationPickerSheet(
+      context: context,
+      title: AppLocalizations.of(context)!.recommendedTimeLabel,
+      days: initial.days,
+      hours: initial.hours,
+      minutes: initial.minutes,
+    );
+    if (picked == null || !mounted) return;
+    final minutes = minutesOrNull(picked);
+    // Done on the value already saved writes nothing — and moves no ETag.
+    if (minutes == current) return;
+    setState(() => _savingTime = true);
+    try {
+      await ref
+          .read(itineraryDetailProvider(widget.itineraryId).notifier)
+          .updateHeader({'recommended_duration_min': minutes});
+    } on Exception catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(extractErrorMessage(
+                e as dynamic, AppLocalizations.of(context)!))),
+      );
+    } finally {
+      // As in _editRecommendedPeriod: every exit clears the spinner.
+      if (mounted) setState(() => _savingTime = false);
     }
   }
 
@@ -1290,7 +1331,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                   children: [
                                     _DetailMetaChip(
                                       icon: Icons.schedule_rounded,
-                                      label: itinerary.formattedDuration(l10n),
+                                      label: TripLength.of(itinerary)
+                                          .compact(l10n),
                                     ),
                                     _DetailMetaChip(
                                       icon: Icons.payments_rounded,
@@ -1333,6 +1375,22 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                       period: itinerary.recommendedPeriod!,
                                       itineraryId: itinerary.id,
                                     ),
+                                  ),
+                                ),
+                              ),
+
+                            // ── Recommended time to spend ──────────────────────
+                            // Edit mode only: a reader sees it as the length
+                            // chip above ("3d+").
+                            if (canEdit)
+                              SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                                  child: _RecommendedTimeEditRow(
+                                    minutes: itinerary.recommendedDurationMin,
+                                    saving: _savingTime,
+                                    onTap: () => _editRecommendedTime(
+                                        itinerary.recommendedDurationMin),
                                   ),
                                 ),
                               ),
@@ -2543,6 +2601,52 @@ class _RecommendedPeriodEditRow extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+// ─── Recommended time to spend (edit mode) ────────────────────────────────────
+// Always rendered in edit mode, like the best-time row: an unset value is what
+// makes the feature findable. The length chip shows it to readers.
+class _RecommendedTimeEditRow extends StatelessWidget {
+  final int? minutes;
+  final VoidCallback onTap;
+
+  /// The PATCH behind [onTap] is still in flight; the row keeps showing the
+  /// value the server holds until it answers.
+  final bool saving;
+
+  const _RecommendedTimeEditRow({
+    required this.minutes,
+    required this.onTap,
+    this.saving = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    final l10n = AppLocalizations.of(context)!;
+    final minutes = this.minutes;
+
+    return _EditableInfoBox(
+      label: l10n.recommendedTimeLabel,
+      helpTitle: l10n.recommendedTimeLabel,
+      helpMessage: l10n.recommendedTimeHelp,
+      onTap: onTap,
+      saving: saving,
+      child: minutes == null
+          ? Text(
+              l10n.addRecommendedTime,
+              style: TextStyle(color: Theme.of(context).hintColor),
+            )
+          : Text(
+              l10n.recommendedTimeAtLeast(formatDurationLong(minutes, l10n)),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: nt.bark,
+              ),
+            ),
     );
   }
 }

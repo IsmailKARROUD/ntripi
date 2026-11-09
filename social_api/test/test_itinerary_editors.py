@@ -637,13 +637,14 @@ class TestCanEditFlag:
     def test_can_edit_was_appended_not_inserted(self, client: TestClient):
         """Field order is JSON key order and that is part of the contract —
         can_edit was appended, never inserted, and every later field lands
-        after it (source_lang, for translation)."""
+        after it (source_lang, for translation; recommended_duration_min)."""
         owner_hdrs, _, _, _ = _cast(client)
         itin_id = _itinerary(client, owner_hdrs)
 
         body = client.get(f"/itineraries/{itin_id}", headers=owner_hdrs).json()
 
-        assert list(body)[-2:] == ["can_edit", "source_lang"]
+        assert list(body)[-3:] == [
+            "can_edit", "source_lang", "recommended_duration_min"]
 
 
 # ---------------------------------------------------------------------------

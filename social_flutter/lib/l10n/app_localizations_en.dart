@@ -3471,4 +3471,60 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get errorInvalidInput =>
       'Something you entered can\'t be saved as it is. Check it and try again.';
+
+  @override
+  String get formLabelRecommendedTime => 'RECOMMENDED TIME TO SPEND';
+
+  @override
+  String get recommendedTimeHelp =>
+      'Optional. The least time this trip needs — what you would tell a friend to set aside. Wherever the trip\'s length shows, this replaces the total worked out from the stops, followed by a +. Set the wheel back to zero to remove it.';
+
+  @override
+  String get addRecommendedTime => 'Add the recommended time to spend';
+
+  @override
+  String tripLengthAtLeastShort(String duration) {
+    return '$duration+';
+  }
+
+  @override
+  String recommendedTimeAtLeast(String duration) {
+    return 'At least $duration';
+  }
+
+  @override
+  String durationDaysLong(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days',
+      one: '$count day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String durationHoursLong(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hours',
+      one: '$count hour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String durationMinutesLong(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count minutes',
+      one: '$count minute',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get durationLongSeparator => ', ';
 }

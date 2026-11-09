@@ -6081,6 +6081,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Something you entered can\'t be saved as it is. Check it and try again.'**
   String get errorInvalidInput;
+
+  /// The trip form's row label for the recommended minimum time to spend, in capitals like the other form labels.
+  ///
+  /// In en, this message translates to:
+  /// **'RECOMMENDED TIME TO SPEND'**
+  String get formLabelRecommendedTime;
+
+  /// Help for a trip's recommended minimum time to spend.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. The least time this trip needs — what you would tell a friend to set aside. Wherever the trip\'s length shows, this replaces the total worked out from the stops, followed by a +. Set the wheel back to zero to remove it.'**
+  String get recommendedTimeHelp;
+
+  /// The trip page's edit-mode row when no recommended time is set.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the recommended time to spend'**
+  String get addRecommendedTime;
+
+  /// A trip's length on a chip or card when it is the author's minimum: at least this long. duration is compact, e.g. 3d or 2d 4h.
+  ///
+  /// In en, this message translates to:
+  /// **'{duration}+'**
+  String tripLengthAtLeastShort(String duration);
+
+  /// The recommended time to spend, written out: at least this long. duration is spelled out, e.g. 3 days, 4 hours.
+  ///
+  /// In en, this message translates to:
+  /// **'At least {duration}'**
+  String recommendedTimeAtLeast(String duration);
+
+  /// A number of days, spelled out.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} day} other{{count} days}}'**
+  String durationDaysLong(int count);
+
+  /// A number of hours, spelled out.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} hour} other{{count} hours}}'**
+  String durationHoursLong(int count);
+
+  /// A number of minutes, spelled out.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} minute} other{{count} minutes}}'**
+  String durationMinutesLong(int count);
+
+  /// Between the parts of a spelled-out duration: 3 days, 4 hours. Leading and trailing spaces count.
+  ///
+  /// In en, this message translates to:
+  /// **', '**
+  String get durationLongSeparator;
 }
 
 class _AppLocalizationsDelegate
