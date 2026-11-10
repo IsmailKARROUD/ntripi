@@ -347,6 +347,17 @@ external scheduler) **or SLA auto-hide and post-outage re-checks never run.**
   web page and the in-app sheet without a renderer package.
 - **Adding a language to the app's locales requires adding it to `i18n.py`
   `SUPPORTED`**, or the app's `?lang=` silently serves English.
+- **Nobody is blocked, redirected or charged differently because of where they
+  are** — the Geo-blocking Regulation, (EU) 2018/302, Arts 3–5, which counts an
+  app as an online interface too (recital 18). Nothing reads a visitor's country:
+  no geo-IP lookup, no `CF-IPCountry`. The web language comes from `?lang=`, the
+  cookie or the browser's `Accept-Language` (`i18n.resolve_lang`) and is
+  rendered in place, never by a redirect. One set of terms serves everyone;
+  `resident_country` and `passport_countries` are shown on a profile and decide
+  nothing; a device position only biases place search. It can break outside the
+  code — the stores' country availability, a Cloudflare rule on a visitor's
+  country ([backlog.md](backlog.md)) — and a paid feature would add the price
+  rule (Art. 4) and the payment rule (Art. 5).
 - Outstanding: **App Store privacy nutrition label and Play Data safety both need
   the DOB declared**, and the six-language legal translations need counsel review.
 

@@ -449,6 +449,17 @@ stays. → [features/image-pipeline.md](features/image-pipeline.md)
 
 ## Operations and compliance
 
+### planned — before launch: Ntripi in every EU country's store, no Cloudflare country rule
+
+The Geo-blocking Regulation, (EU) 2018/302, counts an app as an online interface
+(recital 18), so a store listing that leaves out an EU country limits access by
+place of residence (Art. 3). Two dashboard checks, neither visible from the repo:
+Play Console → Production → Countries / regions and App Store Connect → Pricing
+and Availability include all 27 EU countries; Cloudflare holds no WAF custom rule
+and no IP Access rule on a visitor's country. The web app at `/app/` opens from
+everywhere, which softens a missing store but does not cure it.
+→ [constraints.md](constraints.md)
+
 ### idea — a deploy reaches returning web browsers up to four hours late
 
 `/app/main.dart.js` and `flutter_bootstrap.js` carry no content hash, and the
