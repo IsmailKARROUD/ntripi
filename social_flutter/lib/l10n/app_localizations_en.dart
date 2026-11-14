@@ -1489,6 +1489,106 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get orderByDistance => 'Order by distance';
+
+  @override
+  String get orderByDistanceWorking => 'Working out an order…';
+
+  @override
+  String orderByDistanceStartsAt(String name) {
+    return 'Starts at $name, which stays first.';
+  }
+
+  @override
+  String get orderByDistanceEndTitle => 'Where should the trip end?';
+
+  @override
+  String orderByDistanceEndAtLast(String name) {
+    return 'At $name';
+  }
+
+  @override
+  String get orderByDistanceEndAtLastHint => 'It stays the last stop';
+
+  @override
+  String get orderByDistanceEndAnywhere => 'Wherever fits best';
+
+  @override
+  String orderByDistanceWouldEndAt(String name) {
+    return 'Would end at $name';
+  }
+
+  @override
+  String get orderByDistanceLegsTitle => 'Transit segments';
+
+  @override
+  String get orderByDistanceKeepLegs => 'Keep linked stops together';
+
+  @override
+  String get orderByDistanceKeepLegsHint => 'No transit segment is deleted';
+
+  @override
+  String get orderByDistanceBreakLegs =>
+      'Delete transit segments for a better order';
+
+  @override
+  String get orderByDistanceNoChange =>
+      'With these choices, the order stays as it is.';
+
+  @override
+  String get orderByDistanceSuggest => 'Suggest';
+
+  @override
+  String get orderByDistanceAlreadyInOrder =>
+      'The tracks are already in order by distance.';
+
+  @override
+  String orderByDistanceTooFewLocated(int located, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      located,
+      locale: localeName,
+      other:
+          'Only $located of $total tracks have a saved location, so they can\'t be ordered by distance.',
+      one:
+          'Only 1 of $total tracks has a saved location, so they can\'t be ordered by distance.',
+      zero:
+          'None of the $total tracks has a saved location, so they can\'t be ordered by distance.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get suggestedOrderTitle => 'Suggested order';
+
+  @override
+  String suggestedOrderMoved(int moved, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      moved,
+      locale: localeName,
+      other: '$moved of $total tracks move',
+      one: '1 of $total tracks moves',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String suggestedOrderUnmeasured(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count tracks have no saved location and stay after the track before them.',
+      one: '1 track has no saved location and stays after the track before it.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String arrangeWasNumber(int number) {
+    return 'was $number';
+  }
+
+  @override
   String get addStopTooltip => 'Add stop';
 
   @override

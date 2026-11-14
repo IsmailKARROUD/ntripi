@@ -120,6 +120,7 @@ RELEASES: tuple[Release, ...] = (
             "**Der Name einer ausgeblendeten Reise bleibt vom Sperrbildschirm fern.** Eine Benachrichtigung über eine ausgeblendete oder entfernte Reise zeigt ihren Titel nicht mehr, für niemanden — **Einstellungen ▸ Kontostatus** sagt, um welche Reise es geht.",
             "**Mit Google registrieren, geprüft wie alles andere.** Der aus Ihrer E-Mail-Adresse gebildete Benutzername, Ihr Google-Name und Ihr Profilfoto durchlaufen dieselben Prüfungen wie das, was Sie schreiben oder hochladen — ein Name mit Punkt wie `anna.paris` wird zu `anna_paris` —, und die Registrierung gelingt immer.",
             "**Auch die Wörter in einem Google-Maps-Link werden geprüft.** Wonach ein Link sucht, erscheint auf der Karte des Stopps; deshalb gelten dafür dieselben Regeln wie für Name und Notizen des Stopps.",
+            "**Nach Entfernung ordnen.** Ab drei Spalten kann der Modus **Stopps anordnen** eine Reihenfolge nach der Luftlinie zwischen ihren gespeicherten Standorten vorschlagen. Sie sehen den Vorschlag zuerst und speichern oder verwerfen ihn dann.",
         ),
     ),
     Release(
@@ -409,6 +410,16 @@ Gespeichert wird erst, wenn Sie auf **Speichern** tippen. Eine Spalte existiert 
                 body="Im selben Modus ziehen Sie die Nummer einer Spalte, um die ganze Spalte samt Alternativen zu verschieben, oder legen einen Stopp auf einem anderen Stopp seiner Spalte ab, um zu ändern, welche Alternative zuerst kommt. Alles wartet auf **Speichern**, Sie können also eine Reihenfolge ausprobieren und mit ✕ verwerfen. Die erste Spalte einer Reise gilt als Ausgangspunkt und die letzte als Ziel — das ist es, was die Karte verbindet.",
             ),
             Block(
+                anchor="order-by-distance",
+                heading="Spalten nach Entfernung ordnen",
+                kind=KIND_STEP,
+                body="""Ab drei Spalten bietet der Modus **Stopps anordnen** **Nach Entfernung ordnen** an: eine Reihenfolge, in der auf jede Spalte die nächstgelegene folgt, gemessen in Luftlinie zwischen den gespeicherten Standorten der Stopps. Die erste Spalte bleibt die erste. Wo es die Antwort ändert, fragt Ntripi, ob die letzte die letzte bleiben soll und ob durch einen Transport verbundene Stopps zusammenbleiben sollen.
+
+Sie sehen die vorgeschlagene Reihenfolge, bevor sich etwas ändert: wie viele Spalten verschoben werden, und **vorher 4** neben jeder verschobenen Spalte. **Speichern** speichert sie; **Abbrechen** lässt die Reise, wie sie war.
+
+Nur Stopps, die über eine OpenStreetMap-Suche, eine Stecknadel auf der Karte oder eingegebene Koordinaten platziert wurden, haben einen gespeicherten Standort. Ein aus Google Maps gewählter oder als Google-Maps-Link gespeicherter Stopp bleibt direkt hinter dem Stopp davor. Die Entfernung ist eine Luftlinie, nicht die Straße — deshalb zeigt Ntripi keine Kilometer, nur die Reihenfolge.""",
+            ),
+            Block(
                 anchor="transport-warning",
                 heading="Warum das Einfügen einer Spalte manchmal warnt",
                 body="""Transport wird zwischen zwei *benachbarten* Spalten notiert. Fügen Sie eine neue Spalte zwischen zwei ein, die bereits durch Transport verbunden sind, hat diese Verbindung keinen Platz mehr — die beiden Spalten sind keine Nachbarn mehr.
@@ -437,9 +448,16 @@ Beim Anordnen gilt dasselbe: Trennt eine Verschiebung zwei Spalten, zwischen den
             "regentag",
             "wetter",
             "auswahl",
+            "nach entfernung ordnen",
+            "entfernung",
+            "kürzeste route",
+            "optimieren",
+            "nächstgelegen",
+            "luftlinie",
+            "stopps sortieren",
         ),
         related=("plan-a-trip-itinerary", "getting-started"),
-        updated="2026-10-27",
+        updated="2026-11-14",
         cta="Planen Sie eine Reise mit echten Alternativen statt einer einzigen fragilen Linie.",
     ),
     Article(

@@ -669,6 +669,89 @@
       }
     }
   },
+  "orderByDistance": "Order by distance",
+  "@orderByDistance": {
+    "description": "Arrange mode's button that suggests an order for the tracks by straight-line distance, and the title of the sheet it opens."
+  },
+  "orderByDistanceWorking": "Working out an order…",
+  "@orderByDistanceWorking": {
+    "description": "On the Order by distance button while a big trip's order is worked out."
+  },
+  "orderByDistanceStartsAt": "Starts at {name}, which stays first.",
+  "@orderByDistanceStartsAt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderByDistanceEndTitle": "Where should the trip end?",
+  "orderByDistanceEndAtLast": "At {name}",
+  "@orderByDistanceEndAtLast": {
+    "description": "Order by distance: the trip keeps ending at its last stop now.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderByDistanceEndAtLastHint": "It stays the last stop",
+  "orderByDistanceEndAnywhere": "Wherever fits best",
+  "orderByDistanceWouldEndAt": "Would end at {name}",
+  "@orderByDistanceWouldEndAt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderByDistanceLegsTitle": "Transit segments",
+  "orderByDistanceKeepLegs": "Keep linked stops together",
+  "orderByDistanceKeepLegsHint": "No transit segment is deleted",
+  "orderByDistanceBreakLegs": "Delete transit segments for a better order",
+  "orderByDistanceNoChange": "With these choices, the order stays as it is.",
+  "orderByDistanceSuggest": "Suggest",
+  "orderByDistanceAlreadyInOrder": "The tracks are already in order by distance.",
+  "orderByDistanceTooFewLocated": "{located, plural, =0{None of the {total} tracks has a saved location, so they can't be ordered by distance.} one{Only 1 of {total} tracks has a saved location, so they can't be ordered by distance.} other{Only {located} of {total} tracks have a saved location, so they can't be ordered by distance.}}",
+  "@orderByDistanceTooFewLocated": {
+    "placeholders": {
+      "located": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "suggestedOrderTitle": "Suggested order",
+  "suggestedOrderMoved": "{moved, plural, one{1 of {total} tracks moves} other{{moved} of {total} tracks move}}",
+  "@suggestedOrderMoved": {
+    "placeholders": {
+      "moved": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "suggestedOrderUnmeasured": "{count, plural, one{1 track has no saved location and stays after the track before it.} other{{count} tracks have no saved location and stay after the track before them.}}",
+  "@suggestedOrderUnmeasured": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "arrangeWasNumber": "was {number}",
+  "@arrangeWasNumber": {
+    "description": "Order by distance's preview: the number a moved track had before.",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
   "addStopTooltip": "Add stop",
   "mapSection": "Map",
   "openInMaps": "Open in maps",

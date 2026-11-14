@@ -2728,6 +2728,126 @@ abstract class AppLocalizations {
   /// **'Move track {number}'**
   String arrangeMoveTrack(int number);
 
+  /// Arrange mode's button that suggests an order for the tracks by straight-line distance, and the title of the sheet it opens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order by distance'**
+  String get orderByDistance;
+
+  /// On the Order by distance button while a big trip's order is worked out.
+  ///
+  /// In en, this message translates to:
+  /// **'Working out an order…'**
+  String get orderByDistanceWorking;
+
+  /// No description provided for @orderByDistanceStartsAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts at {name}, which stays first.'**
+  String orderByDistanceStartsAt(String name);
+
+  /// No description provided for @orderByDistanceEndTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Where should the trip end?'**
+  String get orderByDistanceEndTitle;
+
+  /// Order by distance: the trip keeps ending at its last stop now.
+  ///
+  /// In en, this message translates to:
+  /// **'At {name}'**
+  String orderByDistanceEndAtLast(String name);
+
+  /// No description provided for @orderByDistanceEndAtLastHint.
+  ///
+  /// In en, this message translates to:
+  /// **'It stays the last stop'**
+  String get orderByDistanceEndAtLastHint;
+
+  /// No description provided for @orderByDistanceEndAnywhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Wherever fits best'**
+  String get orderByDistanceEndAnywhere;
+
+  /// No description provided for @orderByDistanceWouldEndAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Would end at {name}'**
+  String orderByDistanceWouldEndAt(String name);
+
+  /// No description provided for @orderByDistanceLegsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transit segments'**
+  String get orderByDistanceLegsTitle;
+
+  /// No description provided for @orderByDistanceKeepLegs.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep linked stops together'**
+  String get orderByDistanceKeepLegs;
+
+  /// No description provided for @orderByDistanceKeepLegsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No transit segment is deleted'**
+  String get orderByDistanceKeepLegsHint;
+
+  /// No description provided for @orderByDistanceBreakLegs.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete transit segments for a better order'**
+  String get orderByDistanceBreakLegs;
+
+  /// No description provided for @orderByDistanceNoChange.
+  ///
+  /// In en, this message translates to:
+  /// **'With these choices, the order stays as it is.'**
+  String get orderByDistanceNoChange;
+
+  /// No description provided for @orderByDistanceSuggest.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest'**
+  String get orderByDistanceSuggest;
+
+  /// No description provided for @orderByDistanceAlreadyInOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'The tracks are already in order by distance.'**
+  String get orderByDistanceAlreadyInOrder;
+
+  /// No description provided for @orderByDistanceTooFewLocated.
+  ///
+  /// In en, this message translates to:
+  /// **'{located, plural, =0{None of the {total} tracks has a saved location, so they can\'t be ordered by distance.} one{Only 1 of {total} tracks has a saved location, so they can\'t be ordered by distance.} other{Only {located} of {total} tracks have a saved location, so they can\'t be ordered by distance.}}'**
+  String orderByDistanceTooFewLocated(int located, int total);
+
+  /// No description provided for @suggestedOrderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested order'**
+  String get suggestedOrderTitle;
+
+  /// No description provided for @suggestedOrderMoved.
+  ///
+  /// In en, this message translates to:
+  /// **'{moved, plural, one{1 of {total} tracks moves} other{{moved} of {total} tracks move}}'**
+  String suggestedOrderMoved(int moved, int total);
+
+  /// No description provided for @suggestedOrderUnmeasured.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 track has no saved location and stays after the track before it.} other{{count} tracks have no saved location and stay after the track before them.}}'**
+  String suggestedOrderUnmeasured(int count);
+
+  /// Order by distance's preview: the number a moved track had before.
+  ///
+  /// In en, this message translates to:
+  /// **'was {number}'**
+  String arrangeWasNumber(int number);
+
   /// No description provided for @addStopTooltip.
   ///
   /// In en, this message translates to:

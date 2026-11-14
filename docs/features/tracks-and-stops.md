@@ -233,6 +233,9 @@ trip edit.
   a lost claim (409) also puts the lock banner above the rows, which is why
   Save went grey, and taking the claim back keeps the arrangement. Regression
   tests: `test/widgets/arrange_mode_test.dart`, `test/models/trip_arrangement_test.dart`.
+- **Order by distance** suggests a track order by straight-line distance, worked
+  out on the device on the tap and previewed read-only in the arrange rows; its
+  Save is arrange mode's own save. See [order-by-distance.md](order-by-distance.md).
 - **Transport an arrangement breaks is shown as it happens**:
   `computeOrphansForLayout` runs on every move, marks each broken segment under
   its track and sums them up above the rows; Save confirms them and sends them
@@ -325,6 +328,7 @@ trip edit.
 - [translations.md](translations.md) — stop notes carry `source_lang` (never the place name); deleting a stop purges what cascaded
 - [help-centre.md](help-centre.md) — `/help/plan-alternative-options` describes arrange mode to users
 - [places-and-maps.md](places-and-maps.md) — how a stop is placed, what it may store from Google, and every map
+- [order-by-distance.md](order-by-distance.md) — arrange mode's suggested order, saved as one `layout`
 - [reference/data-model.md](../reference/data-model.md)
 
 ## OPEN QUESTIONS

@@ -67,6 +67,7 @@ import 'package:ntripi/features/itineraries/domain/itinerary.dart';
 import 'package:ntripi/features/itineraries/providers/saved_itineraries_provider.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary_annotation.dart';
 import 'package:ntripi/features/itineraries/domain/transit_segment.dart';
+import 'package:ntripi/features/itineraries/domain/order_by_distance.dart';
 import 'package:ntripi/features/itineraries/domain/trip_arrangement.dart';
 import 'package:ntripi/features/itineraries/domain/recommended_period.dart';
 import 'package:ntripi/features/itineraries/presentation/annotation_screen.dart';
@@ -91,6 +92,7 @@ import 'package:ntripi/features/itineraries/presentation/widgets/parallel_stop_g
 import 'package:ntripi/features/itineraries/presentation/widgets/segment_card.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/share_link_action.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/arrange_trip_view.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/order_by_distance_sheet.dart';
 import 'package:ntripi/shared/widgets/content_column.dart';
 import 'package:ntripi/shared/widgets/field_help.dart';
 import 'package:ntripi/shared/widgets/fullscreen_image_viewer.dart';
@@ -107,6 +109,7 @@ import 'package:ntripi/features/itineraries/presentation/widgets/leg_form_dialog
 import 'package:ntripi/features/itineraries/presentation/widgets/edit_lock_banner.dart';
 import 'package:ntripi/features/itineraries/providers/edit_lock_provider.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
+import 'package:ntripi/features/itineraries/providers/order_by_distance_provider.dart';
 import 'package:ntripi/features/translation/presentation/translatable_text.dart';
 import 'package:ntripi/features/translation/providers/translation_providers.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
@@ -157,6 +160,13 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   DateTime? _arrangedFrom;
   // The arrangement's one request is on its way.
   bool _savingArrangement = false;
+  // Order by distance, worked out only on the tap. Each piece names the
+  // arrangement it was made for, so whatever ends arrange mode or changes the
+  // arrangement makes it moot without clearing it by hand; a newer run (or a
+  // cancel) makes an older answer moot through the counter.
+  int _orderRun = 0;
+  TripArrangement? _orderingFor;
+  ({TripArrangement from, DistanceOrder order})? _suggestion;
   final GlobalKey _editDetailsButtonKey = GlobalKey();
   // Anchors the one-time long-press tip at the Edit pencil, the affordance the
   // gesture shortcuts past.
@@ -497,9 +507,77 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     });
   }
 
+  /// Order by distance is working out [_arrangement]'s order.
+  bool get _ordering =>
+      _orderingFor != null && identical(_orderingFor, _arrangement);
+
+  /// The suggested order on screen, if it is still for [_arrangement].
+  DistanceOrder? get _preview {
+    final suggestion = _suggestion;
+    if (suggestion == null || !identical(suggestion.from, _arrangement)) {
+      return null;
+    }
+    return suggestion.order;
+  }
+
+  /// Order by distance: worked out now, never before the tap. Says why when
+  /// no choice is better; otherwise asks only what changes the answer and
+  /// previews it. Nothing is applied to the arrangement.
+  Future<void> _orderByDistance(Itinerary itinerary) async {
+    final arrangement = _arrangement;
+    if (arrangement == null || _ordering || _savingArrangement) return;
+    final run = ++_orderRun;
+    bool moot() =>
+        !mounted || run != _orderRun || !identical(_arrangement, arrangement);
+    setState(() => _orderingFor = arrangement);
+    final choices = await ref.read(orderByDistanceSolverProvider)(
+        arrangement, itinerary.segments,
+        isCancelled: moot);
+    if (!mounted || moot()) return;
+    setState(() => _orderingFor = null);
+    if (choices == null) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    final reason = choices.reason;
+    if (reason != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(switch (reason) {
+          NoOrderReason.tooFewLocated =>
+            l10n.orderByDistanceTooFewLocated(choices.located, choices.total),
+          NoOrderReason.alreadyInOrder => l10n.orderByDistanceAlreadyInOrder,
+        }),
+      ));
+      return;
+    }
+    var choice = const OrderChoice(keepEnd: true, keepLegs: true);
+    // No question whose answer changes the order: nothing to ask.
+    if (choices.endMatters || choices.legsMatter) {
+      final asked = await showOrderByDistanceSheet(context,
+          choices: choices, arrangement: arrangement);
+      if (asked == null || !mounted || moot()) return;
+      choice = asked;
+    }
+    final order = choices.resultFor(choice);
+    if (order == null) return;
+    setState(() => _suggestion = (from: arrangement, order: order));
+  }
+
+  /// Back while the order is worked out, and the preview's Cancel: arrange
+  /// mode exactly as it was.
+  void _cancelOrderByDistance() => setState(() {
+        _orderRun++;
+        _orderingFor = null;
+        _suggestion = null;
+      });
+
   /// ✕ and Back in arrange mode: back to edit mode, asking first when the
   /// arrangement holds something unsaved.
   Future<void> _leaveArrangement() async {
+    // Back over Order by distance ends that, and only that.
+    if (_preview != null || _ordering) {
+      _cancelOrderByDistance();
+      return;
+    }
     final arrangement = _arrangement;
     if (arrangement == null || _savingArrangement) return;
     if (arrangement.isDirty) {
@@ -516,17 +594,26 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   }
 
   /// Save the arrangement: one request carries the layout and deletes the
-  /// transit links it breaks, after the user has confirmed those.
-  Future<void> _saveArrangement(Itinerary itinerary) async {
-    final arrangement = _arrangement;
-    if (arrangement == null || !arrangement.isDirty || _savingArrangement) {
+  /// transit links it breaks, after the user has confirmed those. Order by
+  /// distance's Save passes its [suggested] order, whose deleted links the
+  /// sheet and the preview have already named ([orphansConfirmed]).
+  Future<void> _saveArrangement(
+    Itinerary itinerary, {
+    TripArrangement? suggested,
+    bool orphansConfirmed = false,
+  }) async {
+    final arrangement = suggested ?? _arrangement;
+    if (arrangement == null || _savingArrangement) return;
+    if (!arrangement.isDirty) {
+      // A suggestion that is the saved trip again: nothing to send.
+      if (suggested != null) setState(() => _arrangement = null);
       return;
     }
     final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
     final orphaned = computeOrphansForLayout(
         layout: arrangement.tracks, segments: itinerary.segments);
-    if (orphaned.isNotEmpty) {
+    if (orphaned.isNotEmpty && !orphansConfirmed) {
       String name(String stopId) =>
           arrangement.stop(stopId)?.placeName ?? l10n.unnamedStop;
       final lines = orphaned
@@ -885,6 +972,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                   final canEdit = mayEdit && _editMode;
                   // Arrange mode lives inside edit mode; rights lost end it too.
                   final arrangement = canEdit ? _arrangement : null;
+                  final preview = arrangement == null ? null : _preview;
+                  final ordering = arrangement != null && _ordering;
                   // Nothing on this page can change the trip while arranging, so
                   // this is defence: an arrangement of another version of the trip
                   // would save stops and tracks the user never saw.
@@ -1612,9 +1701,15 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                 // Arrange mode: leave it, or save it — the
                                 // save takes the place of the button that
                                 // opened it.
-                                if (arrangement != null) ...[
+                                // The preview's own bar holds Cancel / Save
+                                // instead, and both wait while the order is
+                                // worked out.
+                                if (arrangement != null && preview != null)
+                                  const SizedBox.shrink()
+                                else if (arrangement != null) ...[
                                   IconButton(
-                                    onPressed: _leaveArrangement,
+                                    onPressed:
+                                        ordering ? null : _leaveArrangement,
                                     tooltip: l10n.cancel,
                                     visualDensity: VisualDensity.compact,
                                     icon: Icon(Icons.close_rounded,
@@ -1624,6 +1719,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                   OfflineGate(
                                     builder: (online) => FilledButton.icon(
                                       onPressed: online &&
+                                              !ordering &&
                                               arrangement.isDirty &&
                                               lockSession.holdsClaim
                                           ? () => _saveArrangement(itinerary)
@@ -1719,11 +1815,46 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                       padding: const EdgeInsets.only(bottom: 8),
                                       child: lockBanner,
                                     ),
-                                  ArrangeTripView(
-                                    arrangement: arrangement,
-                                    segments: itinerary.segments,
-                                    onChanged: (next) =>
-                                        setState(() => _arrangement = next),
+                                  // Order by distance: the preview's bar over
+                                  // the suggestion, else the button — from
+                                  // three tracks, since with two the start is
+                                  // fixed and nothing can move.
+                                  if (preview != null)
+                                    OfflineGate(
+                                      builder: (online) => SuggestedOrderBar(
+                                        order: preview,
+                                        onCancel: _cancelOrderByDistance,
+                                        onSave: online &&
+                                                !_savingArrangement &&
+                                                lockSession.holdsClaim
+                                            ? () => _saveArrangement(
+                                                  itinerary,
+                                                  suggested:
+                                                      preview.arrangement,
+                                                  orphansConfirmed: true,
+                                                )
+                                            : null,
+                                      ),
+                                    )
+                                  else if (arrangement.rows.length >= 3)
+                                    OrderByDistanceButton(
+                                      working: ordering,
+                                      onPressed: _savingArrangement
+                                          ? null
+                                          : () => _orderByDistance(itinerary),
+                                    ),
+                                  // Nothing moves while the order is worked
+                                  // out: the answer is for these rows.
+                                  IgnorePointer(
+                                    ignoring: ordering,
+                                    child: ArrangeTripView(
+                                      arrangement:
+                                          preview?.arrangement ?? arrangement,
+                                      segments: itinerary.segments,
+                                      previewWas: preview?.wasNumber,
+                                      onChanged: (next) =>
+                                          setState(() => _arrangement = next),
+                                    ),
                                   ),
                                 ],
                               ),

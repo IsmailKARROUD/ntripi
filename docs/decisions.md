@@ -3692,3 +3692,72 @@ package's latest release.
   change.
 - **The four light-theme pens in both themes**: the ink pen (`#1A2A1E`) is
   invisible on a dark screenshot, at 1.4:1.
+
+### 2026-11-14 — Order by distance: on the device, in straight lines, from stored coordinates only
+
+**Context.** The only way to put a trip's tracks in a sensible order was by
+hand, in arrange mode. The owner asked for a button that suggests the shortest
+way through them, worked out on the phone from the stops' coordinates, shown
+first and saved or cancelled. A grill session settled the design with the owner
+before anything was built.
+
+**Decision.**
+- **In arrange mode**, the one place a trip's structure changes: **Order by
+  distance**, from three tracks. **Nothing is worked out until it is tapped**.
+- **On the device, in straight lines, in whole metres.** It runs on phones and
+  the web alike, with no backend change. It reads only coordinates a stop
+  stores itself: never a Google place, and never a link's coordinates, which
+  are Google's content (2026-10-31). Those stops, and any without a location,
+  stay after the track before them.
+- **Whole tracks move**: each track is measured from its first alternative with
+  a saved location, and the first track stays first.
+- **The sheet asks only what changes the answer**: where the trip ends (the
+  last track, or wherever fits best), and whether tracks joined by a transit
+  segment stay together. It shows **no distances**: a straight line cannot say
+  what the traveller gains on the road.
+- **A read-only preview**: "N of M tracks move", a "was N" tag on each track to
+  move by hand, a note on tracks without a location, and arrange mode's own
+  banner for segments to delete. Its **Save saves at once** through arrange
+  mode's single `layout` request, without asking about segments again. Cancel
+  and Back leave arrange mode as it was.
+- **The solver**:
+  - exact Held-Karp up to 12 movable blocks, with ties going to the user's
+    order through `d × 256 + popcount`;
+  - above that, local search (Or-opt, 2-opt, swaps) from the input and the
+    nearest-neighbour order, then 100 double-bridge kicks that keep the best
+    strictly shorter order;
+  - deterministic: a fixed non-zero seed, a hand-written xorshift32 and no
+    time limit;
+  - a suggestion only when it is at least 200 m and 3% shorter.
+
+  The owner wrote the solver's specification (`order-by-distance.md`).
+
+**Consequences.**
+- No new table, column, endpoint or error code. The help article
+  `plan-alternative-options` gains a step in all six languages, and What's New
+  an entry.
+- A trip built from Google picks cannot be ordered: a tap says how few tracks
+  have a saved location.
+- Big trips take a moment: 40 tracks took about 0.17 s in release builds
+  (AOT and dart2js), 60 about 0.6 s. The work yields between kicks, so the
+  screen keeps drawing.
+
+**Alternatives rejected.**
+- **Google Routes `optimizeWaypointOrder` through the server**: it measures
+  Google picks, with road distances, but it is billed beyond 5,000 a month and
+  needs the backend. It is a backlog idea.
+- **OpenRouteService's free tier**: a new processor, a daily quota shared by
+  the whole app, and still no Google picks.
+- **The OSRM demo and FOSSGIS routing servers**: they are not for production
+  apps.
+- **Reading a link's `@lat,lng`**: those coordinates are Google's content, and
+  often the map's centre rather than the place.
+- **Distances in the sheet or after**: the owner's reason — a straight line
+  cannot tell what the user gained.
+- **Applying the suggestion in place with an Undo**: the owner wanted nothing
+  applied before Save.
+- **A button shown only when it can help**: that meant checking after every
+  move, which is costly on a big trip, and the button came and went without a
+  reason. The owner chose to show it always and compute on the tap.
+- **Reordering the alternatives inside a track by distance**: their order is
+  the author's preference, and the traveller visits only one of them.

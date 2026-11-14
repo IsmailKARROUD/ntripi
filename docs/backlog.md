@@ -751,6 +751,22 @@ a screen reader hears "button" and not whose request it declines. Needs a
   `APP_STORE_URL` / `PLAY_STORE_URL` (2026-10-18); the homepage's do not yet —
   see below.
 
+### idea — Order by distance through Google Routes (measures Google picks)
+
+Order by distance works in straight lines on the device, from coordinates a stop
+stores itself, so a Google pick or a Google Maps link is never measured: it stays
+after the track before it. Google's Routes API can reorder the stops itself
+(`computeRoutes` with `optimizeWaypointOrder`): real driving, walking or cycling
+distance, and it takes place IDs, so Google picks would count too.
+
+Why not now: it needs the backend (the key never ships in an app), a per-user
+cap, and a Privacy Policy line in all six languages naming what goes to Google.
+It is billed as "Routes: Compute Routes Pro": 5,000 free a month across all
+users, then $10 per 1,000, with at most 25 stops between start and end
+(Google's price list, checked 2026-11-14). Rejected for the first version by the
+owner, who wanted it free and on the phone. →
+[features/order-by-distance.md](features/order-by-distance.md)
+
 ### planned — the homepage's store buttons follow the store URLs at launch
 
 The share pages send their download buttons to `APP_STORE_URL` / `PLAY_STORE_URL`

@@ -75,6 +75,11 @@ Google's route through the stops on screen.
   out of the link's own text into `google_place_id`
   (`services/stop_location.extract_place_id`). The stop page still unfurls a
   link for its preview, by the user's choice (decisions.md 2026-10-31).
+- **Distance math reads only a stop's own coordinates** (since 2026-11-14):
+  Order by distance measures the `lat`/`lng` a stop stores — an OSM pick, a
+  pin, typed coordinates — and never a Google place or the coordinates in a
+  link's text, which the trip's route map hands only to Google's own map
+  (`mapPointOf`). See [order-by-distance.md](order-by-distance.md).
 - **The words in a link are moderated with the stop's text** (since
   2026-11-09): a search link's text, a place's name in the path, a directions
   link's ends — what Google shows in the map's search box. `map_link_words`
@@ -265,4 +270,5 @@ month is paid: watch it with a Google Cloud budget alert.
 - [admin-and-appeals.md](admin-and-appeals.md) — the sweep that refreshes place IDs
 - [help-centre.md](help-centre.md) — `/help/add-locations-from-google-maps`
 - [reference/error-codes.md](../reference/error-codes.md) — `place_search_rate_limited`, `place_search_unavailable`
+- [order-by-distance.md](order-by-distance.md) — measures only a stop's own coordinates, never a Google place or a link's text
 - [decisions.md](../decisions.md) — 2026-10-31

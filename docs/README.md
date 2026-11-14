@@ -105,6 +105,7 @@ last month's behaviour is worse than none, because the reader follows it.**
 | [tracks-and-stops.md](features/tracks-and-stops.md) | Tracks, stops, fractional indexing, the two-phase renumber, place types, map URLs |
 | [places-and-maps.md](features/places-and-maps.md) | How a stop is placed — OpenStreetMap on submit, Google Places as the fallback, pasted links — what a stop may store from Google (a place ID), the `/embed` map pages, the trip's route map, the yearly place-ID refresh |
 | [transit-segments.md](features/transit-segments.md) | Segments, transport legs, leg modes, the orphan warning |
+| [order-by-distance.md](features/order-by-distance.md) | Arrange mode's suggested track order, worked out on the device in straight lines from stored coordinates only — never Google's — and saved or cancelled from its preview |
 | [annotations.md](features/annotations.md) | Both annotation systems — stop-level and trip-wide |
 | [ratings.md](features/ratings.md) | Multi-dimensional community ratings, SQL aggregates, per-rating moderation status |
 | [saved-itineraries.md](features/saved-itineraries.md) | Bookmarks and the Saved tab |

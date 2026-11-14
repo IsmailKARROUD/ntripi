@@ -1502,6 +1502,108 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get orderByDistance => 'Ordenar por distancia';
+
+  @override
+  String get orderByDistanceWorking => 'Calculando un orden…';
+
+  @override
+  String orderByDistanceStartsAt(String name) {
+    return 'Empieza en $name, que sigue siendo la primera.';
+  }
+
+  @override
+  String get orderByDistanceEndTitle => '¿Dónde debe terminar el itinerario?';
+
+  @override
+  String orderByDistanceEndAtLast(String name) {
+    return 'En $name';
+  }
+
+  @override
+  String get orderByDistanceEndAtLastHint => 'Sigue siendo la última parada';
+
+  @override
+  String get orderByDistanceEndAnywhere => 'Donde mejor encaje';
+
+  @override
+  String orderByDistanceWouldEndAt(String name) {
+    return 'Terminaría en $name';
+  }
+
+  @override
+  String get orderByDistanceLegsTitle => 'Segmentos de transporte';
+
+  @override
+  String get orderByDistanceKeepLegs => 'Mantener juntas las paradas enlazadas';
+
+  @override
+  String get orderByDistanceKeepLegsHint =>
+      'No se elimina ningún segmento de transporte';
+
+  @override
+  String get orderByDistanceBreakLegs =>
+      'Eliminar segmentos de transporte para un orden mejor';
+
+  @override
+  String get orderByDistanceNoChange =>
+      'Con estas opciones, el orden se queda como está.';
+
+  @override
+  String get orderByDistanceSuggest => 'Sugerir';
+
+  @override
+  String get orderByDistanceAlreadyInOrder =>
+      'Las columnas ya están ordenadas por distancia.';
+
+  @override
+  String orderByDistanceTooFewLocated(int located, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      located,
+      locale: localeName,
+      other:
+          'Solo $located de $total columnas tienen una ubicación guardada, así que no se pueden ordenar por distancia.',
+      one:
+          'Solo 1 de $total columnas tiene una ubicación guardada, así que no se pueden ordenar por distancia.',
+      zero:
+          'Ninguna de las $total columnas tiene una ubicación guardada, así que no se pueden ordenar por distancia.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get suggestedOrderTitle => 'Orden sugerido';
+
+  @override
+  String suggestedOrderMoved(int moved, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      moved,
+      locale: localeName,
+      other: '$moved de $total columnas cambian de lugar',
+      one: '1 de $total columnas cambia de lugar',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String suggestedOrderUnmeasured(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count columnas no tienen ubicación guardada y se quedan después de la columna anterior.',
+      one:
+          '1 columna no tiene ubicación guardada y se queda después de la columna anterior.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String arrangeWasNumber(int number) {
+    return 'antes $number';
+  }
+
+  @override
   String get addStopTooltip => 'Añadir parada';
 
   @override

@@ -120,6 +120,7 @@ RELEASES: tuple[Release, ...] = (
             "**El nombre de un viaje oculto no aparece en tu pantalla bloqueada.** Una notificación sobre un viaje ocultado o retirado ya no muestra su título, a nadie; **Ajustes ▸ Estado de la cuenta** dice de qué viaje se trata.",
             "**Registrarse con Google, revisado como lo demás.** El nombre de usuario que sale de tu correo, tu nombre de Google y tu foto de perfil pasan las mismas revisiones que lo que escribes o subes —un nombre con punto, como `anna.paris`, pasa a ser `anna_paris`— y el registro siempre se completa.",
             "**Las palabras de un enlace de Google Maps también se revisan.** Lo que busca un enlace aparece en el mapa de la parada, así que sigue las mismas normas que el nombre y las notas de la parada.",
+            "**Ordenar por distancia.** Con tres columnas o más, el modo **Organizar paradas** puede proponer un orden según la distancia en línea recta entre sus ubicaciones guardadas. Primero lo ves y luego lo guardas o lo cancelas.",
         ),
     ),
     Release(
@@ -409,6 +410,16 @@ No se guarda nada hasta que tocas **Guardar**. Una columna existe solo mientras 
                 body="En ese mismo modo, arrastra el número de una columna para mover la columna entera, con sus alternativas, o suelta una parada sobre otra parada de su columna para cambiar qué alternativa va primero. Todo espera a **Guardar**, así que puedes probar un orden y descartarlo con ✕. La primera columna de un viaje se trata como el punto de partida y la última como el destino, que es lo que el mapa une.",
             ),
             Block(
+                anchor="order-by-distance",
+                heading="Ordenar las columnas por distancia",
+                kind=KIND_STEP,
+                body="""Con tres columnas o más, el modo **Organizar paradas** ofrece **Ordenar por distancia**: un orden en el que cada columna va seguida de la más cercana, medido en línea recta entre las ubicaciones guardadas de las paradas. La primera columna sigue siendo la primera. Cuando cambia la respuesta, Ntripi pregunta si la última debe seguir siendo la última y si las paradas unidas por un transporte deben quedarse juntas.
+
+Ves el orden propuesto antes de que nada cambie: cuántas columnas se mueven y **antes 4** junto a cada columna que se movió. **Guardar** lo guarda; **Cancelar** deja el viaje como estaba.
+
+Solo las paradas colocadas con una búsqueda de OpenStreetMap, un marcador en el mapa o coordenadas escritas tienen una ubicación guardada. Una parada elegida en Google Maps, o guardada como enlace de Google Maps, se queda justo después de la parada anterior. La distancia es una línea recta, no la carretera, así que Ntripi no muestra kilómetros: solo el orden.""",
+            ),
+            Block(
                 anchor="transport-warning",
                 heading="Por qué insertar una columna a veces te avisa",
                 body="""El transporte se anota entre dos columnas *vecinas*. Si insertas una columna nueva entre dos que ya están unidas por un transporte, esa conexión se queda sin sitio: las dos columnas ya no son vecinas.
@@ -437,9 +448,15 @@ Al organizar pasa lo mismo: si un movimiento separa dos columnas unidas por un t
             "día de lluvia",
             "tiempo",
             "elección",
+            "ordenar por distancia",
+            "distancia",
+            "ruta más corta",
+            "optimizar",
+            "más cercano",
+            "ordenar paradas",
         ),
         related=("plan-a-trip-itinerary", "getting-started"),
-        updated="2026-10-27",
+        updated="2026-11-14",
         cta="Planifica un viaje con alternativas reales, no una única línea frágil.",
     ),
     Article(

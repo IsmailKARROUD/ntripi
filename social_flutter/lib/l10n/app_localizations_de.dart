@@ -1510,6 +1510,108 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get orderByDistance => 'Nach Entfernung ordnen';
+
+  @override
+  String get orderByDistanceWorking => 'Reihenfolge wird berechnet…';
+
+  @override
+  String orderByDistanceStartsAt(String name) {
+    return 'Beginnt bei $name, das an erster Stelle bleibt.';
+  }
+
+  @override
+  String get orderByDistanceEndTitle => 'Wo soll die Reiseroute enden?';
+
+  @override
+  String orderByDistanceEndAtLast(String name) {
+    return 'Bei $name';
+  }
+
+  @override
+  String get orderByDistanceEndAtLastHint => 'Bleibt der letzte Stopp';
+
+  @override
+  String get orderByDistanceEndAnywhere => 'Wo es am besten passt';
+
+  @override
+  String orderByDistanceWouldEndAt(String name) {
+    return 'Würde bei $name enden';
+  }
+
+  @override
+  String get orderByDistanceLegsTitle => 'Transportabschnitte';
+
+  @override
+  String get orderByDistanceKeepLegs => 'Verbundene Stopps zusammenhalten';
+
+  @override
+  String get orderByDistanceKeepLegsHint =>
+      'Kein Transportabschnitt wird gelöscht';
+
+  @override
+  String get orderByDistanceBreakLegs =>
+      'Transportabschnitte für eine bessere Reihenfolge löschen';
+
+  @override
+  String get orderByDistanceNoChange =>
+      'Mit dieser Auswahl bleibt die Reihenfolge, wie sie ist.';
+
+  @override
+  String get orderByDistanceSuggest => 'Vorschlagen';
+
+  @override
+  String get orderByDistanceAlreadyInOrder =>
+      'Die Spalten sind bereits nach Entfernung geordnet.';
+
+  @override
+  String orderByDistanceTooFewLocated(int located, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      located,
+      locale: localeName,
+      other:
+          'Nur $located von $total Spalten haben einen gespeicherten Standort, daher lassen sie sich nicht nach Entfernung ordnen.',
+      one:
+          'Nur 1 von $total Spalten hat einen gespeicherten Standort, daher lassen sie sich nicht nach Entfernung ordnen.',
+      zero:
+          'Keine der $total Spalten hat einen gespeicherten Standort, daher lassen sie sich nicht nach Entfernung ordnen.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get suggestedOrderTitle => 'Vorgeschlagene Reihenfolge';
+
+  @override
+  String suggestedOrderMoved(int moved, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      moved,
+      locale: localeName,
+      other: '$moved von $total Spalten werden verschoben',
+      one: '1 von $total Spalten wird verschoben',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String suggestedOrderUnmeasured(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count Spalten haben keinen gespeicherten Standort und bleiben jeweils hinter der Spalte davor.',
+      one:
+          '1 Spalte hat keinen gespeicherten Standort und bleibt hinter der Spalte davor.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String arrangeWasNumber(int number) {
+    return 'vorher $number';
+  }
+
+  @override
   String get addStopTooltip => 'Stopp hinzufügen';
 
   @override

@@ -1423,6 +1423,96 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get orderByDistance => '按距离排序';
+
+  @override
+  String get orderByDistanceWorking => '正在计算顺序…';
+
+  @override
+  String orderByDistanceStartsAt(String name) {
+    return '从 $name 出发，它仍排在第一位。';
+  }
+
+  @override
+  String get orderByDistanceEndTitle => '行程应在哪里结束？';
+
+  @override
+  String orderByDistanceEndAtLast(String name) {
+    return '在 $name';
+  }
+
+  @override
+  String get orderByDistanceEndAtLastHint => '它仍是最后一个停靠点';
+
+  @override
+  String get orderByDistanceEndAnywhere => '最合适的地方';
+
+  @override
+  String orderByDistanceWouldEndAt(String name) {
+    return '将在 $name 结束';
+  }
+
+  @override
+  String get orderByDistanceLegsTitle => '交通路段';
+
+  @override
+  String get orderByDistanceKeepLegs => '让相连的停靠点保持在一起';
+
+  @override
+  String get orderByDistanceKeepLegsHint => '不会删除任何交通路段';
+
+  @override
+  String get orderByDistanceBreakLegs => '删除交通路段以获得更好的顺序';
+
+  @override
+  String get orderByDistanceNoChange => '按这些选择，顺序保持不变。';
+
+  @override
+  String get orderByDistanceSuggest => '建议';
+
+  @override
+  String get orderByDistanceAlreadyInOrder => '这些列已经按距离排好序了。';
+
+  @override
+  String orderByDistanceTooFewLocated(int located, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      located,
+      locale: localeName,
+      other: '$total 列中只有 $located 列保存了位置，无法按距离排序。',
+      zero: '$total 列中没有一列保存了位置，无法按距离排序。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get suggestedOrderTitle => '建议的顺序';
+
+  @override
+  String suggestedOrderMoved(int moved, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      moved,
+      locale: localeName,
+      other: '$total 列中有 $moved 列移动',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String suggestedOrderUnmeasured(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 列没有保存位置，会留在前一列之后。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String arrangeWasNumber(int number) {
+    return '原第 $number 列';
+  }
+
+  @override
   String get addStopTooltip => '添加停靠点';
 
   @override

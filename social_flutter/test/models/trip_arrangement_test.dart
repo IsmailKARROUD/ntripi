@@ -46,6 +46,45 @@ void main() {
     expect(t.isDirty, isFalse);
   });
 
+  group('withRowOrder', () {
+    test('puts the rows in the order named, alternatives and all', () {
+      final t = _trip().withRowOrder(['C', 'A', 'B']);
+      expect(_shape(t), [
+        ['C', 'c'],
+        ['A', 'a1', 'a2'],
+        ['B', 'b'],
+      ]);
+      expect(t.isDirty, isTrue);
+      expect(t.toLayoutJson().first, {
+        'track_id': 'C',
+        'stop_ids': ['c'],
+      });
+    });
+
+    test('the same order is nothing to save', () {
+      expect(_trip().withRowOrder(['A', 'B', 'C']).isDirty, isFalse);
+    });
+
+    test('anything but a permutation of the rows changes nothing', () {
+      final t = _trip();
+      for (final keys in [
+        ['A', 'B'],
+        ['A', 'B', 'B'],
+        ['A', 'B', 'X'],
+        ['A', 'B', 'C', 'C'],
+      ]) {
+        expect(identical(t.withRowOrder(keys), t), isTrue, reason: '$keys');
+      }
+    });
+
+    test('keeps a new row created before it', () {
+      final t = _trip().moveStopToGap('a2', 3);
+      final reordered = t.withRowOrder([t.rows.last.key, 'A', 'B', 'C']);
+      expect(_shape(reordered).first, ['+', 'a2']);
+      expect(reordered.toLayoutJson().first['track_id'], isNull);
+    });
+  });
+
   group('moveTrack', () {
     test('to the front and to the end', () {
       expect(_shape(_trip().moveTrack('C', 0)).map((r) => r.first), ['C', 'A', 'B']);

@@ -1513,6 +1513,118 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get orderByDistance => 'ترتيب حسب المسافة';
+
+  @override
+  String get orderByDistanceWorking => 'جارٍ حساب الترتيب…';
+
+  @override
+  String orderByDistanceStartsAt(String name) {
+    return 'يبدأ من $name، وتبقى في المقدمة.';
+  }
+
+  @override
+  String get orderByDistanceEndTitle => 'أين ينبغي أن ينتهي المسار؟';
+
+  @override
+  String orderByDistanceEndAtLast(String name) {
+    return 'عند $name';
+  }
+
+  @override
+  String get orderByDistanceEndAtLastHint => 'تبقى المحطة الأخيرة';
+
+  @override
+  String get orderByDistanceEndAnywhere => 'حيث يناسب أكثر';
+
+  @override
+  String orderByDistanceWouldEndAt(String name) {
+    return 'سينتهي عند $name';
+  }
+
+  @override
+  String get orderByDistanceLegsTitle => 'مقاطع التنقّل';
+
+  @override
+  String get orderByDistanceKeepLegs => 'إبقاء المحطات المترابطة معًا';
+
+  @override
+  String get orderByDistanceKeepLegsHint => 'لا يُحذف أي مقطع تنقّل';
+
+  @override
+  String get orderByDistanceBreakLegs =>
+      'حذف مقاطع تنقّل للحصول على ترتيب أفضل';
+
+  @override
+  String get orderByDistanceNoChange => 'بهذه الاختيارات يبقى الترتيب كما هو.';
+
+  @override
+  String get orderByDistanceSuggest => 'اقتراح';
+
+  @override
+  String get orderByDistanceAlreadyInOrder =>
+      'الممرات مرتبة حسب المسافة بالفعل.';
+
+  @override
+  String orderByDistanceTooFewLocated(int located, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      located,
+      locale: localeName,
+      other:
+          '$located ممر فقط من $total يحمل موقعًا محفوظًا، لذا لا يمكن ترتيبها حسب المسافة.',
+      many:
+          '$located ممرًا فقط من $total يحمل موقعًا محفوظًا، لذا لا يمكن ترتيبها حسب المسافة.',
+      few:
+          '$located ممرات فقط من $total تحمل موقعًا محفوظًا، لذا لا يمكن ترتيبها حسب المسافة.',
+      two:
+          'ممران فقط من $total يحملان موقعًا محفوظًا، لذا لا يمكن ترتيبها حسب المسافة.',
+      one:
+          'ممر واحد فقط من $total يحمل موقعًا محفوظًا، لذا لا يمكن ترتيبها حسب المسافة.',
+      zero:
+          'لا يحمل أي من الممرات الـ$total موقعًا محفوظًا، لذا لا يمكن ترتيبها حسب المسافة.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get suggestedOrderTitle => 'الترتيب المقترح';
+
+  @override
+  String suggestedOrderMoved(int moved, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      moved,
+      locale: localeName,
+      other: 'يتحرك $moved ممر من $total',
+      many: 'يتحرك $moved ممرًا من $total',
+      few: 'تتحرك $moved ممرات من $total',
+      two: 'يتحرك ممران من $total',
+      one: 'يتحرك ممر واحد من $total',
+      zero: 'لا يتحرك أي ممر من $total',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String suggestedOrderUnmeasured(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ممر بلا موقع محفوظ، ويبقى كل منها بعد الممر الذي يسبقه.',
+      many: '$count ممرًا بلا موقع محفوظ، ويبقى كل منها بعد الممر الذي يسبقه.',
+      few: '$count ممرات بلا موقع محفوظ، ويبقى كل منها بعد الممر الذي يسبقه.',
+      two: 'ممران بلا موقع محفوظ، ويبقى كل منهما بعد الممر الذي يسبقه.',
+      one: 'ممر واحد بلا موقع محفوظ، ويبقى بعد الممر الذي يسبقه.',
+      zero: 'لا يوجد ممر بلا موقع محفوظ.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String arrangeWasNumber(int number) {
+    return 'كان $number';
+  }
+
+  @override
   String get addStopTooltip => 'إضافة محطة';
 
   @override

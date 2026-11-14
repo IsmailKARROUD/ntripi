@@ -131,6 +131,19 @@ class TripArrangement {
     return TripArrangement._(next, _original, _created + 1);
   }
 
+  /// The same rows in the order [keys] names: Order by distance's suggestion.
+  /// Anything but a permutation of the row keys leaves the arrangement as is.
+  TripArrangement withRowOrder(List<String> keys) {
+    final byKey = {for (final r in rows) r.key: r};
+    if (keys.length != rows.length ||
+        keys.toSet().length != keys.length ||
+        !keys.every(byKey.containsKey)) {
+      return this;
+    }
+    return TripArrangement._(
+        [for (final k in keys) byKey[k]!], _original, _created);
+  }
+
   /// Put [stopId] in the track [rowKey], before [beforeStopId] or at its end.
   /// In its own track this reorders the alternatives; in another it joins
   /// them, and a track it leaves empty goes. Refused (unchanged) past the cap.

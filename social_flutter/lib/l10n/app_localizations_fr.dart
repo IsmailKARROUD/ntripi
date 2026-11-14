@@ -1514,6 +1514,109 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get orderByDistance => 'Ordonner par distance';
+
+  @override
+  String get orderByDistanceWorking => 'Calcul d\'un ordre…';
+
+  @override
+  String orderByDistanceStartsAt(String name) {
+    return 'Commence à $name, qui reste en premier.';
+  }
+
+  @override
+  String get orderByDistanceEndTitle =>
+      'Où l\'itinéraire doit-il se terminer ?';
+
+  @override
+  String orderByDistanceEndAtLast(String name) {
+    return 'À $name';
+  }
+
+  @override
+  String get orderByDistanceEndAtLastHint => 'Elle reste la dernière étape';
+
+  @override
+  String get orderByDistanceEndAnywhere => 'Là où l\'ordre est le meilleur';
+
+  @override
+  String orderByDistanceWouldEndAt(String name) {
+    return 'Se terminerait à $name';
+  }
+
+  @override
+  String get orderByDistanceLegsTitle => 'Segments de transit';
+
+  @override
+  String get orderByDistanceKeepLegs => 'Garder ensemble les étapes reliées';
+
+  @override
+  String get orderByDistanceKeepLegsHint =>
+      'Aucun segment de transit n\'est supprimé';
+
+  @override
+  String get orderByDistanceBreakLegs =>
+      'Supprimer des segments de transit pour un meilleur ordre';
+
+  @override
+  String get orderByDistanceNoChange =>
+      'Avec ces choix, l\'ordre reste tel quel.';
+
+  @override
+  String get orderByDistanceSuggest => 'Suggérer';
+
+  @override
+  String get orderByDistanceAlreadyInOrder =>
+      'Les pistes sont déjà dans l\'ordre des distances.';
+
+  @override
+  String orderByDistanceTooFewLocated(int located, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      located,
+      locale: localeName,
+      other:
+          'Seules $located pistes sur $total ont une localisation enregistrée : impossible de les ordonner par distance.',
+      one:
+          'Seule 1 piste sur $total a une localisation enregistrée : impossible de les ordonner par distance.',
+      zero:
+          'Aucune des $total pistes n\'a de localisation enregistrée : impossible de les ordonner par distance.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get suggestedOrderTitle => 'Ordre suggéré';
+
+  @override
+  String suggestedOrderMoved(int moved, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      moved,
+      locale: localeName,
+      other: '$moved pistes sur $total changent de place',
+      one: '1 piste sur $total change de place',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String suggestedOrderUnmeasured(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count pistes n\'ont pas de localisation enregistrée et restent après la piste qui les précède.',
+      one:
+          '1 piste n\'a pas de localisation enregistrée et reste après la piste qui la précède.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String arrangeWasNumber(int number) {
+    return 'avant : $number';
+  }
+
+  @override
   String get addStopTooltip => 'Ajouter une étape';
 
   @override

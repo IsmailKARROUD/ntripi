@@ -166,6 +166,7 @@ endpoints are defined in the backend for future API consumers."*
 ## Related
 
 - [tracks-and-stops.md](tracks-and-stops.md) — the endpoints a segment joins
+- [order-by-distance.md](order-by-distance.md) — asks whether linked tracks stay together, and deletes what it breaks only when told to
 - [itineraries.md](itineraries.md) — segments feed the denormalised totals
 - [collaborative-editing.md](collaborative-editing.md) — the write guard
 - [text-moderation.md](text-moderation.md) — leg line/direction/notes are scanned

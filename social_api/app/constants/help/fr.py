@@ -120,6 +120,7 @@ RELEASES: tuple[Release, ...] = (
             "**Le nom d’un voyage masqué reste hors de votre écran verrouillé.** Une notification sur un voyage masqué ou supprimé n’affiche plus son titre, pour personne — **Paramètres ▸ État du compte** indique de quel voyage il s’agit.",
             "**S’inscrire avec Google, vérifié comme le reste.** Le nom d’utilisateur tiré de votre adresse e-mail, votre nom Google et votre photo de profil passent les mêmes vérifications que ce que vous écrivez ou téléversez — un nom avec un point, comme `anna.paris`, devient `anna_paris` — et l’inscription aboutit toujours.",
             "**Les mots d’un lien Google Maps sont vérifiés aussi.** Ce qu’un lien recherche s’affiche sur la carte de l’étape : il suit donc les mêmes règles que le nom et les notes de l’étape.",
+            "**Ordonner par distance.** À partir de trois pistes, le mode **Organiser les étapes** peut proposer un ordre selon la distance en ligne droite entre leurs localisations enregistrées. Vous le voyez d’abord, puis vous l’enregistrez ou l’annulez.",
         ),
     ),
     Release(
@@ -410,6 +411,16 @@ Rien n’est enregistré avant que vous touchiez **Enregistrer**. Une piste n’
                 body="Dans ce même mode, faites glisser le numéro d’une piste pour déplacer toute la piste, alternatives comprises, ou déposez une étape sur une autre étape de sa piste pour changer l’alternative qui vient en premier. Tout attend **Enregistrer** : vous pouvez essayer un ordre et y renoncer avec ✕. La première piste d’un voyage est traitée comme le point de départ et la dernière comme la destination, c’est ce que la carte relie.",
             ),
             Block(
+                anchor="order-by-distance",
+                heading="Ordonner les pistes par distance",
+                kind=KIND_STEP,
+                body="""À partir de trois pistes, le mode **Organiser les étapes** propose **Ordonner par distance** : un ordre où chaque piste est suivie de la plus proche, mesuré en ligne droite entre les localisations enregistrées des étapes. La première piste reste la première. Quand cela change la réponse, Ntripi demande si la dernière doit rester la dernière, et si les étapes reliées par un transit doivent rester ensemble.
+
+Vous voyez l’ordre proposé avant que rien ne change : combien de pistes bougent, et **avant : 4** à côté de chaque piste déplacée. **Enregistrer** l’enregistre ; **Annuler** laisse le voyage tel qu’il était.
+
+Seules les étapes placées par une recherche OpenStreetMap, une épingle sur la carte ou des coordonnées saisies ont une localisation enregistrée. Une étape choisie dans Google Maps, ou enregistrée comme lien Google Maps, reste juste après l’étape qui la précède. La distance est une ligne droite, pas la route : Ntripi n’affiche donc aucun kilomètre, seulement l’ordre.""",
+            ),
+            Block(
                 anchor="transport-warning",
                 heading="Pourquoi insérer une piste déclenche parfois un avertissement",
                 body="""Un transit se note entre deux pistes *voisines*. Si vous insérez une nouvelle piste entre deux qui sont déjà reliées par un transit, cette liaison n’a plus où se loger — les deux pistes ne sont plus voisines.
@@ -439,9 +450,15 @@ L’organisation fonctionne de la même façon : si un déplacement sépare deux
             "jour de pluie",
             "météo",
             "choix",
+            "ordonner par distance",
+            "distance",
+            "itinéraire le plus court",
+            "optimiser",
+            "plus proche",
+            "trier les étapes",
         ),
         related=("plan-a-trip-itinerary", "getting-started"),
-        updated="2026-10-27",
+        updated="2026-11-14",
         cta="Planifiez un voyage avec de vraies alternatives, pas une seule ligne fragile.",
     ),
     Article(

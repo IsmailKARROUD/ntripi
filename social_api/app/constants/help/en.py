@@ -241,6 +241,9 @@ RELEASES: tuple[Release, ...] = (
             "**The words in a Google Maps link are checked too.** What a link "
             "searches for shows on the stop's map, so it is held to the same "
             "rules as the stop's name and notes.",
+            "**Order by distance.** With three or more tracks, arrange mode can "
+            "suggest an order for them by straight-line distance between their "
+            "saved locations. You see it first, then save it or cancel.",
         ),
     ),
     Release(
@@ -600,12 +603,13 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="building",
         schema=SCHEMA_HOWTO,
-        updated="2026-10-27",
+        updated="2026-11-14",
         keywords=(
             "parallel", "track", "tracks", "alternative", "alternatives",
             "options", "optional", "plan b", "backup", "branch", "column",
             "either or", "rainy day", "weather", "choice", "choices",
             "arrange", "rearrange", "reorder", "move a stop", "drag",
+            "order by distance", "distance", "shortest route", "optimise", "optimize", "nearest", "sort stops",
         ),
         related=("plan-a-trip-itinerary", "getting-started"),
         cta="Plan a trip with real alternatives, not a single fragile line.",
@@ -676,6 +680,27 @@ ARTICLES: tuple[Article, ...] = (
                     "back out with ✕. The first track in a trip is treated as the "
                     "starting point and the last as the destination, which is what "
                     "the map draws between."
+                ),
+            ),
+            Block(
+                anchor="order-by-distance",
+                heading="Put the tracks in order by distance",
+                kind=KIND_STEP,
+                body=(
+                    "With three or more tracks, arrange mode offers **Order by "
+                    "distance**: an order in which each track is followed by the "
+                    "nearest one, measured in a straight line between the stops' "
+                    "saved locations. The first track stays first. When it changes "
+                    "the answer, Ntripi asks whether the last one should stay last, "
+                    "and whether stops joined by transport should stay together.\n\n"
+                    "You see the suggested order before anything changes: how many "
+                    "tracks move, and **was 4** beside each track that moved. "
+                    "**Save** saves it; **Cancel** leaves the trip as it was.\n\n"
+                    "Only stops placed with an OpenStreetMap search, a pin on the "
+                    "map or typed coordinates have a saved location. A stop picked "
+                    "from Google Maps, or saved as a Google Maps link, stays right "
+                    "after the stop before it. The distance is a straight line, not "
+                    "the road, so Ntripi shows no kilometres — only the order."
                 ),
             ),
             Block(

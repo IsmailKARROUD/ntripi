@@ -20,6 +20,9 @@
 // Transit links are checked live against the layout as it stands: what a move
 // would break is marked under its track and summed up above the list, so the
 // confirmation on Save never comes as a surprise.
+//
+// PREVIEW: given [previewWas], the view shows Order by distance's suggestion
+// read-only — nothing moves, and each track that moved says where it was.
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -53,9 +56,14 @@ class ArrangeTripView extends StatefulWidget {
     required this.arrangement,
     required this.segments,
     required this.onChanged,
+    this.previewWas,
   });
 
   final TripArrangement arrangement;
+
+  /// Non-null for Order by distance's preview: the rows are read-only, and the
+  /// tracks named here carry their old number ("was 4").
+  final Map<String, int>? previewWas;
 
   /// The trip's transit segments, checked against the layout as it stands.
   final List<TransitSegment> segments;
@@ -199,21 +207,24 @@ class _ArrangeTripViewState extends State<ArrangeTripView> {
     final orphans = computeOrphansForLayout(
         layout: _arrangement.tracks, segments: widget.segments);
     final orphanIds = {for (final s in orphans) s.id};
-    final moving = _moving;
+    final preview = widget.previewWas != null;
+    final moving = preview ? null : _moving;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _Instructions(
-          picked: switch (_picked) {
-            _MovingStop(:final stopId) =>
-              l10n.arrangeMovingStop(_name(_arrangement.stop(stopId), l10n)),
-            _MovingTrack(:final rowKey) => l10n.arrangeMovingTrack(
-                rows.indexWhere((r) => r.key == rowKey) + 1),
-            null => null,
-          },
-          onCancel: () => _pick(null),
-        ),
+        // The preview moves nothing, so there is nothing to explain.
+        if (!preview)
+          _Instructions(
+            picked: switch (_picked) {
+              _MovingStop(:final stopId) =>
+                l10n.arrangeMovingStop(_name(_arrangement.stop(stopId), l10n)),
+              _MovingTrack(:final rowKey) => l10n.arrangeMovingTrack(
+                  rows.indexWhere((r) => r.key == rowKey) + 1),
+              null => null,
+            },
+            onCancel: () => _pick(null),
+          ),
         if (orphans.isNotEmpty)
           _BrokenLinksBanner(
             count: orphans.length,
@@ -224,21 +235,25 @@ class _ArrangeTripViewState extends State<ArrangeTripView> {
             ],
             moreCount: orphans.length > 3 ? orphans.length - 3 : 0,
           ),
-        Container(
-          decoration: BoxDecoration(
-            color: nt.surface,
-            borderRadius: BorderRadius.circular(NtripiRadius.card),
-            border: Border.all(color: nt.border),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (var i = 0; i <= rows.length; i++) ...[
-                _gap(i, moving, orphanIds),
-                if (i < rows.length) _row(i, rows[i], moving, orphans),
+        // A preview takes no touch: Save or Cancel are the only answers.
+        IgnorePointer(
+          ignoring: preview,
+          child: Container(
+            decoration: BoxDecoration(
+              color: nt.surface,
+              borderRadius: BorderRadius.circular(NtripiRadius.card),
+              border: Border.all(color: nt.border),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i <= rows.length; i++) ...[
+                  _gap(i, moving, orphanIds),
+                  if (i < rows.length) _row(i, rows[i], moving, orphans),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ],
@@ -298,6 +313,7 @@ class _ArrangeTripViewState extends State<ArrangeTripView> {
       for (final seg in orphans)
         if (rowStops.contains(seg.fromStopId)) seg,
     ];
+    final was = widget.previewWas?[row.key];
 
     return DragTarget<_Moving>(
       key: ValueKey(row.key),
@@ -343,6 +359,13 @@ class _ArrangeTripViewState extends State<ArrangeTripView> {
                                 label: l10n.moveStopFull(Track.maxParallelStops),
                                 icon: Icons.block_rounded,
                                 active: false,
+                              ),
+                            // The preview's moved tracks: where each one was.
+                            if (was != null)
+                              _Tag(
+                                label: l10n.arrangeWasNumber(was),
+                                icon: Icons.swap_vert_rounded,
+                                active: true,
                               ),
                           ],
                         ),
