@@ -10,7 +10,8 @@
 // measured from its first alternative with saved coordinates; one with none
 // stays after the track before it, and with `keepLegs` two tracks joined by a
 // transit segment move as one block, in their direction. The first track stays
-// first, and the last stays last when `keepEnd` says so.
+// first when `keepStart` says so — always when nothing locates it — and the
+// last stays last when `keepEnd` does.
 //
 // HOW: an open-path asymmetric travelling salesman over the blocks, in whole
 // metres — exact (Held-Karp) up to 12 movable blocks, an iterated local search
@@ -44,32 +45,52 @@ const kOrderKicks = 100;
 /// The kicks' generator seed. Never 0: xorshift's state 0 stays 0 forever.
 const kOrderSeed = 12345;
 
-/// One way to answer the sheet: whether the last track stays last, and
-/// whether tracks joined by a transit segment stay together.
+/// One way to answer the sheet: whether the first track stays first, whether
+/// the last stays last, and whether tracks joined by a transit segment stay
+/// together.
 class OrderChoice {
-  const OrderChoice({required this.keepEnd, required this.keepLegs});
+  const OrderChoice({
+    required this.keepStart,
+    required this.keepEnd,
+    required this.keepLegs,
+  });
 
+  final bool keepStart;
   final bool keepEnd;
   final bool keepLegs;
 
+  /// Every combination, the careful one first.
   static const all = [
-    OrderChoice(keepEnd: true, keepLegs: true),
-    OrderChoice(keepEnd: true, keepLegs: false),
-    OrderChoice(keepEnd: false, keepLegs: true),
-    OrderChoice(keepEnd: false, keepLegs: false),
+    OrderChoice(keepStart: true, keepEnd: true, keepLegs: true),
+    OrderChoice(keepStart: true, keepEnd: true, keepLegs: false),
+    OrderChoice(keepStart: true, keepEnd: false, keepLegs: true),
+    OrderChoice(keepStart: true, keepEnd: false, keepLegs: false),
+    OrderChoice(keepStart: false, keepEnd: true, keepLegs: true),
+    OrderChoice(keepStart: false, keepEnd: true, keepLegs: false),
+    OrderChoice(keepStart: false, keepEnd: false, keepLegs: true),
+    OrderChoice(keepStart: false, keepEnd: false, keepLegs: false),
   ];
+
+  OrderChoice copyWith({bool? keepStart, bool? keepEnd, bool? keepLegs}) =>
+      OrderChoice(
+        keepStart: keepStart ?? this.keepStart,
+        keepEnd: keepEnd ?? this.keepEnd,
+        keepLegs: keepLegs ?? this.keepLegs,
+      );
 
   @override
   bool operator ==(Object other) =>
       other is OrderChoice &&
+      other.keepStart == keepStart &&
       other.keepEnd == keepEnd &&
       other.keepLegs == keepLegs;
 
   @override
-  int get hashCode => Object.hash(keepEnd, keepLegs);
+  int get hashCode => Object.hash(keepStart, keepEnd, keepLegs);
 
   @override
-  String toString() => 'OrderChoice(keepEnd: $keepEnd, keepLegs: $keepLegs)';
+  String toString() => 'OrderChoice(keepStart: $keepStart, '
+      'keepEnd: $keepEnd, keepLegs: $keepLegs)';
 }
 
 /// What one choice suggests.
@@ -110,7 +131,8 @@ class DistanceOrder {
 
 /// Why a tap found nothing to suggest.
 enum NoOrderReason {
-  /// Fewer than two tracks after the first have a saved location.
+  /// Fewer than three tracks have a saved location: between two points,
+  /// either order is as short.
   tooFewLocated,
 
   /// No choice gives a clearly shorter order.
@@ -127,6 +149,8 @@ class DistanceOrderChoices {
     required this.tooFewLocated,
   });
 
+  /// Every one of [OrderChoice.all] with its answer; choices that come to the
+  /// same thing share one.
   final Map<OrderChoice, DistanceOrder?> _results;
 
   /// Some transit segment joins two neighbouring tracks as they stand — the
@@ -140,23 +164,32 @@ class DistanceOrderChoices {
   final bool tooFewLocated;
 
   /// The answer for [choice]; null when it suggests nothing better.
-  DistanceOrder? resultFor(OrderChoice choice) => _results[legsLive
-      ? choice
-      : OrderChoice(keepEnd: choice.keepEnd, keepLegs: false)];
+  DistanceOrder? resultFor(OrderChoice choice) => _results[choice];
 
   bool get hasSuggestion => _results.values.any((r) => r != null);
 
-  /// Whether where the trip ends changes the answer, for some legs choice.
-  bool get endMatters => const [true, false].any((legs) => !_same(
-      resultFor(OrderChoice(keepEnd: true, keepLegs: legs)),
-      resultFor(OrderChoice(keepEnd: false, keepLegs: legs))));
+  /// Whether the first track staying first changes the answer, for some
+  /// answer to the other two questions. Never when nothing locates it.
+  bool get startMatters =>
+      _matters((c) => c.keepStart, (c) => c.copyWith(keepStart: false));
 
-  /// Whether keeping linked tracks together changes the answer, for some end.
+  /// Whether where the trip ends changes the answer, for some answer to the
+  /// other two.
+  bool get endMatters =>
+      _matters((c) => c.keepEnd, (c) => c.copyWith(keepEnd: false));
+
+  /// Whether keeping linked tracks together changes the answer, for some
+  /// answer to the other two. Never without a live segment.
   bool get legsMatter =>
-      legsLive &&
-      const [true, false].any((end) => !_same(
-          resultFor(OrderChoice(keepEnd: end, keepLegs: true)),
-          resultFor(OrderChoice(keepEnd: end, keepLegs: false))));
+      _matters((c) => c.keepLegs, (c) => c.copyWith(keepLegs: false));
+
+  bool _matters(
+    bool Function(OrderChoice) kept,
+    OrderChoice Function(OrderChoice) freed,
+  ) =>
+      OrderChoice.all
+          .where(kept)
+          .any((c) => !_same(resultFor(c), resultFor(freed(c))));
 
   NoOrderReason? get reason => hasSuggestion
       ? null
@@ -191,11 +224,21 @@ Future<DistanceOrderChoices?> orderByDistanceChoices(
   }
 
   final results = <OrderChoice, DistanceOrder?>{};
+  final worked = <OrderChoice, DistanceOrder?>{};
   try {
     for (final choice in OrderChoice.all) {
-      // With no live segment, keeping legs and deleting them are one choice.
-      if (!trip.legsLive && choice.keepLegs) continue;
-      results[choice] = await _suggest(trip, choice, pause);
+      // Choices that come to the same thing are worked out once: with no live
+      // segment there is none to keep, and a first track nothing locates
+      // stays first whatever the answer.
+      final effective = OrderChoice(
+        keepStart: choice.keepStart || !trip.startCanMove,
+        keepEnd: choice.keepEnd,
+        keepLegs: choice.keepLegs && trip.legsLive,
+      );
+      if (!worked.containsKey(effective)) {
+        worked[effective] = await _suggest(trip, effective, pause);
+      }
+      results[choice] = worked[effective];
     }
   } on _Cancelled {
     return null;
@@ -205,8 +248,8 @@ Future<DistanceOrderChoices?> orderByDistanceChoices(
     legsLive: trip.legsLive,
     located: trip.located,
     total: arrangement.rows.length,
-    // The freest choice still has fewer than two blocks to put in order.
-    tooFewLocated: trip.measuredAfterFirst < 2,
+    // Between two points either order is as short, so nothing can be gained.
+    tooFewLocated: trip.located < 3,
   );
 }
 
@@ -255,8 +298,9 @@ class _Trip {
 
   int get located => points.where((p) => p != null).length;
 
-  int get measuredAfterFirst =>
-      points.skip(1).where((p) => p != null).length;
+  /// The first track may go elsewhere only when it has a point of its own;
+  /// one nothing locates has nowhere else to go, and stays first.
+  bool get startCanMove => points.isNotEmpty && points.first != null;
 
   /// The rows as blocks that move whole: a row joins the block before it when
   /// it has no point, or when [keepLegs] and a segment links it to that block.
@@ -317,15 +361,18 @@ Future<DistanceOrder?> _suggest(
   Future<void> Function() pause,
 ) async {
   final blocks = trip.blocks(keepLegs: choice.keepLegs);
-  final hasEnd = choice.keepEnd && blocks.length > 1;
-  final movable =
-      blocks.sublist(1, hasEnd ? blocks.length - 1 : blocks.length);
+  if (blocks.length < 2) return null;
+  // A first block nothing locates has nowhere else to go: it stays first.
+  final hasStart = choice.keepStart || blocks.first.entry == null;
+  final hasEnd = choice.keepEnd;
+  final movable = blocks.sublist(
+      hasStart ? 1 : 0, hasEnd ? blocks.length - 1 : blocks.length);
   final m = movable.length;
   // Nothing to put in order: the input order, which suggests nothing.
   if (m < 2) return null;
 
   final d = _pathCosts(
-    start: blocks.first,
+    start: hasStart ? blocks.first : null,
     movable: movable,
     end: hasEnd ? blocks.last : null,
   );
@@ -348,7 +395,7 @@ Future<DistanceOrder?> _suggest(
     }
   }
 
-  addBlock(blocks.first);
+  if (hasStart) addBlock(blocks.first);
   for (var t = 1; t <= m; t++) {
     addBlock(movable[order[t] - 1]);
   }
@@ -404,11 +451,12 @@ Set<int> longestIncreasingRun(List<int> sequence) {
 
 // ── Path costs ───────────────────────────────────────────────────────────────
 
-/// Whole-metre costs between the nodes of one path: node 0 is the fixed start,
-/// 1..m the movable blocks in input order, m+1 the end — the fixed last block,
-/// or a virtual end that costs 0 to reach when the trip may end anywhere.
-/// Going from a block to another costs the distance from its exit to the
-/// other's entry; a start with no point costs 0 to leave.
+/// Whole-metre costs between the nodes of one path: node 0 is the start — the
+/// fixed first block, or a virtual start that costs 0 to leave when the trip
+/// may start anywhere — 1..m the movable blocks in input order, m+1 the end —
+/// the fixed last block, or a virtual end that costs 0 to reach when the trip
+/// may end anywhere. Going from a block to another costs the distance from its
+/// exit to the other's entry; a start with no point costs 0 to leave.
 class PathCosts {
   PathCosts(this.m, this._d) : assert(_d.length == (m + 2) * (m + 2));
 
@@ -439,18 +487,18 @@ class PathCosts {
 }
 
 PathCosts _pathCosts({
-  required _Block start,
+  required _Block? start,
   required List<_Block> movable,
   required _Block? end,
 }) {
   final m = movable.length;
   final n = m + 2;
   final d = Int32List(n * n);
-  LatLng? exitOf(int u) => u == 0 ? start.exit : movable[u - 1].exit;
+  LatLng? exitOf(int u) => u == 0 ? start?.exit : movable[u - 1].exit;
   LatLng? entryOf(int v) => v == m + 1 ? end?.entry : movable[v - 1].entry;
   for (var u = 0; u <= m; u++) {
     final from = exitOf(u);
-    if (from == null) continue; // a start nothing locates: free to leave
+    if (from == null) continue; // the virtual start, or one nothing locates
     for (var v = 1; v <= m + 1; v++) {
       if (u == v) continue;
       final to = entryOf(v);
@@ -714,7 +762,7 @@ bool _swap(PathCosts d, List<int> p) {
 }
 
 /// Cuts the movable part into A B C D E (B, C and D never empty) and returns
-/// A D C B E. The fixed start and end stay outside it.
+/// A D C B E. The start and the end, fixed or virtual, stay outside it.
 List<int> doubleBridge(List<int> path, XorShift32 rng) {
   final q = path.sublist(1, path.length - 1);
   final m = q.length;

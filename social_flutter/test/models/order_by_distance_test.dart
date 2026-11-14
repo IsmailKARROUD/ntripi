@@ -63,22 +63,35 @@ Future<DistanceOrderChoices> _choices(
 }) async =>
     (await orderByDistanceChoices(TripArrangement.of(tracks), segments))!;
 
-const _keepAll = OrderChoice(keepEnd: true, keepLegs: true);
-const _freeEnd = OrderChoice(keepEnd: false, keepLegs: true);
-const _freeAll = OrderChoice(keepEnd: false, keepLegs: false);
+const _keepAll = OrderChoice(keepStart: true, keepEnd: true, keepLegs: true);
+const _freeEnd = OrderChoice(keepStart: true, keepEnd: false, keepLegs: true);
+const _freeEndNoLegs =
+    OrderChoice(keepStart: true, keepEnd: false, keepLegs: false);
+const _freeStart = OrderChoice(keepStart: false, keepEnd: true, keepLegs: true);
+const _freeBoth = OrderChoice(keepStart: false, keepEnd: false, keepLegs: true);
 
 List<String>? _keys(DistanceOrderChoices c, OrderChoice choice) =>
     c.resultFor(choice)?.rowKeys;
 
 /// A random asymmetric table of metres for m movable blocks, with a fixed or
-/// a virtual end (a column of zeros into node m+1).
-PathCosts _randomCosts(math.Random rng, int m, {required bool fixedEnd}) {
+/// a virtual start (a row of zeros out of node 0) and a fixed or a virtual end
+/// (a column of zeros into node m+1).
+PathCosts _randomCosts(
+  math.Random rng,
+  int m, {
+  required bool fixedEnd,
+  bool fixedStart = true,
+}) {
   final n = m + 2;
   return PathCosts.fromRows([
     for (var u = 0; u < n; u++)
       [
         for (var v = 0; v < n; v++)
-          if (u == v || v == 0 || u == n - 1 || (v == n - 1 && !fixedEnd))
+          if (u == v ||
+              v == 0 ||
+              u == n - 1 ||
+              (v == n - 1 && !fixedEnd) ||
+              (u == 0 && !fixedStart))
             0
           else
             rng.nextInt(20000),
@@ -155,10 +168,33 @@ void main() {
         _at('E', 0.05),
       ]);
       expect(_keys(c, _keepAll), ['S', 'B', 'D', 'A', 'C', 'E']);
-      // E is the far end anyway: where the trip ends changes nothing.
+      // S and E are the line's two ends anyway: where the trip starts or ends
+      // changes nothing.
+      expect(c.startMatters, isFalse);
       expect(c.endMatters, isFalse);
       expect(c.legsMatter, isFalse);
       expect(c.reason, isNull);
+    });
+
+    test('the start stays first only when asked; free, the trip starts where '
+        'the path is shortest', () async {
+      final c = await _choices([
+        _at('S', 0.02),
+        _at('A', 0.00),
+        _at('B', 0.01),
+        _at('C', 0.03),
+        _at('D', 0.04),
+      ]);
+      // Kept first, S is already left the shortest way.
+      expect(c.resultFor(_keepAll), isNull);
+      expect(c.resultFor(_freeEnd), isNull);
+      final order = c.resultFor(_freeStart)!;
+      expect(order.rowKeys, ['A', 'B', 'S', 'C', 'D']);
+      expect(order.wasNumber, {'S': 1});
+      expect(c.startMatters, isTrue);
+      // D is the far end whichever way the trip starts.
+      expect(_keys(c, _freeBoth), order.rowKeys);
+      expect(c.endMatters, isFalse);
     });
 
     test('the end stays last only when asked; free, it ends where it is '
@@ -219,6 +255,10 @@ void main() {
       // A·C·B and B·C·A are equally short; A·C·B inverts less of A·B·C.
       expect(_keys(c, _freeEnd), ['U', 'A', 'C', 'B']);
       expect(c.resultFor(_freeEnd)!.unmeasured, 0);
+      // Nothing says where else U would go: it stays first, whatever the
+      // answer, and the start is never asked about.
+      expect(_keys(c, _freeBoth), ['U', 'A', 'C', 'B']);
+      expect(c.startMatters, isFalse);
     });
 
     test('Google places and Google Maps links are never measured', () async {
@@ -263,7 +303,7 @@ void main() {
     test('deleted, the order is shorter and names the segment it breaks',
         () async {
       final c = await _choices(tracks, segments: legs);
-      final broken = c.resultFor(_freeAll)!;
+      final broken = c.resultFor(_freeEndNoLegs)!;
       expect(broken.rowKeys, ['S', 'Y', 'Z', 'X']);
       expect(broken.brokenLegs.map((s) => s.id), ['leg']);
       expect(c.legsMatter, isTrue);
@@ -274,8 +314,7 @@ void main() {
       final c = await _choices(tracks, segments: [_segment('back', 'Y', 'X')]);
       expect(c.legsLive, isFalse);
       expect(c.legsMatter, isFalse);
-      expect(_keys(c, _keepAll),
-          _keys(c, const OrderChoice(keepEnd: true, keepLegs: false)));
+      expect(_keys(c, _keepAll), _keys(c, _keepAll.copyWith(keepLegs: false)));
     });
   });
 
@@ -311,7 +350,8 @@ void main() {
       expect(c.reason, NoOrderReason.alreadyInOrder);
     });
 
-    test('fewer than two located tracks after the first is too few', () async {
+    test('fewer than three located tracks is too few, wherever they are',
+        () async {
       final c = await _choices([
         _at('S', 0.00),
         _at('A', 0.03),
@@ -321,6 +361,16 @@ void main() {
       expect(c.reason, NoOrderReason.tooFewLocated);
       expect(c.located, 2);
       expect(c.total, 4);
+
+      // Behind a first track nothing locates: between A and B, either order
+      // is as short.
+      final behind = await _choices([
+        _at('U', null),
+        _at('A', 0.03),
+        _at('B', 0.01),
+        _at('C', null),
+      ]);
+      expect(behind.reason, NoOrderReason.tooFewLocated);
     });
 
     test('two tracks have nothing to move', () async {
@@ -351,11 +401,12 @@ void main() {
   });
 
   group('Held-Karp', () {
-    test('matches brute force, with a fixed and with a virtual end', () {
+    test('matches brute force, with a fixed or a virtual start and end', () {
       final rng = math.Random(42);
-      for (var trial = 0; trial < 60; trial++) {
+      for (var trial = 0; trial < 80; trial++) {
         final m = 2 + trial % 7;
-        final d = _randomCosts(rng, m, fixedEnd: trial.isEven);
+        final d = _randomCosts(rng, m,
+            fixedStart: trial % 4 < 2, fixedEnd: trial.isEven);
         expect(d.lengthOf(exactOrder(d)), _bruteForce(d),
             reason: 'trial $trial, m=$m');
       }
@@ -365,7 +416,8 @@ void main() {
         () {
       final rng = math.Random(3);
       for (var trial = 0; trial < 20; trial++) {
-        final d = _randomCosts(rng, 3 + trial % 9, fixedEnd: trial.isOdd);
+        final d = _randomCosts(rng, 3 + trial % 9,
+            fixedStart: trial % 4 < 2, fixedEnd: trial.isOdd);
         final (:order, :score) = exactOrderWithScore(d);
         expect(score ~/ 256, d.lengthOf(order));
       }
@@ -385,7 +437,8 @@ void main() {
     test('never longer than the input order, and the input wins a tie', () async {
       final rng = math.Random(11);
       for (var trial = 0; trial < 10; trial++) {
-        final d = _randomCosts(rng, 13 + trial, fixedEnd: trial.isEven);
+        final d = _randomCosts(rng, 13 + trial,
+            fixedStart: trial % 4 < 2, fixedEnd: trial.isEven);
         final order = await localSearchOrder(d);
         expect(d.lengthOf(order), lessThanOrEqualTo(d.lengthOf(d.identity())));
         expect(order.toSet(), d.identity().toSet(), reason: 'a permutation');
@@ -402,7 +455,8 @@ void main() {
       final rng = math.Random(5);
       for (var trial = 0; trial < 200; trial++) {
         final m = 3 + trial % 15;
-        final d = _randomCosts(rng, m, fixedEnd: trial.isEven);
+        final d = _randomCosts(rng, m,
+            fixedStart: trial % 4 < 2, fixedEnd: trial.isEven);
         final p = [0, ...([for (var i = 1; i <= m; i++) i]..shuffle(rng)), m + 1];
         final f = List<int>.filled(m + 2, 0), r = List<int>.filled(m + 2, 0);
         for (var k = 0; k <= m; k++) {
@@ -443,6 +497,10 @@ void main() {
       final d = _freeEndCosts(tracks);
       expect(d.lengthOf(nearestNeighbourOrder(d)), greaterThan(order.lengthMetres));
       expect(order.rowKeys, _pinnedScatteredOrder);
+      // A free start too: the same order every run, never longer than now.
+      final free = first.resultFor(_freeBoth)!;
+      expect(free.rowKeys, again.resultFor(_freeBoth)!.rowKeys);
+      expect(free.lengthMetres, lessThan(free.previousLengthMetres));
     });
 
     test('40 tracks: every choice worked out within the budget', () async {
@@ -450,12 +508,13 @@ void main() {
       final c = await _choices(_scattered(40));
       watch.stop();
       expect(c.hasSuggestion, isTrue);
-      // Measured 285–362 ms here on the development Mac (2026-11-14, two
-      // choices); release builds took 153 ms (AOT) and 174 ms (dart2js -O2,
-      // Node 22). The budget is about ten times the VM's, so a slow machine
-      // passes and an accidental O(m⁴) does not. The VM only: the browser
-      // test runner compiles without release optimisation (5.5 s).
-      expect(watch.elapsedMilliseconds, lessThan(3000));
+      // Measured 470–680 ms here on the development Mac (2026-11-14, four
+      // choices: the start and the end, each kept or free); release builds
+      // took about 350 ms (AOT) and 380 ms (dart2js -O2, Node 22). The budget
+      // is about ten times the VM's, so a slow machine passes and an
+      // accidental O(m⁴) does not. The VM only: the browser test runner
+      // compiles without release optimisation.
+      expect(watch.elapsedMilliseconds, lessThan(6000));
     }, testOn: 'vm');
 
     test('cancelled at a pause, the work stops and answers nothing', () async {

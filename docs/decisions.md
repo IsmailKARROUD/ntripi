@@ -3761,3 +3761,47 @@ before anything was built.
   reason. The owner chose to show it always and compute on the tap.
 - **Reordering the alternatives inside a track by distance**: their order is
   the author's preference, and the traveller visits only one of them.
+
+### 2026-11-14 — Order by distance asks where the trip starts, too
+
+**Context.** When the owner tried Order by distance on a trip, the app asked
+nothing about its start or end and went straight to the suggested order. That
+followed the entry above: the first track always stayed first (the grill
+option "Ask each time" said so), and the end was asked about only when its
+two answers gave different orders. On that trip they did not.
+
+**Decision.** This supersedes "the first track stays first" in the entry above.
+- **The start is a question too**, worded like the end's: at the first track,
+  or wherever fits best ("Would start at ‹name›"). Its default is the careful
+  answer, the first track.
+- **Every question still shows only when its answer changes the order**, for
+  the start, the end and the transit segments alike. The owner chose this over
+  asking about the start and the end on every tap, knowing that a trip where
+  no answer changes anything still goes straight to the preview.
+- **When the sheet opens, it covers both the start and the end.** One it does
+  not ask about is stated under the title ("Starts at ‹first›, which stays
+  first." / "Ends at ‹last›, which stays last.").
+- **A first track without a saved location stays first.** Nothing says where
+  else it would go, so the start is never asked about in that case.
+- **"Too few located" means fewer than three tracks with a location.** With a
+  free start, two points are as short in either order. The old rule ("fewer
+  than two after the first") answered "already in order" when only the first
+  track lacked a location and two others had one.
+
+**Consequences.**
+- Each tap works out up to eight combinations instead of four: four with no
+  live transit segment, and half that when the first track has no location.
+  A 40-track trip went from 0.15 s to about 0.35 s in release builds, and 60
+  tracks take 1.4–2 s. The work still yields between kicks, and Back stops
+  it.
+- Six new strings in each of the six languages. The help step
+  `order-by-distance` now says the start is asked about too.
+- The search itself is unchanged. A free start is a virtual node that costs 0
+  to leave, the same convention as a first track nothing locates.
+
+**Alternatives rejected.**
+- **Asking about the start and the end on every tap**: the owner chose to keep
+  asking only what changes the order.
+- **Asking first and working the order out afterwards**: it would work out one
+  combination instead of eight. But the sheet could give no "would start at"
+  hint, and a fully answered sheet could still end in "nothing better".

@@ -3,7 +3,9 @@
 //
 // The button is there from three tracks and works out nothing until it is
 // tapped. A tap that finds no better order says why; otherwise the sheet asks
-// only what changes the answer, and the suggestion is shown read-only under a
+// only what changes the answer — where the trip starts, where it ends, the
+// transit segments — and says the start or the end stays when no answer
+// moves it. The suggestion is shown read-only under a
 // bar whose Save saves it at once — one request, no second question about
 // transit, nothing downloaded after — and whose Cancel leaves arrange mode as
 // it was. Back over any of it ends Order by distance, and only that.
@@ -339,6 +341,49 @@ void main() {
 
     expect(_rows(tester), ['t1', 't2', 't4', 't3']);
     expect(find.byType(SuggestedOrderBar), findsOneWidget);
+  });
+
+  testWidgets(
+      'the sheet asks where the trip starts when that changes the answer, says '
+      'the end stays, and Suggest waits for a start that changes the order',
+      (tester) async {
+    final api = RecordingDio();
+    // Market, the first track, sits between the others: kept first, it is
+    // already left the shortest way; free, the trip starts at Hotel. Beach is
+    // the far end whichever way it starts.
+    final l10n = await _pump(
+        tester,
+        api,
+        tripJson(tracks: [
+          _at('t1', 'Market', 0.02, 'a'),
+          _at('t2', 'Hotel', 0.00, 'b'),
+          _at('t3', 'Museum', 0.01, 'c'),
+          _at('t4', 'Gallery', 0.03, 'd'),
+          _at('t5', 'Beach', 0.04, 'e'),
+        ]));
+    await _arrange(tester, l10n);
+    await _orderByDistance(tester, l10n);
+
+    expect(_section(l10n.orderByDistanceStartTitle), findsOneWidget);
+    expect(_section(l10n.orderByDistanceEndTitle), findsNothing);
+    expect(find.text(l10n.orderByDistanceEndsAt('Beach')), findsOneWidget);
+    expect(find.text(l10n.orderByDistanceStartsAt('Market')), findsNothing);
+    expect(
+        find.text(l10n.orderByDistanceStartAtFirst('Market')), findsOneWidget);
+    expect(find.text(l10n.orderByDistanceWouldStartAt('Hotel')), findsOneWidget);
+    expect(find.text(l10n.orderByDistanceNoChange), findsOneWidget);
+    expect(_sheetSuggest(tester, l10n).onPressed, isNull);
+
+    await tester.tap(find.text(l10n.orderByDistanceStartAnywhere));
+    await tester.pumpAndSettle();
+    expect(find.text(l10n.orderByDistanceNoChange), findsNothing);
+    await tester.tap(find.text(l10n.orderByDistanceSuggest));
+    await tester.pumpAndSettle();
+
+    expect(_rows(tester), ['t2', 't3', 't1', 't4', 't5']);
+    // The first track is the one to move by hand.
+    expect(find.text(l10n.arrangeWasNumber(1)), findsOneWidget);
+    expect(find.text(l10n.suggestedOrderMoved(1, 5)), findsOneWidget);
   });
 
   testWidgets(

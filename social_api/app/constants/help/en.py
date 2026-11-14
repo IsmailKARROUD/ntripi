@@ -610,6 +610,7 @@ ARTICLES: tuple[Article, ...] = (
             "either or", "rainy day", "weather", "choice", "choices",
             "arrange", "rearrange", "reorder", "move a stop", "drag",
             "order by distance", "distance", "shortest route", "optimise", "optimize", "nearest", "sort stops",
+            "starting point", "end point",
         ),
         related=("plan-a-trip-itinerary", "getting-started"),
         cta="Plan a trip with real alternatives, not a single fragile line.",
@@ -690,9 +691,11 @@ ARTICLES: tuple[Article, ...] = (
                     "With three or more tracks, arrange mode offers **Order by "
                     "distance**: an order in which each track is followed by the "
                     "nearest one, measured in a straight line between the stops' "
-                    "saved locations. The first track stays first. When it changes "
-                    "the answer, Ntripi asks whether the last one should stay last, "
-                    "and whether stops joined by transport should stay together.\n\n"
+                    "saved locations. When it changes the answer, Ntripi asks "
+                    "whether the first track should stay first, whether the last "
+                    "one should stay last, and whether stops joined by transport "
+                    "should stay together. If the first track has no saved "
+                    "location, it stays first.\n\n"
                     "You see the suggested order before anything changes: how many "
                     "tracks move, and **was 4** beside each track that moved. "
                     "**Save** saves it; **Cancel** leaves the trip as it was.\n\n"

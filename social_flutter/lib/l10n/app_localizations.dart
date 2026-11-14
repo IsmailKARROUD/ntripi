@@ -2740,11 +2740,47 @@ abstract class AppLocalizations {
   /// **'Working out an order…'**
   String get orderByDistanceWorking;
 
-  /// No description provided for @orderByDistanceStartsAt.
+  /// Order by distance's sheet, when no answer moves the trip's first stop (or nothing locates it): it stays first.
   ///
   /// In en, this message translates to:
   /// **'Starts at {name}, which stays first.'**
   String orderByDistanceStartsAt(String name);
+
+  /// Order by distance's sheet, when no answer moves the trip's last stop: it stays last.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends at {name}, which stays last.'**
+  String orderByDistanceEndsAt(String name);
+
+  /// No description provided for @orderByDistanceStartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Where should the trip start?'**
+  String get orderByDistanceStartTitle;
+
+  /// Order by distance: the trip keeps starting at its first stop now.
+  ///
+  /// In en, this message translates to:
+  /// **'At {name}'**
+  String orderByDistanceStartAtFirst(String name);
+
+  /// No description provided for @orderByDistanceStartAtFirstHint.
+  ///
+  /// In en, this message translates to:
+  /// **'It stays the first stop'**
+  String get orderByDistanceStartAtFirstHint;
+
+  /// No description provided for @orderByDistanceStartAnywhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Wherever fits best'**
+  String get orderByDistanceStartAnywhere;
+
+  /// No description provided for @orderByDistanceWouldStartAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Would start at {name}'**
+  String orderByDistanceWouldStartAt(String name);
 
   /// No description provided for @orderByDistanceEndTitle.
   ///

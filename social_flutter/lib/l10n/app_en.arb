@@ -679,6 +679,36 @@
   },
   "orderByDistanceStartsAt": "Starts at {name}, which stays first.",
   "@orderByDistanceStartsAt": {
+    "description": "Order by distance's sheet, when no answer moves the trip's first stop (or nothing locates it): it stays first.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderByDistanceEndsAt": "Ends at {name}, which stays last.",
+  "@orderByDistanceEndsAt": {
+    "description": "Order by distance's sheet, when no answer moves the trip's last stop: it stays last.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderByDistanceStartTitle": "Where should the trip start?",
+  "orderByDistanceStartAtFirst": "At {name}",
+  "@orderByDistanceStartAtFirst": {
+    "description": "Order by distance: the trip keeps starting at its first stop now.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderByDistanceStartAtFirstHint": "It stays the first stop",
+  "orderByDistanceStartAnywhere": "Wherever fits best",
+  "orderByDistanceWouldStartAt": "Would start at {name}",
+  "@orderByDistanceWouldStartAt": {
     "placeholders": {
       "name": {
         "type": "String"

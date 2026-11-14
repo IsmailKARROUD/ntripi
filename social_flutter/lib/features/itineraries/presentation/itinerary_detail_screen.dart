@@ -549,9 +549,10 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
       ));
       return;
     }
-    var choice = const OrderChoice(keepEnd: true, keepLegs: true);
+    var choice =
+        const OrderChoice(keepStart: true, keepEnd: true, keepLegs: true);
     // No question whose answer changes the order: nothing to ask.
-    if (choices.endMatters || choices.legsMatter) {
+    if (choices.startMatters || choices.endMatters || choices.legsMatter) {
       final asked = await showOrderByDistanceSheet(context,
           choices: choices, arrangement: arrangement);
       if (asked == null || !mounted || moot()) return;

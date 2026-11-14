@@ -414,7 +414,7 @@ Rien n’est enregistré avant que vous touchiez **Enregistrer**. Une piste n’
                 anchor="order-by-distance",
                 heading="Ordonner les pistes par distance",
                 kind=KIND_STEP,
-                body="""À partir de trois pistes, le mode **Organiser les étapes** propose **Ordonner par distance** : un ordre où chaque piste est suivie de la plus proche, mesuré en ligne droite entre les localisations enregistrées des étapes. La première piste reste la première. Quand cela change la réponse, Ntripi demande si la dernière doit rester la dernière, et si les étapes reliées par un transit doivent rester ensemble.
+                body="""À partir de trois pistes, le mode **Organiser les étapes** propose **Ordonner par distance** : un ordre où chaque piste est suivie de la plus proche, mesuré en ligne droite entre les localisations enregistrées des étapes. Quand cela change la réponse, Ntripi demande si la première piste doit rester la première, si la dernière doit rester la dernière, et si les étapes reliées par un transit doivent rester ensemble. Une première piste sans localisation enregistrée reste la première.
 
 Vous voyez l’ordre proposé avant que rien ne change : combien de pistes bougent, et **avant : 4** à côté de chaque piste déplacée. **Enregistrer** l’enregistre ; **Annuler** laisse le voyage tel qu’il était.
 
@@ -456,6 +456,8 @@ L’organisation fonctionne de la même façon : si un déplacement sépare deux
             "optimiser",
             "plus proche",
             "trier les étapes",
+            "point de départ",
+            "point d'arrivée",
         ),
         related=("plan-a-trip-itinerary", "getting-started"),
         updated="2026-11-14",

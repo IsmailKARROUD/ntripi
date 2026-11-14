@@ -1521,6 +1521,30 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String orderByDistanceEndsAt(String name) {
+    return 'Endet bei $name, das an letzter Stelle bleibt.';
+  }
+
+  @override
+  String get orderByDistanceStartTitle => 'Wo soll die Reiseroute beginnen?';
+
+  @override
+  String orderByDistanceStartAtFirst(String name) {
+    return 'Bei $name';
+  }
+
+  @override
+  String get orderByDistanceStartAtFirstHint => 'Bleibt der erste Stopp';
+
+  @override
+  String get orderByDistanceStartAnywhere => 'Wo es am besten passt';
+
+  @override
+  String orderByDistanceWouldStartAt(String name) {
+    return 'Würde bei $name beginnen';
+  }
+
+  @override
   String get orderByDistanceEndTitle => 'Wo soll die Reiseroute enden?';
 
   @override

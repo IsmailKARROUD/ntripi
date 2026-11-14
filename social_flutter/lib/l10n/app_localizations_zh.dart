@@ -1434,6 +1434,30 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String orderByDistanceEndsAt(String name) {
+    return '在 $name 结束，它仍排在最后一位。';
+  }
+
+  @override
+  String get orderByDistanceStartTitle => '行程应从哪里开始？';
+
+  @override
+  String orderByDistanceStartAtFirst(String name) {
+    return '在 $name';
+  }
+
+  @override
+  String get orderByDistanceStartAtFirstHint => '它仍是第一个停靠点';
+
+  @override
+  String get orderByDistanceStartAnywhere => '最合适的地方';
+
+  @override
+  String orderByDistanceWouldStartAt(String name) {
+    return '将从 $name 出发';
+  }
+
+  @override
   String get orderByDistanceEndTitle => '行程应在哪里结束？';
 
   @override

@@ -58,8 +58,9 @@ class OrderByDistanceButton extends StatelessWidget {
   }
 }
 
-/// Asks where the trip ends and whether linked tracks stay together — only
-/// what changes the answer — and returns the choice, or null for Cancel.
+/// Asks where the trip starts, where it ends and whether linked tracks stay
+/// together — only what changes the answer — and returns the choice, or null
+/// for Cancel. A start or an end no answer moves is said instead of asked.
 Future<OrderChoice?> showOrderByDistanceSheet(
   BuildContext context, {
   required DistanceOrderChoices choices,
@@ -89,11 +90,14 @@ class _OrderByDistanceSheet extends StatefulWidget {
 }
 
 class _OrderByDistanceSheetState extends State<_OrderByDistanceSheet> {
-  // The careful answers first: the end stays, and no segment is deleted.
+  // The careful answers first: the start and the end stay, and no segment is
+  // deleted.
+  bool _keepStart = true;
   bool _keepEnd = true;
   bool _keepLegs = true;
 
-  OrderChoice get _choice => OrderChoice(keepEnd: _keepEnd, keepLegs: _keepLegs);
+  OrderChoice get _choice => OrderChoice(
+      keepStart: _keepStart, keepEnd: _keepEnd, keepLegs: _keepLegs);
 
   @override
   Widget build(BuildContext context) {
@@ -102,10 +106,16 @@ class _OrderByDistanceSheetState extends State<_OrderByDistanceSheet> {
     final choices = widget.choices;
     final rows = widget.arrangement.rows;
     final result = choices.resultFor(_choice);
-    final freeEnd =
-        choices.resultFor(OrderChoice(keepEnd: false, keepLegs: _keepLegs));
-    final breaking =
-        choices.resultFor(OrderChoice(keepEnd: _keepEnd, keepLegs: false));
+    final freeStart = choices.resultFor(_choice.copyWith(keepStart: false));
+    final freeEnd = choices.resultFor(_choice.copyWith(keepEnd: false));
+    final breaking = choices.resultFor(_choice.copyWith(keepLegs: false));
+    // Whatever is not asked stays where it is, and the sheet says so.
+    final staying = [
+      if (!choices.startMatters)
+        l10n.orderByDistanceStartsAt(_rowName(rows.first, l10n)),
+      if (!choices.endMatters)
+        l10n.orderByDistanceEndsAt(_rowName(rows.last, l10n)),
+    ];
 
     Widget check(bool selected) => Icon(
           selected ? Icons.check_circle_rounded : Icons.circle_outlined,
@@ -160,7 +170,7 @@ class _OrderByDistanceSheetState extends State<_OrderByDistanceSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(22, 6, 22, 4),
+            padding: EdgeInsets.fromLTRB(22, 6, 22, staying.isEmpty ? 14 : 4),
             child: Text(
               l10n.orderByDistance,
               style: TextStyle(
@@ -171,13 +181,48 @@ class _OrderByDistanceSheetState extends State<_OrderByDistanceSheet> {
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(22, 0, 22, 14),
-            child: Text(
-              l10n.orderByDistanceStartsAt(_rowName(rows.first, l10n)),
-              style: TextStyle(fontSize: 13, height: 1.35, color: nt.text2),
+          if (staying.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(22, 0, 22, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final line in staying)
+                    Text(
+                      line,
+                      style:
+                          TextStyle(fontSize: 13, height: 1.35, color: nt.text2),
+                    ),
+                ],
+              ),
             ),
-          ),
+          if (choices.startMatters) ...[
+            SectionLabel(label: l10n.orderByDistanceStartTitle),
+            SectionCard(
+              clipBehavior: Clip.antiAlias,
+              children: [
+                option(
+                  icon: Icons.trip_origin_rounded,
+                  label: l10n
+                      .orderByDistanceStartAtFirst(_rowName(rows.first, l10n)),
+                  subtitle: l10n.orderByDistanceStartAtFirstHint,
+                  selected: _keepStart,
+                  onTap: () => setState(() => _keepStart = true),
+                ),
+                option(
+                  icon: Icons.alt_route_rounded,
+                  label: l10n.orderByDistanceStartAnywhere,
+                  subtitle: freeStart == null
+                      ? null
+                      : l10n.orderByDistanceWouldStartAt(
+                          _rowName(freeStart.arrangement.rows.first, l10n)),
+                  selected: !_keepStart,
+                  isLast: true,
+                  onTap: () => setState(() => _keepStart = false),
+                ),
+              ],
+            ),
+          ],
           if (choices.endMatters) ...[
             SectionLabel(label: l10n.orderByDistanceEndTitle),
             SectionCard(

@@ -38,10 +38,13 @@ backend route, and the save is arrange mode's own single `POST /reorder`
   and no track is split or merged.
 - A track is measured from its **first alternative with saved coordinates**.
 - **A track with no measurable alternative stays after the track before it.**
-- **The first track always stays first.**
-- **The end is asked about each time**: the last track stays last, or the
-  trip ends wherever fits best.
-- **Transit segments are asked about each time** (when it matters). Keeping
+  A first track with none has no track before it, so it **stays first**.
+- **The start and the end are asked about, each only when the answer changes
+  the order**: the first track stays first, or the trip starts wherever fits
+  best; the last stays last, or the trip ends wherever fits best. A start or
+  an end no answer moves is not asked about (decisions.md, the second
+  2026-11-14 entry).
+- **Transit segments are asked about, when it matters.** Keeping
   them moves tracks joined by a segment that is live in the arrangement as it
   stands as one block, in their direction. Deleting them lets those tracks move
   apart, and the save then deletes the segments, as any arrange-mode save does.
@@ -51,7 +54,9 @@ backend route, and the save is arrange mode's own single `POST /reorder`
 `domain/order_by_distance.dart` solves an open-path asymmetric travelling
 salesman problem over the blocks. Going from block A to block B costs the
 haversine distance from A's last point to B's first, in **whole metres**. With
-a free end the path ends at a virtual end that costs 0 to reach.
+a free end the path ends at a virtual end that costs 0 to reach; with a free
+start it leaves from a virtual start that costs 0 to leave, and the first block
+is one of the movable ones.
 
 - **Up to 12 movable blocks: exact Held-Karp.** Every step, the first and the
   last included, scores `d × 256 + popcount(visited blocks above it)`. Among
@@ -77,13 +82,19 @@ a free end the path ends at a virtual end that costs 0 to reach.
   `kOrderMinGainPercent`), so the button never offers a reshuffle for a few
   metres.
 - **Nothing is worked out before the tap.** The button is shown in arrange
-  mode from three tracks (with two, the start is fixed and nothing can move).
-  The work runs on the tap, `async`, yielding between kicks so the screen keeps
-  drawing (the web has no isolates). A 40-track trip (two choices) took
-  153 ms in an AOT build and 174 ms in release JavaScript (dart2js `-O2`);
-  60 tracks about 0.6 s (2026-11-14). The browser *test runner* is about 30
-  times slower — it compiles without release optimisation — so the time budget
-  test runs on the VM only.
+  mode from three tracks (with two, either order is as short). The work runs
+  on the tap, `async`, yielding between kicks so the screen keeps drawing (the
+  web has no isolates).
+  - Every combination of the three answers is worked out then: up to eight,
+    four with no live transit segment, and half that when the first track has
+    no location. Choices that come to the same thing are worked out once.
+  - A 40-track trip (four choices) took about 0.35 s in an AOT build and
+    0.38 s in release JavaScript (dart2js `-O2`); 60 tracks took 1.4–2 s
+    (2026-11-14, on a busy development Mac). With two choices, before the
+    start became a question, 40 tracks took 0.15 s.
+  - The browser *test runner* is about 30 times slower, because it compiles
+    without release optimisation, so the time budget test runs on the VM
+    only.
 
 ## Data model
 
@@ -102,13 +113,18 @@ arrange mode's Save ([tracks-and-stops.md](tracks-and-stops.md)).
   - On a tap it reads "Working out an order…" until the answer is in. Meanwhile
     the rows take no touch, the header's ✕ and Save wait, and Back stops it.
   - A tap that finds no better order says why in a SnackBar: "Only N of M
-    tracks have a saved location…" when fewer than two tracks after the first
-    can be measured, otherwise "The tracks are already in order by distance".
+    tracks have a saved location…" when fewer than three tracks can be
+    measured (between two points, either order is as short), otherwise "The
+    tracks are already in order by distance".
 - **`showOrderByDistanceSheet`** asks **only the questions whose answer changes
-  the result**: where the trip ends, and whether to keep or delete transit
-  segments. When none does, there is no sheet. The defaults are the careful
-  answers (end kept, segments kept). If the chosen answers change nothing,
-  Suggest is disabled and the sheet says the order stays as it is.
+  the result**: where the trip starts, where it ends, and whether to keep or
+  delete transit segments. When none does, there is no sheet.
+  - A start or an end it does not ask about is stated under the title instead:
+    "Starts at ‹first›, which stays first." and "Ends at ‹last›, which stays
+    last.".
+  - The defaults are the careful answers: start kept, end kept, segments kept.
+  - If the chosen answers change nothing, Suggest is disabled and the sheet
+    says the order stays as it is.
 - **The preview** is arrange mode's rows, read-only, in the suggested order
   (`ArrangeTripView(previewWas:)`).
   - Each track a user would have to move by hand carries "was N": the rows
