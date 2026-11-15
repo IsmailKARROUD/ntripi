@@ -138,6 +138,10 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # Runs tests on a phone: Order by distance's golden days and timings
+  # (integration_test/order_by_distance_device_test.dart).
+  integration_test:
+    sdk: flutter
   flutter_lints: ^6.0.0
   # Code generation for Riverpod providers (@riverpod annotation)
   riverpod_generator: ^4.0.4

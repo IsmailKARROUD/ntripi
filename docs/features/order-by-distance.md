@@ -58,12 +58,21 @@ a free end the path ends at a virtual end that costs 0 to reach; with a free
 start it leaves from a virtual start that costs 0 to leave, and the first block
 is one of the movable ones.
 
-- **Up to 12 movable blocks: exact Held-Karp.** Every step, the first and the
-  last included, scores `d × 256 + popcount(visited blocks above it)`. Among
-  equally short orders, the one inverting least of the user's order wins; on a
-  tie, the user's own order. The metres are `score ~/ 256` (at most 66
-  inversions, under 256). Scores live in a `Float64List`, because `Int64List`
-  is unsupported on the web; the largest score (≈7×10¹⁰) is exact below 2⁵³.
+- **The cost table** is built in one place, `PathCosts.of`: the trip builds
+  it with `straightLineMetres`, the tests with points on a line or a plane. A
+  movable block's points are never null by type, so a block nothing locates
+  cannot reach the search.
+- **Up to 12 movable blocks: exact Held-Karp** (`bestOrder` makes the switch).
+  - Every step, the first and the last included, scores
+    `d × 256 + popcount(visited blocks above it)`. Among equally short orders,
+    the one inverting least of the user's order wins; on a tie, the user's own
+    order.
+  - The metres are `score ~/ 256`. At most 120 inversions are counted, under
+    256.
+  - Scores live in a `Float64List`, because `Int64List` is unsupported on the
+    web. The largest score (≈10¹¹) is exact below 2⁵³.
+  - The function itself takes up to 16 blocks (`kOrderExactLimit`). The tests
+    use it at 13–16 blocks as the exact answer the local search is held to.
 - **Above 12: iterated local search.**
   - It starts from the input order and from the nearest-neighbour order; the
     shorter wins, the input on a tie.
@@ -81,20 +90,34 @@ is one of the movable ones.
   the current straight-line length (`kOrderMinGainMetres`,
   `kOrderMinGainPercent`), so the button never offers a reshuffle for a few
   metres.
-- **Nothing is worked out before the tap.** The button is shown in arrange
-  mode from three tracks (with two, either order is as short). The work runs
-  on the tap, `async`, yielding between kicks so the screen keeps drawing (the
-  web has no isolates).
+- **Nothing is worked out before the tap, and no trip is too big.** The
+  button is shown in arrange mode from three tracks (with two, either order is
+  as short), with no upper limit (the owner's choice, decisions.md
+  2026-11-15). The work runs on the tap, `async` (the web has no isolates).
   - Every combination of the three answers is worked out then: up to eight,
     four with no live transit segment, and half that when the first track has
     no location. Choices that come to the same thing are worked out once.
-  - A 40-track trip (four choices) took about 0.35 s in an AOT build and
-    0.38 s in release JavaScript (dart2js `-O2`); 60 tracks took 1.4–2 s
-    (2026-11-14, on a busy development Mac). With two choices, before the
-    start became a question, 40 tracks took 0.15 s.
+  - **The screen gets a turn about once a frame** (`kOrderYieldEveryMs`,
+    16 ms): the local search pauses between moves and between kicks, and a
+    pause hands the event loop a turn only once 16 ms have passed. That keeps
+    the spinner turning and Cancel heard on any size of trip.
+    - A turn at every pause would cost a browser at least 4 ms each, once its
+      timers nest: 100 pauses took 0.46 s in Edge, against 8 ms on the VM
+      (2026-11-15).
+    - The clock decides only when the screen gets a turn, never how much work
+      is done, so every device still gives the same answer.
+  - Times for all four choices, on the development Mac (2026-11-15):
+
+    | Tracks | AOT | dart2js `-O2` |
+    |---|---|---|
+    | 12 | 7 ms | 25 ms |
+    | 40 | 0.33 s | 0.44 s |
+    | 60 | 1.2 s | 1.5 s |
+
+    It roughly doubles with a live transit segment (eight choices). A phone
+    can be two or three times slower; the device test prints its own.
   - The browser *test runner* is about 30 times slower, because it compiles
-    without release optimisation, so the time budget test runs on the VM
-    only.
+    without release optimisation: 60 tracks took 50 s there.
 
 ## Data model
 
@@ -110,8 +133,11 @@ arrange mode's Save ([tracks-and-stops.md](tracks-and-stops.md)).
 
 - **`OrderByDistanceButton`** (`widgets/order_by_distance_sheet.dart`), above
   the arrange rows from three tracks.
-  - On a tap it reads "Working out an order…" until the answer is in. Meanwhile
-    the rows take no touch, the header's ✕ and Save wait, and Back stops it.
+  - On a tap it reads "Working out an order…" with a spinner and a **Cancel**
+    beside it, until the answer is in. Meanwhile everything else waits: the
+    page above is dimmed, the rows take no touch, and the header's ✕ and Save
+    are disabled. Cancel, like Back, stops the work and leaves arrange mode as
+    it was; an answer that lands afterwards is dropped.
   - A tap that finds no better order says why in a SnackBar: "Only N of M
     tracks have a saved location…" when fewer than three tracks can be
     measured (between two points, either order is as short), otherwise "The
@@ -143,9 +169,33 @@ arrange mode's Save ([tracks-and-stops.md](tracks-and-stops.md)).
 - **`orderByDistanceSolverProvider`** (`providers/order_by_distance_provider.dart`)
   is the solver's seam: `test/widgets/order_by_distance_test.dart` counts its
   calls to hold "nothing before the tap".
-- Tests: `test/models/order_by_distance_test.dart` (the solvers, the
-  tie-breaks, the 2-opt formula, the pinned generator and a pinned 30-track
-  order) and `test/widgets/order_by_distance_test.dart` (the flow).
+- **Tests**, after the owner's 35-item specification (2026-11-15):
+  - `test/models/order_by_distance_solver_test.dart`: the solver alone, on a
+    line or a plane, through `PathCosts.of`.
+    - Edge cases, the exact search against brute force (840 days), and the
+      local search's line, grid and rectangle cases.
+    - The building blocks: the generator, 2,000 kicks per size, and every
+      move's own change held to the path measured again through the steps'
+      `MoveProbe`.
+    - The rules every answer keeps. On the VM only: the heavy batches, no
+      crossings, and at least 95% as short as the exact search at 13, 14 and
+      16 blocks.
+  - `test/models/order_by_distance_test.dart`: whole trips. What is read and
+    moved; lengths measured again from the stops; tracks nothing locates;
+    transit segments kept whole; distances of 20,000 km; and
+    `straightLineMetres`.
+  - `test/models/order_by_distance_golden_test.dart`: 30 fixed trips
+    (`test/support/order_by_distance_days.dart`), every choice, held to
+    `order_by_distance_golden.dart`, on the VM and in the browser.
+    - Rewrite the golden file on purpose only, with
+      `order_by_distance_golden_writer_test.dart` and
+      `--dart-define=UPDATE_ORDER_GOLDEN=true`.
+    - On a phone, run `integration_test/order_by_distance_device_test.dart`
+      (`flutter drive --profile`), which also prints its timings.
+  - `test/speed/order_by_distance_speed_test.dart`: 12 and 60 tracks,
+    budgets about ten times what each runner measured. Skipped unless run
+    with `--dart-define=ORDER_SPEED=true`.
+  - `test/widgets/order_by_distance_test.dart`: the flow, Cancel included.
 
 ## Known gaps
 

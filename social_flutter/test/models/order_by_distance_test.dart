@@ -1,173 +1,53 @@
-// test/models/order_by_distance_test.dart — Order by distance, as plain
-// function calls: what it reads (a stop's own coordinates, never Google's),
-// what it moves (whole tracks, glued where they must stay together), and the
-// two solvers' promises — exact up to 12 blocks, never longer than the input,
-// the user's order on a tie, and the same answer on every run.
+// test/models/order_by_distance_test.dart — Order by distance on whole trips,
+// as the app calls it: what it reads (a stop's own coordinates, never
+// Google's), what it moves (whole tracks, glued where they must stay
+// together), when it suggests nothing, and the rules every answer keeps —
+// measured again from the stops themselves. The solver on its own is
+// order_by_distance_solver_test.dart; the same answer everywhere,
+// order_by_distance_golden_test.dart.
 //
 // Points sit on the equator, where 0.01° of longitude is about 1.1 km, so a
 // fixture's lengths can be read off its longitudes.
 
-import 'dart:math' as math;
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ntripi/features/itineraries/domain/order_by_distance.dart';
-import 'package:ntripi/features/itineraries/domain/stop.dart';
-import 'package:ntripi/features/itineraries/domain/track.dart';
-import 'package:ntripi/features/itineraries/domain/transit_segment.dart';
 import 'package:ntripi/features/itineraries/domain/trip_arrangement.dart';
 
-Stop _stop(
-  String id,
-  String trackId, {
-  double? lng,
-  double lat = 0,
-  String? googlePlaceId,
-  String? mapUrl,
-}) =>
-    Stop(
-      id: id,
-      itineraryId: 'itin-1',
-      trackId: trackId,
-      rank: 'a0',
-      type: StopType.waypoint,
-      placeName: id,
-      lat: lng == null ? null : lat,
-      lng: lng,
-      googlePlaceId: googlePlaceId,
-      mapUrl: mapUrl,
-      createdAt: DateTime.utc(2026, 1, 1),
-    );
-
-/// A track [id] holding one stop of the same name at longitude [lng] (none
-/// when null).
-Track _at(String id, double? lng) =>
-    Track(id: id, itineraryId: 'itin-1', rank: id, stops: [_stop(id, id, lng: lng)]);
-
-Track _track(String id, List<Stop> stops) =>
-    Track(id: id, itineraryId: 'itin-1', rank: id, stops: stops);
-
-TransitSegment _segment(String id, String from, String to) => TransitSegment(
-      id: id,
-      itineraryId: 'itin-1',
-      fromStopId: from,
-      toStopId: to,
-      totalDurationMin: 10,
-      totalCost: 0,
-      createdAt: DateTime.utc(2026, 1, 1),
-    );
-
-Future<DistanceOrderChoices> _choices(
-  List<Track> tracks, {
-  List<TransitSegment> segments = const [],
-}) async =>
-    (await orderByDistanceChoices(TripArrangement.of(tracks), segments))!;
-
-const _keepAll = OrderChoice(keepStart: true, keepEnd: true, keepLegs: true);
-const _freeEnd = OrderChoice(keepStart: true, keepEnd: false, keepLegs: true);
-const _freeEndNoLegs =
-    OrderChoice(keepStart: true, keepEnd: false, keepLegs: false);
-const _freeStart = OrderChoice(keepStart: false, keepEnd: true, keepLegs: true);
-const _freeBoth = OrderChoice(keepStart: false, keepEnd: false, keepLegs: true);
+import '../support/order_by_distance_fixtures.dart';
 
 List<String>? _keys(DistanceOrderChoices c, OrderChoice choice) =>
     c.resultFor(choice)?.rowKeys;
 
-/// A random asymmetric table of metres for m movable blocks, with a fixed or
-/// a virtual start (a row of zeros out of node 0) and a fixed or a virtual end
-/// (a column of zeros into node m+1).
-PathCosts _randomCosts(
-  math.Random rng,
-  int m, {
-  required bool fixedEnd,
-  bool fixedStart = true,
-}) {
-  final n = m + 2;
-  return PathCosts.fromRows([
-    for (var u = 0; u < n; u++)
-      [
-        for (var v = 0; v < n; v++)
-          if (u == v ||
-              v == 0 ||
-              u == n - 1 ||
-              (v == n - 1 && !fixedEnd) ||
-              (u == 0 && !fixedStart))
-            0
-          else
-            rng.nextInt(20000),
-      ],
-  ]);
-}
-
-/// The shortest length over every order of the movable blocks.
-int _bruteForce(PathCosts d) {
-  var best = -1;
-  void visit(List<int> path, List<bool> used) {
-    if (path.length == d.m + 1) {
-      final length = d.lengthOf([...path, d.m + 1]);
-      if (best < 0 || length < best) best = length;
-      return;
-    }
-    for (var v = 1; v <= d.m; v++) {
-      if (used[v]) continue;
-      used[v] = true;
-      visit([...path, v], used);
-      used[v] = false;
-    }
-  }
-
-  visit([0], List<bool>.filled(d.m + 1, false));
-  return best;
-}
-
-/// [count] tracks scattered over about 10 km, from xorshift — not dart:math's
-/// Random, whose stream may differ on the web, where a pinned order must hold.
-List<Track> _scattered(int count) {
-  final rng = XorShift32(99);
-  double coordinate() => rng.nextInt(9000) / 100000;
-  return [
-    for (var i = 0; i < count; i++)
-      Track(
-        id: 't$i',
-        itineraryId: 'itin-1',
-        rank: 't$i',
-        stops: [_stop('t$i', 't$i', lat: coordinate(), lng: coordinate())],
-      ),
-  ];
-}
-
-/// The free-end costs of one-stop [tracks]: the first is the start, the rest
-/// movable in order, then the virtual end.
-PathCosts _freeEndCosts(List<Track> tracks) {
-  final points = [
-    for (final t in tracks) LatLng(t.stops.first.lat!, t.stops.first.lng!),
-  ];
-  final n = points.length + 1;
-  return PathCosts.fromRows([
-    for (var u = 0; u < n; u++)
-      [
-        for (var v = 0; v < n; v++)
-          if (u == v || v == 0 || u == n - 1 || v == n - 1)
-            0
-          else
-            const Haversine().distance(points[u], points[v]).round(),
-      ],
-  ]);
-}
+/// Random trips with segments, tracks nothing locates (the first one too,
+/// sometimes) and alternatives, from fixed seeds.
+final _randomTrips = [
+  for (var i = 0; i < 24; i++)
+    randomTrip(
+      'random-$i',
+      700 + i,
+      5 + i % 16,
+      legPercent: i % 3 == 0 ? 0 : 35,
+      unmeasuredPercent: i % 4 == 0 ? 0 : 30,
+      firstUnmeasured: i % 5 == 1,
+      alternativesPercent: i % 2 == 0 ? 0 : 30,
+      clustered: i % 6 == 2,
+    ),
+];
 
 void main() {
   group('what moves', () {
     test('a scrambled line comes out in order; the start stays first',
         () async {
-      final c = await _choices([
-        _at('S', 0.00),
-        _at('A', 0.03),
-        _at('B', 0.01),
-        _at('C', 0.04),
-        _at('D', 0.02),
-        _at('E', 0.05),
+      final c = await choicesFor([
+        trackAt('S', 0.00),
+        trackAt('A', 0.03),
+        trackAt('B', 0.01),
+        trackAt('C', 0.04),
+        trackAt('D', 0.02),
+        trackAt('E', 0.05),
       ]);
-      expect(_keys(c, _keepAll), ['S', 'B', 'D', 'A', 'C', 'E']);
+      expect(_keys(c, keepAll), ['S', 'B', 'D', 'A', 'C', 'E']);
       // S and E are the line's two ends anyway: where the trip starts or ends
       // changes nothing.
       expect(c.startMatters, isFalse);
@@ -178,48 +58,48 @@ void main() {
 
     test('the start stays first only when asked; free, the trip starts where '
         'the path is shortest', () async {
-      final c = await _choices([
-        _at('S', 0.02),
-        _at('A', 0.00),
-        _at('B', 0.01),
-        _at('C', 0.03),
-        _at('D', 0.04),
+      final c = await choicesFor([
+        trackAt('S', 0.02),
+        trackAt('A', 0.00),
+        trackAt('B', 0.01),
+        trackAt('C', 0.03),
+        trackAt('D', 0.04),
       ]);
       // Kept first, S is already left the shortest way.
-      expect(c.resultFor(_keepAll), isNull);
-      expect(c.resultFor(_freeEnd), isNull);
-      final order = c.resultFor(_freeStart)!;
+      expect(c.resultFor(keepAll), isNull);
+      expect(c.resultFor(freeEnd), isNull);
+      final order = c.resultFor(freeStart)!;
       expect(order.rowKeys, ['A', 'B', 'S', 'C', 'D']);
       expect(order.wasNumber, {'S': 1});
       expect(c.startMatters, isTrue);
       // D is the far end whichever way the trip starts.
-      expect(_keys(c, _freeBoth), order.rowKeys);
+      expect(_keys(c, freeBoth), order.rowKeys);
       expect(c.endMatters, isFalse);
     });
 
     test('the end stays last only when asked; free, it ends where it is '
         'shortest', () async {
-      final c = await _choices([
-        _at('S', 0.00),
-        _at('A', 0.05),
-        _at('B', 0.01),
-        _at('C', 0.02),
+      final c = await choicesFor([
+        trackAt('S', 0.00),
+        trackAt('A', 0.05),
+        trackAt('B', 0.01),
+        trackAt('C', 0.02),
       ]);
-      expect(_keys(c, _keepAll), ['S', 'B', 'A', 'C']);
-      expect(_keys(c, _freeEnd), ['S', 'B', 'C', 'A']);
+      expect(_keys(c, keepAll), ['S', 'B', 'A', 'C']);
+      expect(_keys(c, freeEnd), ['S', 'B', 'C', 'A']);
       expect(c.endMatters, isTrue);
     });
 
     test('alternatives keep their order and their track; a track is measured '
         'from its first alternative with saved coordinates', () async {
-      final c = await _choices([
-        _at('S', 0.00),
+      final c = await choicesFor([
+        trackAt('S', 0.00),
         // Measured at y (0.03): x has no coordinates.
-        _track('T', [_stop('x', 'T'), _stop('y', 'T', lng: 0.03)]),
-        _at('B', 0.01),
-        _at('C', 0.02),
+        orderTrack('T', [orderStop('x', 'T'), orderStop('y', 'T', lng: 0.03)]),
+        trackAt('B', 0.01),
+        trackAt('C', 0.02),
       ]);
-      final order = c.resultFor(_freeEnd)!;
+      final order = c.resultFor(freeEnd)!;
       expect(order.rowKeys, ['S', 'B', 'C', 'T']);
       expect(
           order.arrangement.rows.last.stops.map((s) => s.id), ['x', 'y']);
@@ -231,79 +111,79 @@ void main() {
 
     test('a track without saved coordinates stays after the track before it',
         () async {
-      final c = await _choices([
-        _at('S', 0.00),
-        _at('U', null),
-        _at('A', 0.03),
-        _at('B', 0.01),
-        _track('V', [_stop('V', 'V', googlePlaceId: 'ChIJ-place')]),
-        _at('C', 0.02),
+      final c = await choicesFor([
+        trackAt('S', 0.00),
+        trackAt('U', null),
+        trackAt('A', 0.03),
+        trackAt('B', 0.01),
+        orderTrack('V', [orderStop('V', 'V', googlePlaceId: 'ChIJ-place')]),
+        trackAt('C', 0.02),
       ]);
-      final order = c.resultFor(_freeEnd)!;
+      final order = c.resultFor(freeEnd)!;
       expect(order.rowKeys, ['S', 'U', 'B', 'V', 'C', 'A']);
       expect(order.unmeasured, 2);
     });
 
     test('a first track nothing locates is still the start, and leaving it '
         'costs nothing; equally short orders keep the input order', () async {
-      final c = await _choices([
-        _at('U', null),
-        _at('A', 0.03),
-        _at('B', 0.01),
-        _at('C', 0.02),
+      final c = await choicesFor([
+        trackAt('U', null),
+        trackAt('A', 0.03),
+        trackAt('B', 0.01),
+        trackAt('C', 0.02),
       ]);
       // A·C·B and B·C·A are equally short; A·C·B inverts less of A·B·C.
-      expect(_keys(c, _freeEnd), ['U', 'A', 'C', 'B']);
-      expect(c.resultFor(_freeEnd)!.unmeasured, 0);
+      expect(_keys(c, freeEnd), ['U', 'A', 'C', 'B']);
+      expect(c.resultFor(freeEnd)!.unmeasured, 0);
       // Nothing says where else U would go: it stays first, whatever the
       // answer, and the start is never asked about.
-      expect(_keys(c, _freeBoth), ['U', 'A', 'C', 'B']);
+      expect(_keys(c, freeBoth), ['U', 'A', 'C', 'B']);
       expect(c.startMatters, isFalse);
     });
 
     test('Google places and Google Maps links are never measured', () async {
-      final c = await _choices([
-        _at('S', 0.00),
-        _at('A', 0.02),
-        _at('B', 0.01),
+      final c = await choicesFor([
+        trackAt('S', 0.00),
+        trackAt('A', 0.02),
+        trackAt('B', 0.01),
         // A Google place, even holding coordinates no server would store.
-        _track('G', [
-          _stop('G', 'G', lng: 0.005, googlePlaceId: 'ChIJ-place'),
+        orderTrack('G', [
+          orderStop('G', 'G', lng: 0.005, googlePlaceId: 'ChIJ-place'),
         ]),
         // A link whose own text carries coordinates.
-        _track('L', [
-          _stop('L', 'L',
+        orderTrack('L', [
+          orderStop('L', 'L',
               mapUrl: 'https://www.google.com/maps/@0.0,0.004,15z'),
         ]),
       ]);
       expect(c.located, 3);
       // Both travel with B, the track before them: G and L hold their order.
-      expect(_keys(c, _freeEnd), ['S', 'B', 'G', 'L', 'A']);
-      expect(c.resultFor(_freeEnd)!.unmeasured, 2);
+      expect(_keys(c, freeEnd), ['S', 'B', 'G', 'L', 'A']);
+      expect(c.resultFor(freeEnd)!.unmeasured, 2);
     });
   });
 
   group('transit segments', () {
     // X→Y is a leg; X is far, Y and Z near the start.
     final tracks = [
-      _at('S', 0.00),
-      _at('X', 0.05),
-      _at('Y', 0.01),
-      _at('Z', 0.02),
+      trackAt('S', 0.00),
+      trackAt('X', 0.05),
+      trackAt('Y', 0.01),
+      trackAt('Z', 0.02),
     ];
-    final legs = [_segment('leg', 'X', 'Y')];
+    final legs = [orderSegment('leg', 'X', 'Y')];
 
     test('kept, linked tracks move as one block, in their direction', () async {
-      final c = await _choices(tracks, segments: legs);
-      final kept = c.resultFor(_freeEnd)!;
+      final c = await choicesFor(tracks, segments: legs);
+      final kept = c.resultFor(freeEnd)!;
       expect(kept.rowKeys, ['S', 'Z', 'X', 'Y']);
       expect(kept.brokenLegs, isEmpty);
     });
 
     test('deleted, the order is shorter and names the segment it breaks',
         () async {
-      final c = await _choices(tracks, segments: legs);
-      final broken = c.resultFor(_freeEndNoLegs)!;
+      final c = await choicesFor(tracks, segments: legs);
+      final broken = c.resultFor(freeEndNoLegs)!;
       expect(broken.rowKeys, ['S', 'Y', 'Z', 'X']);
       expect(broken.brokenLegs.map((s) => s.id), ['leg']);
       expect(c.legsMatter, isTrue);
@@ -311,52 +191,71 @@ void main() {
 
     test('a segment already broken by the arrangement glues nothing', () async {
       // Y→X runs backwards in this order: it is an orphan, not a link.
-      final c = await _choices(tracks, segments: [_segment('back', 'Y', 'X')]);
+      final c = await choicesFor(tracks,
+          segments: [orderSegment('back', 'Y', 'X')]);
       expect(c.legsLive, isFalse);
       expect(c.legsMatter, isFalse);
-      expect(_keys(c, _keepAll), _keys(c, _keepAll.copyWith(keepLegs: false)));
+      expect(_keys(c, keepAll), _keys(c, keepAll.copyWith(keepLegs: false)));
+    });
+
+    test(
+        'Given start 0, a leg from 0 to 10 km, S1 at 10.1 km and S2 at 100 m, '
+        'When the end is free, Then S2, the leg, S1 — 300 m, the leg run from '
+        'its exit', () async {
+      final c = await choicesFor([
+        trackAtMetres('start', 0),
+        trackAtMetres('L1', 0),
+        trackAtMetres('L2', 10000),
+        trackAtMetres('S1', 10100),
+        trackAtMetres('S2', 100),
+      ], segments: [
+        orderSegment('leg', 'L1', 'L2'),
+      ]);
+      final order = c.resultFor(freeEnd)!;
+      expect(order.rowKeys, ['start', 'S2', 'L1', 'L2', 'S1']);
+      expect(order.lengthMetres, 300);
     });
   });
 
   group('when there is nothing to suggest', () {
     test('a gain under 200 m is no suggestion', () async {
-      final c = await _choices([
-        _at('S', 0.0),
-        _at('A', 0.0015),
-        _at('B', 0.001),
-        _at('C', 0.002),
+      final c = await choicesFor([
+        trackAt('S', 0.0),
+        trackAt('A', 0.0015),
+        trackAt('B', 0.001),
+        trackAt('C', 0.002),
       ]);
       expect(c.hasSuggestion, isFalse);
       expect(c.reason, NoOrderReason.alreadyInOrder);
     });
 
     test('a gain under 3% is no suggestion, however many metres', () async {
-      final c = await _choices([
-        _at('S', 0.0),
-        _at('A', 1.0),
-        _at('B', 0.99),
-        _at('C', 2.0),
+      final c = await choicesFor([
+        trackAt('S', 0.0),
+        trackAt('A', 1.0),
+        trackAt('B', 0.99),
+        trackAt('C', 2.0),
       ]);
       expect(c.hasSuggestion, isFalse);
     });
 
     test('a trip already in order says so', () async {
-      final c = await _choices([
-        _at('S', 0.00),
-        _at('A', 0.01),
-        _at('B', 0.02),
-        _at('C', 0.03),
+      final c = await choicesFor([
+        trackAt('S', 0.00),
+        trackAt('A', 0.01),
+        trackAt('B', 0.02),
+        trackAt('C', 0.03),
       ]);
       expect(c.reason, NoOrderReason.alreadyInOrder);
     });
 
     test('fewer than three located tracks is too few, wherever they are',
         () async {
-      final c = await _choices([
-        _at('S', 0.00),
-        _at('A', 0.03),
-        _at('B', null),
-        _at('C', null),
+      final c = await choicesFor([
+        trackAt('S', 0.00),
+        trackAt('A', 0.03),
+        trackAt('B', null),
+        trackAt('C', null),
       ]);
       expect(c.reason, NoOrderReason.tooFewLocated);
       expect(c.located, 2);
@@ -364,31 +263,31 @@ void main() {
 
       // Behind a first track nothing locates: between A and B, either order
       // is as short.
-      final behind = await _choices([
-        _at('U', null),
-        _at('A', 0.03),
-        _at('B', 0.01),
-        _at('C', null),
+      final behind = await choicesFor([
+        trackAt('U', null),
+        trackAt('A', 0.03),
+        trackAt('B', 0.01),
+        trackAt('C', null),
       ]);
       expect(behind.reason, NoOrderReason.tooFewLocated);
     });
 
     test('two tracks have nothing to move', () async {
-      final c = await _choices([_at('S', 0.00), _at('A', 0.03)]);
+      final c = await choicesFor([trackAt('S', 0.00), trackAt('A', 0.03)]);
       expect(c.hasSuggestion, isFalse);
     });
   });
 
   test('"moved" counts the tracks to move by hand, not every one pushed down',
       () async {
-    final c = await _choices([
-      _at('S', 0.00),
-      _at('A', 0.02),
-      _at('B', 0.03),
-      _at('C', 0.04),
-      _at('D', 0.01),
+    final c = await choicesFor([
+      trackAt('S', 0.00),
+      trackAt('A', 0.02),
+      trackAt('B', 0.03),
+      trackAt('C', 0.04),
+      trackAt('D', 0.01),
     ]);
-    final order = c.resultFor(_freeEnd)!;
+    final order = c.resultFor(freeEnd)!;
     expect(order.rowKeys, ['S', 'D', 'A', 'B', 'C']);
     expect(order.moved, 1);
     expect(order.wasNumber, {'D': 5});
@@ -400,143 +299,212 @@ void main() {
     expect(longestIncreasingRun(<int>[]), isEmpty);
   });
 
-  group('Held-Karp', () {
-    test('matches brute force, with a fixed or a virtual start and end', () {
-      final rng = math.Random(42);
-      for (var trial = 0; trial < 80; trial++) {
-        final m = 2 + trial % 7;
-        final d = _randomCosts(rng, m,
-            fixedStart: trial % 4 < 2, fixedEnd: trial.isEven);
-        expect(d.lengthOf(exactOrder(d)), _bruteForce(d),
-            reason: 'trial $trial, m=$m');
-      }
-    });
-
-    test('score ~/ 256 is the length in metres, first and last steps included',
-        () {
-      final rng = math.Random(3);
-      for (var trial = 0; trial < 20; trial++) {
-        final d = _randomCosts(rng, 3 + trial % 9,
-            fixedStart: trial % 4 < 2, fixedEnd: trial.isOdd);
-        final (:order, :score) = exactOrderWithScore(d);
-        expect(score ~/ 256, d.lengthOf(order));
-      }
-    });
-
-    test('on equal lengths the input order wins', () {
-      final m = 9;
-      final d = PathCosts.fromRows([
-        for (var u = 0; u < m + 2; u++)
-          [for (var v = 0; v < m + 2; v++) u == v ? 0 : 1000],
-      ]);
-      expect(exactOrder(d), d.identity());
-    });
-  });
-
-  group('local search', () {
-    test('never longer than the input order, and the input wins a tie', () async {
-      final rng = math.Random(11);
-      for (var trial = 0; trial < 10; trial++) {
-        final d = _randomCosts(rng, 13 + trial,
-            fixedStart: trial % 4 < 2, fixedEnd: trial.isEven);
-        final order = await localSearchOrder(d);
-        expect(d.lengthOf(order), lessThanOrEqualTo(d.lengthOf(d.identity())));
-        expect(order.toSet(), d.identity().toSet(), reason: 'a permutation');
-      }
-      final flat = PathCosts.fromRows([
-        for (var u = 0; u < 17; u++)
-          [for (var v = 0; v < 17; v++) u == v ? 0 : 500],
-      ]);
-      expect(await localSearchOrder(flat), flat.identity(),
-          reason: 'plateau moves never change what is returned');
-    });
-
-    test('the 2-opt change matches the path recomputed', () {
-      final rng = math.Random(5);
-      for (var trial = 0; trial < 200; trial++) {
-        final m = 3 + trial % 15;
-        final d = _randomCosts(rng, m,
-            fixedStart: trial % 4 < 2, fixedEnd: trial.isEven);
-        final p = [0, ...([for (var i = 1; i <= m; i++) i]..shuffle(rng)), m + 1];
-        final f = List<int>.filled(m + 2, 0), r = List<int>.filled(m + 2, 0);
-        for (var k = 0; k <= m; k++) {
-          f[k + 1] = f[k] + d(p[k], p[k + 1]);
-          r[k + 1] = r[k] + d(p[k + 1], p[k]);
-        }
-        final i = 1 + rng.nextInt(m - 1);
-        final j = i + 1 + rng.nextInt(m - i);
-        final reversed = [
-          ...p.sublist(0, i),
-          ...p.sublist(i, j + 1).reversed,
-          ...p.sublist(j + 1),
-        ];
-        expect(twoOptChange(d, p, i, j, f, r),
-            d.lengthOf(reversed) - d.lengthOf(p),
-            reason: 'trial $trial, m=$m, i=$i, j=$j');
-      }
-    });
-
-    test('0 and 1 movable blocks give the input order back', () async {
-      for (final m in [0, 1]) {
-        final d = PathCosts.fromRows([
-          for (var u = 0; u < m + 2; u++) [for (var v = 0; v < m + 2; v++) 7],
-        ]);
-        expect(exactOrder(d), d.identity());
-        expect(await localSearchOrder(d), d.identity());
-      }
+  group('the whole trip', () {
+    test(
+        'Given 14 tracks with the start and the end kept, When worked out, '
+        'Then the 12 tracks between come out exactly as the exact search '
+        'orders them — "up to 12" includes 12', () async {
+      final tracks = scatteredTracks(14, seed: 1414);
+      final points = [for (final t in tracks) pointOfTrack(t.stops)!];
+      final d = PathCosts.of<LatLng>(
+        start: points.first,
+        blocks: [for (final p in points.sublist(1, 13)) (p, p)],
+        end: points.last,
+        metres: straightLineMetres,
+      );
+      expect(d.m, 12);
+      final exact = exactOrder(d);
+      final c = await choicesFor(tracks);
+      expect(c.resultFor(keepAll)!.rowKeys, [for (final v in exact) 't$v']);
+      expect(c.resultFor(keepAll)!.lengthMetres, d.lengthOf(exact));
     });
 
     test('30 scattered tracks: the same order every run, shorter than the '
         'input and than nearest neighbour alone', () async {
-      final tracks = _scattered(30);
-      final first = await _choices(tracks);
-      final again = await _choices(tracks);
-      final order = first.resultFor(_freeEnd)!;
-      expect(order.rowKeys, again.resultFor(_freeEnd)!.rowKeys);
+      final tracks = scatteredTracks(30);
+      final first = await choicesFor(tracks);
+      final again = await choicesFor(tracks);
+      final order = first.resultFor(freeEnd)!;
+      expect(order.rowKeys, again.resultFor(freeEnd)!.rowKeys);
       expect(order.lengthMetres, lessThan(order.previousLengthMetres));
-      final d = _freeEndCosts(tracks);
-      expect(d.lengthOf(nearestNeighbourOrder(d)), greaterThan(order.lengthMetres));
+      final points = [for (final t in tracks) pointOfTrack(t.stops)!];
+      final d = PathCosts.of<LatLng>(
+        start: points.first,
+        blocks: [for (final p in points.skip(1)) (p, p)],
+        end: null,
+        metres: straightLineMetres,
+      );
+      expect(
+          d.lengthOf(nearestNeighbourOrder(d)), greaterThan(order.lengthMetres));
       expect(order.rowKeys, _pinnedScatteredOrder);
       // A free start too: the same order every run, never longer than now.
-      final free = first.resultFor(_freeBoth)!;
-      expect(free.rowKeys, again.resultFor(_freeBoth)!.rowKeys);
+      final free = first.resultFor(freeBoth)!;
+      expect(free.rowKeys, again.resultFor(freeBoth)!.rowKeys);
       expect(free.lengthMetres, lessThan(free.previousLengthMetres));
     });
-
-    test('40 tracks: every choice worked out within the budget', () async {
-      final watch = Stopwatch()..start();
-      final c = await _choices(_scattered(40));
-      watch.stop();
-      expect(c.hasSuggestion, isTrue);
-      // Measured 470–680 ms here on the development Mac (2026-11-14, four
-      // choices: the start and the end, each kept or free); release builds
-      // took about 350 ms (AOT) and 380 ms (dart2js -O2, Node 22). The budget
-      // is about ten times the VM's, so a slow machine passes and an
-      // accidental O(m⁴) does not. The VM only: the browser test runner
-      // compiles without release optimisation.
-      expect(watch.elapsedMilliseconds, lessThan(6000));
-    }, testOn: 'vm');
 
     test('cancelled at a pause, the work stops and answers nothing', () async {
       expect(
         await orderByDistanceChoices(
-            TripArrangement.of(_scattered(30)), const [],
+            TripArrangement.of(scatteredTracks(30)), const [],
             isCancelled: () => true),
         isNull,
       );
     });
-  });
 
-  group('XorShift32', () {
-    test('its first values are pinned, so every platform draws the same cuts',
-        () {
-      final rng = XorShift32(kOrderSeed);
-      expect([for (var i = 0; i < 5; i++) rng.next()],
-          [3336926330, 1697253807, 2816511904, 1955480042, 718842323]);
+    // Item 22.
+    test(
+        'Given random trips, When every choice is worked out, Then each answer '
+        'holds every track once with its stops, keeps a kept start first and '
+        'a kept end last, and never splits or turns round a kept segment',
+        () async {
+      var checked = 0, legsChecked = 0;
+      for (final day in _randomTrips) {
+        final c = (await orderByDistanceChoices(day.arrangement, day.segments))!;
+        final original = day.arrangement.rows;
+        for (final choice in OrderChoice.all) {
+          final order = c.resultFor(choice);
+          if (order == null) continue;
+          final rows = order.arrangement.rows;
+          final why = '${day.name} ${choiceCode(choice)}';
+          expect(rows.map((r) => r.key).toSet(),
+              original.map((r) => r.key).toSet(),
+              reason: why);
+          expect(rows.length, original.length, reason: why);
+          for (final r in rows) {
+            final before = original.firstWhere((o) => o.key == r.key);
+            expect(r.stops.map((s) => s.id), before.stops.map((s) => s.id),
+                reason: why);
+          }
+          if (choice.keepStart) {
+            expect(rows.first.key, original.first.key, reason: why);
+          }
+          if (choice.keepEnd) {
+            expect(rows.last.key, original.last.key, reason: why);
+          }
+          if (choice.keepLegs) {
+            int rowOf(String stopId) =>
+                rows.indexWhere((r) => r.stops.any((x) => x.id == stopId));
+            for (final s in day.segments) {
+              expect(rowOf(s.toStopId), rowOf(s.fromStopId) + 1,
+                  reason: '$why ${s.id}');
+              legsChecked++;
+            }
+          }
+          checked++;
+        }
+      }
+      expect(checked, greaterThan(60), reason: 'answers checked');
+      expect(legsChecked, greaterThan(20), reason: 'kept segments checked');
     });
 
-    test('refuses a zero seed, whose state would stay 0 forever', () {
-      expect(() => XorShift32(0), throwsA(isA<AssertionError>()));
+    // Item 23.
+    test(
+        'Given random trips, When every choice is worked out, Then the length '
+        'each answer reports, before and after, is the length measured again '
+        'from its stops', () async {
+      var checked = 0;
+      for (final day in _randomTrips) {
+        final c = (await orderByDistanceChoices(day.arrangement, day.segments))!;
+        for (final choice in OrderChoice.all) {
+          final order = c.resultFor(choice);
+          if (order == null) continue;
+          final glued =
+              choice.keepLegs ? day.gluedByLegs : const <String>{};
+          final why = '${day.name} ${choiceCode(choice)}';
+          expect(order.lengthMetres,
+              measuredLength(order.arrangement.rows, gluedByLegs: glued),
+              reason: why);
+          expect(order.previousLengthMetres,
+              measuredLength(day.arrangement.rows, gluedByLegs: glued),
+              reason: why);
+          checked++;
+        }
+      }
+      expect(checked, greaterThan(60), reason: 'answers checked');
+    });
+
+    // Item 35.
+    test(
+        'Given random trips with tracks nothing locates, When every choice is '
+        'worked out, Then nothing throws, a first one stays first, and every '
+        'other stays right after the track before it', () async {
+      var checked = 0;
+      for (final day in _randomTrips) {
+        final c = (await orderByDistanceChoices(day.arrangement, day.segments))!;
+        final original = day.arrangement.rows;
+        final unmeasured = day.unmeasured;
+        for (final choice in OrderChoice.all) {
+          final order = c.resultFor(choice);
+          if (order == null) continue;
+          final rows = order.arrangement.rows;
+          final why = '${day.name} ${choiceCode(choice)}';
+          for (var i = 0; i < original.length; i++) {
+            if (!unmeasured.contains(original[i].key)) continue;
+            final at = rows.indexWhere((r) => r.key == original[i].key);
+            if (i == 0) {
+              expect(at, 0, reason: why);
+            } else {
+              expect(rows[at - 1].key, original[i - 1].key, reason: why);
+            }
+            checked++;
+          }
+        }
+      }
+      expect(checked, greaterThan(60), reason: 'unlocated tracks checked');
+    });
+
+    // Item 31.
+    test(
+        'Given tracks about 20,000 km apart, When worked out, Then every '
+        'length reported is the one measured again, to the metre', () async {
+      final tracks = [
+        trackAt('A', 0, lat: 0),
+        trackAt('B', 179.5, lat: 0.5),
+        trackAt('C', -1, lat: -0.5),
+        trackAt('D', -179.9, lat: 1),
+        trackAt('E', 90, lat: 45),
+        trackAt('F', -90, lat: -45),
+        trackAt('G', 2, lat: 0.2),
+      ];
+      final c = await choicesFor(tracks);
+      expect(c.hasSuggestion, isTrue);
+      for (final choice in OrderChoice.all) {
+        final order = c.resultFor(choice);
+        if (order == null) continue;
+        expect(order.lengthMetres, measuredLength(order.arrangement.rows),
+            reason: choiceCode(choice));
+        expect(order.previousLengthMetres,
+            measuredLength(TripArrangement.of(tracks).rows));
+        expect(order.previousLengthMetres, greaterThan(60000000));
+      }
+    });
+  });
+
+  // Item 32.
+  group('straightLineMetres', () {
+    test('Given the same point twice, Then 0 m', () {
+      expect(straightLineMetres(const LatLng(50, 4), const LatLng(50, 4)), 0);
+    });
+
+    test('Given (50.000, 4.000) and (50.001, 4.000), Then 111 m', () {
+      expect(
+          straightLineMetres(const LatLng(50.000, 4.000),
+              const LatLng(50.001, 4.000)),
+          111);
+    });
+
+    test('Given two points, Then A → B is B → A, in whole metres', () {
+      final rng = XorShift32(32);
+      double unit() => (rng.nextInt(20001) - 10000) / 10000;
+      for (var i = 0; i < 200; i++) {
+        final a = LatLng(unit() * 80, unit() * 180);
+        final b = LatLng(unit() * 80, unit() * 180);
+        final ab = straightLineMetres(a, b);
+        expect(ab, straightLineMetres(b, a));
+        expect(ab, isA<int>());
+        expect(ab, greaterThanOrEqualTo(0));
+      }
     });
   });
 }

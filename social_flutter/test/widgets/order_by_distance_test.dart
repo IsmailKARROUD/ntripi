@@ -8,7 +8,8 @@
 // moves it. The suggestion is shown read-only under a
 // bar whose Save saves it at once — one request, no second question about
 // transit, nothing downloaded after — and whose Cancel leaves arrange mode as
-// it was. Back over any of it ends Order by distance, and only that.
+// it was. While the order is worked out every other button waits and a Cancel
+// stops it; Back over any of it ends Order by distance, and only that.
 //
 // Stops sit on the equator, where 0.01° of longitude is about 1.1 km.
 
@@ -520,6 +521,62 @@ void main() {
     pending.complete(await orderByDistanceChoices(asked, const []));
     await tester.pumpAndSettle();
     expect(find.byType(SuggestedOrderBar), findsNothing);
+  });
+
+  testWidgets(
+      'Given the order is being worked out, Then every other button waits and '
+      'a Cancel is offered; When Cancel is tapped, Then the work stops and '
+      'arrange mode is as it was', (tester) async {
+    final api = RecordingDio();
+    final pending = Completer<DistanceOrderChoices?>();
+    bool Function()? cancelled;
+    late TripArrangement asked;
+    final l10n = await _pump(tester, api, _scrambled(),
+        solver: (arrangement, segments, {isCancelled}) {
+      asked = arrangement;
+      cancelled = isCancelled;
+      return pending.future;
+    });
+    await _arrange(tester, l10n);
+    await tester.tap(find.text(l10n.orderByDistance));
+    await tester.pump();
+
+    final cancel = find.descendant(
+        of: find.byType(OrderByDistanceButton),
+        matching: find.text(l10n.cancel));
+    expect(find.text(l10n.orderByDistanceWorking), findsOneWidget);
+    expect(cancel, findsOneWidget);
+    // The header's ✕ and Save wait for the answer.
+    expect(
+        tester
+            .widget<IconButton>(find.ancestor(
+                of: find.byTooltip(l10n.cancel),
+                matching: find.byType(IconButton)))
+            .onPressed,
+        isNull);
+    expect(
+        tester
+            .widget<FilledButton>(find
+                .ancestor(
+                    of: find.text(l10n.save),
+                    matching: find.byWidgetPredicate((w) => w is FilledButton))
+                .first)
+            .onPressed,
+        isNull);
+
+    await tester.tap(cancel);
+    await tester.pump();
+    expect(cancelled!(), isTrue);
+    expect(find.text(l10n.orderByDistanceWorking), findsNothing);
+    expect(cancel, findsNothing);
+    expect(find.text(l10n.orderByDistance), findsOneWidget);
+    expect(_rows(tester), ['t1', 't2', 't3', 't4']);
+
+    // An answer that lands afterwards is dropped.
+    pending.complete(await orderByDistanceChoices(asked, const []));
+    await tester.pumpAndSettle();
+    expect(find.byType(SuggestedOrderBar), findsNothing);
+    expect(find.byType(BottomSheet), findsNothing);
   });
 
   testWidgets('offline, the preview cannot be saved', (tester) async {

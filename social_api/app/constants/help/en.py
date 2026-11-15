@@ -603,7 +603,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="building",
         schema=SCHEMA_HOWTO,
-        updated="2026-11-14",
+        updated="2026-11-15",
         keywords=(
             "parallel", "track", "tracks", "alternative", "alternatives",
             "options", "optional", "plan b", "backup", "branch", "column",
@@ -696,6 +696,8 @@ ARTICLES: tuple[Article, ...] = (
                     "one should stay last, and whether stops joined by transport "
                     "should stay together. If the first track has no saved "
                     "location, it stays first.\n\n"
+                    "On a long trip, working out the order can take a moment, and "
+                    "**Cancel** beside it stops it. "
                     "You see the suggested order before anything changes: how many "
                     "tracks move, and **was 4** beside each track that moved. "
                     "**Save** saves it; **Cancel** leaves the trip as it was.\n\n"

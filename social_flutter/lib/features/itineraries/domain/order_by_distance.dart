@@ -38,6 +38,16 @@ const kOrderMinGainPercent = 3;
 /// search: Held-Karp is O(m²·2^m), about 2 ms at 12 and 400 times that at 20.
 const kOrderExactMaxBlocks = 12;
 
+/// The most blocks the exact search can take at all (its popcount table and
+/// memory). The app stops at [kOrderExactMaxBlocks]; the tests use the exact
+/// search up to here, as the answer the local search is measured against.
+const kOrderExactLimit = 16;
+
+/// How long the work runs between two turns of the screen, in milliseconds:
+/// about a frame. The clock decides only when the screen gets a turn, never
+/// how much is worked out, so the answer is the same on every device.
+const kOrderYieldEveryMs = 16;
+
 /// Perturbations of the iterated local search — a fixed count, never a time
 /// budget, so a slower phone does not get a different answer.
 const kOrderKicks = 100;
@@ -209,18 +219,27 @@ class DistanceOrderChoices {
 }
 
 /// Order by distance for [arrangement], every choice at once. Runs on the tap,
-/// never before, and yields to the event loop between kicks so the screen
-/// keeps drawing on every platform (the web has no isolates). Answers null
-/// when [isCancelled] says so at one of those pauses.
+/// never before, and hands the event loop a turn about once a frame, so the
+/// screen keeps drawing on every platform (the web has no isolates) and a
+/// Cancel is heard. Answers null when [isCancelled] says so at one of those
+/// turns.
 Future<DistanceOrderChoices?> orderByDistanceChoices(
   TripArrangement arrangement,
   List<TransitSegment> segments, {
   bool Function()? isCancelled,
 }) async {
   final trip = _Trip.of(arrangement, segments);
+  // A turn at every pause would cost a browser at least 4 ms each, once its
+  // timers nest — about half a second per choice — so only once a frame.
+  Stopwatch? sinceTurn;
   Future<void> pause() async {
+    final watch = sinceTurn;
+    if (watch != null && watch.elapsedMilliseconds < kOrderYieldEveryMs) {
+      return;
+    }
     await Future<void>.delayed(Duration.zero);
     if (isCancelled?.call() ?? false) throw const _Cancelled();
+    sinceTurn = Stopwatch()..start();
   }
 
   final results = <OrderChoice, DistanceOrder?>{};
@@ -351,7 +370,10 @@ class _Block {
   LatLng? exit;
 }
 
-int _metres(LatLng a, LatLng b) => const Haversine().distance(a, b).round();
+/// The one distance Order by distance measures: a straight line over the
+/// earth (haversine), in whole metres.
+int straightLineMetres(LatLng a, LatLng b) =>
+    const Haversine().distance(a, b).round();
 
 // ── One choice ───────────────────────────────────────────────────────────────
 
@@ -371,14 +393,15 @@ Future<DistanceOrder?> _suggest(
   // Nothing to put in order: the input order, which suggests nothing.
   if (m < 2) return null;
 
-  final d = _pathCosts(
-    start: hasStart ? blocks.first : null,
-    movable: movable,
-    end: hasEnd ? blocks.last : null,
+  final d = PathCosts.of<LatLng>(
+    start: hasStart ? blocks.first.exit : null,
+    // Only the first block can go without a point, and it is never movable:
+    // a block nothing locates never reaches the search.
+    blocks: [for (final b in movable) (b.entry!, b.exit!)],
+    end: hasEnd ? blocks.last.entry : null,
+    metres: straightLineMetres,
   );
-  final order = m <= kOrderExactMaxBlocks
-      ? exactOrder(d)
-      : await localSearchOrder(d, pause: pause);
+  final order = await bestOrder(d, pause: pause);
 
   final before = d.lengthOf(d.identity());
   final after = d.lengthOf(order);
@@ -464,6 +487,34 @@ class PathCosts {
   factory PathCosts.fromRows(List<List<int>> rows) => PathCosts(
       rows.length - 2, Int32List.fromList([for (final r in rows) ...r]));
 
+  /// The one way the table is built: a path from [start] — the point the
+  /// fixed first block is left at, or null for a start that is free to leave
+  /// — through [blocks], each entered at its first point and left at its
+  /// last, to [end] — the point the kept last block is entered at, or null
+  /// for an end that is free to reach — measured by [metres]. The trip uses
+  /// it with straight lines over the earth; the tests with lines and planes.
+  static PathCosts of<P>({
+    required P? start,
+    required List<(P entry, P exit)> blocks,
+    required P? end,
+    required int Function(P from, P to) metres,
+  }) {
+    final m = blocks.length;
+    final n = m + 2;
+    final d = Int32List(n * n);
+    for (var u = 0; u <= m; u++) {
+      final from = u == 0 ? start : blocks[u - 1].$2;
+      if (from == null) continue; // a start free to leave
+      for (var v = 1; v <= m + 1; v++) {
+        if (u == v) continue;
+        final to = v == m + 1 ? end : blocks[v - 1].$1;
+        if (to == null) continue; // an end free to reach
+        d[u * n + v] = metres(from, to);
+      }
+    }
+    return PathCosts(m, d);
+  }
+
   /// Movable blocks; the path has m+2 nodes.
   final int m;
   final Int32List _d;
@@ -486,35 +537,24 @@ class PathCosts {
   }
 }
 
-PathCosts _pathCosts({
-  required _Block? start,
-  required List<_Block> movable,
-  required _Block? end,
-}) {
-  final m = movable.length;
-  final n = m + 2;
-  final d = Int32List(n * n);
-  LatLng? exitOf(int u) => u == 0 ? start?.exit : movable[u - 1].exit;
-  LatLng? entryOf(int v) => v == m + 1 ? end?.entry : movable[v - 1].entry;
-  for (var u = 0; u <= m; u++) {
-    final from = exitOf(u);
-    if (from == null) continue; // the virtual start, or one nothing locates
-    for (var v = 1; v <= m + 1; v++) {
-      if (u == v) continue;
-      final to = entryOf(v);
-      if (to == null) continue; // the virtual end
-      d[u * n + v] = _metres(from, to);
-    }
-  }
-  return PathCosts(m, d);
-}
+/// The order to suggest for [d]: exact up to [kOrderExactMaxBlocks] movable
+/// blocks, the local search above.
+Future<List<int>> bestOrder(
+  PathCosts d, {
+  Future<void> Function()? pause,
+}) async =>
+    d.m <= kOrderExactMaxBlocks
+        ? exactOrder(d)
+        : await localSearchOrder(d, pause: pause);
 
 // ── Exact: Held-Karp ─────────────────────────────────────────────────────────
 
-/// popcount of every 12-bit mask. Dart 3.12 has no int.oneBitCount, and the
-/// pubspec floor is 3.7; switch once the floor reaches an SDK that has it.
+/// popcount of every mask Held-Karp looks up: one is shifted right at least
+/// once, so 15 bits cover [kOrderExactLimit] blocks. Dart 3.12 has no
+/// int.oneBitCount, and the pubspec floor is 3.7; switch once the floor
+/// reaches an SDK that has it.
 final Uint8List _popcount = () {
-  final t = Uint8List(1 << kOrderExactMaxBlocks);
+  final t = Uint8List(1 << (kOrderExactLimit - 1));
   for (var x = 1; x < t.length; x++) {
     t[x] = t[x >> 1] + (x & 1);
   }
@@ -524,10 +564,10 @@ final Uint8List _popcount = () {
 /// The shortest path through every movable block, exactly. Every step scores
 /// `d × 256 + popcount(visited above it)` — the first and last steps too, as
 /// `d × 256` — so among equally long orders the one with the fewest
-/// inversions of the input order wins: on a tie, the user's order. At most 66
-/// inversions are ever counted (under 256), so the metres are `score ~/ 256`.
-/// Scores live in a Float64List: Int64List is unsupported on the web, and the
-/// largest score (≈7×10¹⁰) is exact below 2⁵³.
+/// inversions of the input order wins: on a tie, the user's order. At most
+/// 120 inversions are ever counted (16 blocks; under 256), so the metres are
+/// `score ~/ 256`. Scores live in a Float64List: Int64List is unsupported on
+/// the web, and the largest score (≈10¹¹) is exact below 2⁵³.
 List<int> exactOrder(PathCosts d) => exactOrderWithScore(d).order;
 
 /// [exactOrder] with its winning score — whose `~/ 256` is its length.
@@ -537,7 +577,7 @@ List<int> exactOrder(PathCosts d) => exactOrderWithScore(d).order;
     final order = d.identity();
     return (order: order, score: d.lengthOf(order) * 256.0);
   }
-  assert(m <= kOrderExactMaxBlocks);
+  assert(m <= kOrderExactLimit, 'the exact search takes at most 16 blocks');
   final size = 1 << m;
   final best = Float64List(size * m)..fillRange(0, size * m, double.infinity);
   final parent = Int8List(size * m)..fillRange(0, size * m, -1);
@@ -596,8 +636,8 @@ Future<List<int>> localSearchOrder(
   Future<void> Function()? pause,
 }) async {
   if (d.m < 2) return d.identity();
-  final fromInput = improve(d, d.identity());
-  final fromNearest = improve(d, nearestNeighbourOrder(d));
+  final fromInput = await improve(d, d.identity(), pause: pause);
+  final fromNearest = await improve(d, nearestNeighbourOrder(d), pause: pause);
   var current = d.lengthOf(fromInput) <= d.lengthOf(fromNearest)
       ? fromInput
       : fromNearest;
@@ -608,7 +648,8 @@ Future<List<int>> localSearchOrder(
   final rng = XorShift32(kOrderSeed);
   for (var k = 0; k < kOrderKicks; k++) {
     await pause?.call();
-    final candidate = improve(d, doubleBridge(current, rng));
+    final candidate =
+        await improve(d, doubleBridge(current, rng), pause: pause);
     final length = d.lengthOf(candidate);
     if (length <= currentLength) {
       current = candidate;
@@ -650,14 +691,35 @@ List<int> nearestNeighbourOrder(PathCosts d) {
 /// Or-opt, 2-opt and swaps, each taking the first move that shortens the
 /// path in a fixed scan order, until none does. Blocks never flip — a leg
 /// runs entry → exit — so 2-opt only reverses the order blocks are visited in.
-List<int> improve(PathCosts d, List<int> path) {
+/// [pause] runs after every move, so a long climb still lets the screen draw.
+Future<List<int>> improve(
+  PathCosts d,
+  List<int> path, {
+  Future<void> Function()? pause,
+}) async {
   final p = [...path];
-  while (_orOpt(d, p) || _twoOpt(d, p) || _swap(d, p)) {}
+  while (orOptStep(d, p) || twoOptStep(d, p) || swapStep(d, p)) {
+    await pause?.call();
+  }
   return p;
 }
 
-/// Moves a run p[a..b] of any length to a position it is not already in.
-bool _orOpt(PathCosts d, List<int> p) {
+/// The three moves of the local search.
+enum MoveKind { orOpt, twoOpt, swap }
+
+/// Shown every candidate a step looks at, with the change in length the step
+/// worked out, instead of the step applying the first that shortens the path:
+/// how the tests hold each step's own arithmetic to the path measured again.
+///   Or-opt: the run p[i..j] goes between p[k] and p[k+1].
+///   2-opt:  p[i..j] is visited in reverse (k unused).
+///   Swap:   p[i] and p[j] trade places (k unused).
+typedef MoveProbe = void Function(
+    MoveKind kind, int i, int j, int k, int change);
+
+/// Moves a run p[a..b] of any length to a position it is not already in —
+/// the first one that shortens the path. Shows every candidate to [probe]
+/// instead, when there is one.
+bool orOptStep(PathCosts d, List<int> p, [MoveProbe? probe]) {
   final m = d.m, n = m + 2, dd = d.table;
   for (var a = 1; a <= m; a++) {
     final before = p[a - 1] * n, first = p[a];
@@ -669,8 +731,11 @@ bool _orOpt(PathCosts d, List<int> p) {
         // Between p[t] and p[t+1]; inside or beside the run changes nothing.
         if (t >= a - 1 && t <= b) continue;
         final from = p[t] * n, to = p[t + 1];
-        final added = dd[from + first] + dd[last + to] - dd[from + to];
-        if (added - removed < 0) {
+        final change =
+            dd[from + first] + dd[last + to] - dd[from + to] - removed;
+        if (probe != null) {
+          probe(MoveKind.orOpt, a, b, t, change);
+        } else if (change < 0) {
           final run = p.sublist(a, b + 1);
           final rest = [...p.sublist(0, a), ...p.sublist(b + 1)];
           rest.insertAll((t < a ? t : t - run.length) + 1, run);
@@ -683,12 +748,14 @@ bool _orOpt(PathCosts d, List<int> p) {
   return false;
 }
 
-/// Reverses the order p[i..j] is visited in. With F and R the forward and
-/// backward costs added up along the path, the change is
+/// Reverses the order p[i..j] is visited in — the first reversal that
+/// shortens the path. With F and R the forward and backward costs added up
+/// along the path, the change is
 ///   d(p[i−1]→p[j]) + d(p[i]→p[j+1]) − d(p[i−1]→p[i]) − d(p[j]→p[j+1])
 ///   + (R[j] − R[i]) − (F[j] − F[i])
-/// and below 0 the reversal shortens the path.
-bool _twoOpt(PathCosts d, List<int> p) {
+/// and below 0 the reversal shortens the path. Shows every candidate to
+/// [probe] instead, when there is one.
+bool twoOptStep(PathCosts d, List<int> p, [MoveProbe? probe]) {
   final m = d.m, n = m + 2, dd = d.table;
   final f = List<int>.filled(m + 2, 0);
   final r = List<int>.filled(m + 2, 0);
@@ -699,7 +766,6 @@ bool _twoOpt(PathCosts d, List<int> p) {
   for (var i = 1; i < m; i++) {
     final before = p[i - 1] * n, first = p[i];
     for (var j = i + 1; j <= m; j++) {
-      // twoOptChange, written out over the table.
       final last = p[j], after = p[j + 1];
       final change = dd[before + last] +
           dd[first * n + after] -
@@ -707,7 +773,9 @@ bool _twoOpt(PathCosts d, List<int> p) {
           dd[last * n + after] +
           (r[j] - r[i]) -
           (f[j] - f[i]);
-      if (change < 0) {
+      if (probe != null) {
+        probe(MoveKind.twoOpt, i, j, -1, change);
+      } else if (change < 0) {
         for (var lo = i, hi = j; lo < hi; lo++, hi--) {
           final t = p[lo];
           p[lo] = p[hi];
@@ -720,18 +788,9 @@ bool _twoOpt(PathCosts d, List<int> p) {
   return false;
 }
 
-/// The 2-opt change for reversing p[i..j], from prefix sums [f] and [r].
-int twoOptChange(
-        PathCosts d, List<int> p, int i, int j, List<int> f, List<int> r) =>
-    d(p[i - 1], p[j]) +
-    d(p[i], p[j + 1]) -
-    d(p[i - 1], p[i]) -
-    d(p[j], p[j + 1]) +
-    (r[j] - r[i]) -
-    (f[j] - f[i]);
-
-/// Swaps two blocks.
-bool _swap(PathCosts d, List<int> p) {
+/// Swaps two blocks — the first swap that shortens the path. Shows every
+/// candidate to [probe] instead, when there is one.
+bool swapStep(PathCosts d, List<int> p, [MoveProbe? probe]) {
   final m = d.m, n = m + 2, dd = d.table;
   int c(int u, int v) => dd[u * n + v];
   for (var a = 1; a < m; a++) {
@@ -750,7 +809,9 @@ bool _swap(PathCosts d, List<int> p) {
             c(p[b - 1], p[a]) +
             c(p[a], p[b + 1]);
       }
-      if (after < before) {
+      if (probe != null) {
+        probe(MoveKind.swap, a, b, -1, after - before);
+      } else if (after < before) {
         final t = p[a];
         p[a] = p[b];
         p[b] = t;

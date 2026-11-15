@@ -415,7 +415,7 @@ No se guarda nada hasta que tocas **Guardar**. Una columna existe solo mientras 
                 kind=KIND_STEP,
                 body="""Con tres columnas o más, el modo **Organizar paradas** ofrece **Ordenar por distancia**: un orden en el que cada columna va seguida de la más cercana, medido en línea recta entre las ubicaciones guardadas de las paradas. Cuando cambia la respuesta, Ntripi pregunta si la primera columna debe seguir siendo la primera, si la última debe seguir siendo la última y si las paradas unidas por un transporte deben quedarse juntas. Si la primera columna no tiene ubicación guardada, sigue siendo la primera.
 
-Ves el orden propuesto antes de que nada cambie: cuántas columnas se mueven y **antes 4** junto a cada columna que se movió. **Guardar** lo guarda; **Cancelar** deja el viaje como estaba.
+En un viaje largo, calcular el orden puede llevar un momento; **Cancelar**, a su lado, lo detiene. Ves el orden propuesto antes de que nada cambie: cuántas columnas se mueven y **antes 4** junto a cada columna que se movió. **Guardar** lo guarda; **Cancelar** deja el viaje como estaba.
 
 Solo las paradas colocadas con una búsqueda de OpenStreetMap, un marcador en el mapa o coordenadas escritas tienen una ubicación guardada. Una parada elegida en Google Maps, o guardada como enlace de Google Maps, se queda justo después de la parada anterior. La distancia es una línea recta, no la carretera, así que Ntripi no muestra kilómetros: solo el orden.""",
             ),
@@ -458,7 +458,7 @@ Al organizar pasa lo mismo: si un movimiento separa dos columnas unidas por un t
             "punto de llegada",
         ),
         related=("plan-a-trip-itinerary", "getting-started"),
-        updated="2026-11-14",
+        updated="2026-11-15",
         cta="Planifica un viaje con alternativas reales, no una única línea frágil.",
     ),
     Article(

@@ -3805,3 +3805,63 @@ two answers gave different orders. On that trip they did not.
 - **Asking first and working the order out afterwards**: it would work out one
   combination instead of eight. But the sheet could give no "would start at"
   hint, and a fully answered sheet could still end in "nothing better".
+
+### 2026-11-15 — Order by distance: no limit on a trip's size; Cancel while it works
+
+**Context.** The owner sent a 35-item test specification for the solver. One
+item asked to time "the biggest section the app allows", and Ntripi sets no
+limit on a trip's tracks. On this Mac's release builds, all four choices took
+0.33 s at 40 tracks and 1.2 s at 60, growing about with the cube of the size,
+and twice that with a live transit segment.
+Two problems surfaced:
+- The local search gave the screen a turn only between its 100 kicks, so on
+  a big trip its first climb ran for seconds with the spinner stopped and
+  Back unheard.
+- Each turn was a zero-length timer, which a browser stretches to at least
+  4 ms once timers nest: 100 of them took 0.46 s in Edge, against 8 ms on the
+  VM. Every trip above 12 blocks lost about half a second per choice on the
+  web.
+
+**Decision.**
+- **No cap.** Any trip can be ordered by distance; asked to choose between
+  40, 60 or no limit, the owner chose none.
+- **While it works**, the button shows a spinner, "Working out an order…"
+  and a **Cancel**. Everything else waits: the dimmed page above, the rows,
+  and the header's ✕ and Save. Cancel, like Back, stops the work and leaves
+  arrange mode as it was.
+- **The screen gets a turn about once a frame** (`kOrderYieldEveryMs`,
+  16 ms): the local search pauses between moves as well as between kicks,
+  and a pause yields only once 16 ms have passed. The clock decides when the
+  screen gets a turn, never how much is worked out, so answers stay the same
+  everywhere. The golden file and the pinned 30-track order are unchanged.
+- **For the tests**:
+  - The cost table has one builder, `PathCosts.of`.
+  - The moves (`orOptStep`, `twoOptStep`, `swapStep`) take a `MoveProbe`
+    that shows each move's own arithmetic. The separate copy of the 2-opt
+    formula, `twoOptChange`, is gone.
+  - The exact search takes up to 16 blocks as a test oracle; the app still
+    switches at 12.
+  - `straightLineMetres` and `bestOrder` are public.
+  - `integration_test` joins the dev dependencies, so the same golden days
+    run on a phone.
+
+**Consequences.**
+- On the web, the idle time between turns falls from about 0.46 s per
+  choice to a few milliseconds; on the VM nothing measurable changes.
+- A very long trip still takes long, about 10 s at 100 tracks on a
+  laptop-class CPU and longer on a phone, but it can be cancelled at any
+  moment.
+- The tests answer the specification item by item:
+  - `order_by_distance_solver_test.dart` and `order_by_distance_test.dart`;
+  - the golden check on the VM, in the browser, and on a phone through
+    `integration_test`;
+  - a speed check kept apart behind `--dart-define=ORDER_SPEED=true`.
+- Item 34 (a fixed-time block in the middle of the day) does not apply:
+  Ntripi has no fixed-time blocks.
+
+**Alternatives rejected.**
+- **A cap at 40 or 60 tracks**: the owner chose no cap, with Cancel.
+- **A turn at every pause**: a browser's minimum timer delay made it cost
+  half a second per choice.
+- **Testing a copy of each move's formula**: a copy proves nothing about the
+  scan that runs. The probe shows the scan's own numbers.

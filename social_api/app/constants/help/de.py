@@ -415,7 +415,7 @@ Gespeichert wird erst, wenn Sie auf **Speichern** tippen. Eine Spalte existiert 
                 kind=KIND_STEP,
                 body="""Ab drei Spalten bietet der Modus **Stopps anordnen** **Nach Entfernung ordnen** an: eine Reihenfolge, in der auf jede Spalte die nächstgelegene folgt, gemessen in Luftlinie zwischen den gespeicherten Standorten der Stopps. Wo es die Antwort ändert, fragt Ntripi, ob die erste Spalte die erste bleiben soll, ob die letzte die letzte bleiben soll und ob durch einen Transport verbundene Stopps zusammenbleiben sollen. Hat die erste Spalte keinen gespeicherten Standort, bleibt sie die erste.
 
-Sie sehen die vorgeschlagene Reihenfolge, bevor sich etwas ändert: wie viele Spalten verschoben werden, und **vorher 4** neben jeder verschobenen Spalte. **Speichern** speichert sie; **Abbrechen** lässt die Reise, wie sie war.
+Bei einer langen Reise kann die Berechnung einen Moment dauern; **Abbrechen** daneben stoppt sie. Sie sehen die vorgeschlagene Reihenfolge, bevor sich etwas ändert: wie viele Spalten verschoben werden, und **vorher 4** neben jeder verschobenen Spalte. **Speichern** speichert sie; **Abbrechen** lässt die Reise, wie sie war.
 
 Nur Stopps, die über eine OpenStreetMap-Suche, eine Stecknadel auf der Karte oder eingegebene Koordinaten platziert wurden, haben einen gespeicherten Standort. Ein aus Google Maps gewählter oder als Google-Maps-Link gespeicherter Stopp bleibt direkt hinter dem Stopp davor. Die Entfernung ist eine Luftlinie, nicht die Straße — deshalb zeigt Ntripi keine Kilometer, nur die Reihenfolge.""",
             ),
@@ -459,7 +459,7 @@ Beim Anordnen gilt dasselbe: Trennt eine Verschiebung zwei Spalten, zwischen den
             "endpunkt",
         ),
         related=("plan-a-trip-itinerary", "getting-started"),
-        updated="2026-11-14",
+        updated="2026-11-15",
         cta="Planen Sie eine Reise mit echten Alternativen statt einer einzigen fragilen Linie.",
     ),
     Article(

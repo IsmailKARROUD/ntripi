@@ -14,12 +14,15 @@ import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:ntripi/shared/widgets/keyboard_avoidance.dart';
 
 /// Above the arrangement: starts Order by distance. Nothing is worked out
-/// until it is tapped; [working] while the answer is on its way.
+/// until it is tapped; [working] while the answer is on its way, when the
+/// button turns into a spinner beside a Cancel — a long trip can take a
+/// while, and everything else on the screen waits for it.
 class OrderByDistanceButton extends StatelessWidget {
   const OrderByDistanceButton({
     super.key,
     required this.working,
     required this.onPressed,
+    required this.onCancel,
   });
 
   final bool working;
@@ -27,33 +30,49 @@ class OrderByDistanceButton extends StatelessWidget {
   /// Null while [working] or while nothing may start.
   final VoidCallback? onPressed;
 
+  /// Stops the work, while [working]: arrange mode stays as it was.
+  final VoidCallback onCancel;
+
   @override
   Widget build(BuildContext context) {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
+    final button = OutlinedButton.icon(
+      onPressed: working ? null : onPressed,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: nt.forest,
+        side: BorderSide(color: nt.border),
+        alignment: AlignmentDirectional.centerStart,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      ),
+      icon: working
+          ? SizedBox(
+              width: 16,
+              height: 16,
+              child:
+                  CircularProgressIndicator(strokeWidth: 2, color: nt.forest),
+            )
+          : const Icon(Icons.route_rounded, size: 18),
+      label: Text(
+        working ? l10n.orderByDistanceWorking : l10n.orderByDistance,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+    );
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: OutlinedButton.icon(
-        onPressed: working ? null : onPressed,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: nt.forest,
-          side: BorderSide(color: nt.border),
-          alignment: AlignmentDirectional.centerStart,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        ),
-        icon: working
-            ? SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: nt.forest),
-              )
-            : const Icon(Icons.route_rounded, size: 18),
-        label: Text(
-          working ? l10n.orderByDistanceWorking : l10n.orderByDistance,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-      ),
+      child: working
+          ? Row(
+              children: [
+                Expanded(child: button),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: onCancel,
+                  style: TextButton.styleFrom(foregroundColor: nt.forest),
+                  child: Text(l10n.cancel),
+                ),
+              ],
+            )
+          : button,
     );
   }
 }

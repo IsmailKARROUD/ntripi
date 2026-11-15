@@ -1843,6 +1843,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                       onPressed: _savingArrangement
                                           ? null
                                           : () => _orderByDistance(itinerary),
+                                      onCancel: _cancelOrderByDistance,
                                     ),
                                   // Nothing moves while the order is worked
                                   // out: the answer is for these rows.
